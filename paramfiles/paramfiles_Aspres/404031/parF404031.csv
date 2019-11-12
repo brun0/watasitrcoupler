@@ -1,0 +1,2 @@
+climate,annee,jdsim,jfsim,fc,ppf,profx,rkru,res,rksol,base,tseuil0,xt0,tjdc,tjfc,tm,tfmat,taux,rkcm,rlaimax,rmg,hi,coefas0,cwx,alpha1,alpha2,gama,dens,densopt,rlcrit,xl1,pourc,jsem,jrecol,rscx,gge,itest,irrigfile,th_w,dosap,dosem,jdir,jfir,quota,selini,ssel,csel,ciw,css,f1,f2,f3
+climate_buech_2017.csv,2017,1,365,0.00146445993031359,0.12,114.8,0.65,300,0.2,0,30,0,900,1700,1000,750,0.016,1.2,5,1.35,0.52,0,0,4,1,2.5,100,100,5,0.2,0,1,365,0,0,0,irrig_file_watasit.dat,0,0,0,1,140,1000000,NA,NA,NA,NA,NA,NA,NA,NA

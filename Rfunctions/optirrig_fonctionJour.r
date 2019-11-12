@@ -387,10 +387,10 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
     d1 = max(0, R1_a - R1max)
     R1_1  = min(R1_a , R1max) 
     RU1_1 = max(0 , round(R1_1 - (param$ppf * 1000 * Hz1), 10)) ### reprendre les "round"
-    cat(R1max, "\n")
-    cat(R1[i-1], "\n")
-    cat(P[i] , "\n")
-    cat(I1[i], "\n")
+    # cat(R1max, "\n")
+    # cat(R1[i-1], "\n")
+    # cat(P[i] , "\n")
+    # cat(I1[i], "\n")
     
     ####### Demandes ES0, TPM et ETM ## 
     ES0 = (1 - Cp) * EP[i] # EP contient effet mulch 

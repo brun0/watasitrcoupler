@@ -56,8 +56,8 @@ list_idParcel <- optiParams(paste0(wd,'paramfiles/'), case_study_name, 'watasit.
 r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
  
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
-probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
-for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
+# probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
+# for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
 
 ####### 3.3 Choose of WatASit initial state and time step function (scenarios) #######
 r <- setInit("INIT_2017_54x44") # Initialization choice
@@ -124,7 +124,7 @@ for (day in 1:10){ # For testing
                               I2, # Deep irrigation (buried drip)
                               day) # Time step
       inval2 = optirday$inval ; inval2_list <- rbind(inval2_list, inval2) ; inval_list[i,] <- inval2 # New constants
-      vect2  = optirday$vect ; vect2_list <- rbind(vect2List, vect2) ; vect_list[i,] <- vect2 # New vectors
+      vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
     }
   } 
 }
