@@ -9,7 +9,7 @@
 # B. Richard -> make this script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+# You must initialize Cormas before run this script
 rm(list=ls()); sessionInfo(); start_time <- Sys.time()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1. R Settings #######
@@ -29,7 +29,7 @@ cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 2.1 Specification of case study, year and duration [REQUIRED] #######
 case_study_name <- "Aspres"
-date_start_sim <- as.Date("2017-05-01", "%Y-%m-%d"); date_end_sim <- as.Date("2017-09-15", "%Y-%m-%d")
+date_start_sim <- as.Date("2017-05-01", "%Y-%m-%d"); date_end_sim <- as.Date("2017-08-31", "%Y-%m-%d")
 
 ####### 2.2 Importation of meteo data input  [REQUIRED] #######
 data_meteo      = read.csv(paste0('climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
@@ -202,6 +202,56 @@ is.numeric0 <- function(x) {
 ####### 7.1 Get the farmers affordances and actions [OPTIONAL] #######
 farmers_aff <- farmers_aff %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
 farmers_act <- farmers_act %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
+parcels_by_farm <- crops_results %>% select(id, idExpl, day) #To identify the number of farmplots (in ASA) by farmer
+parcels_nb_farm1 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 1)))[1]
+parcels_nb_farm2 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 2)))[1]
+parcels_nb_farm3 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 3)))[1]
+parcels_nb_farm4 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 4)))[1]
+parcels_nb_farm5 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 5)))[1]
+parcels_nb_farm6 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 6)))[1]
+parcels_nb_farm7 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 7)))[1]
+parcels_nb_farm8 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 8)))[1]
+parcels_nb_farm9 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 9)))[1]
+parcels_nb_farm10 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 10)))[1]
+parcels_nb_farm11 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 11)))[1]
+parcels_nb_farm12 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 12)))[1]
+parcels_nb_farm13 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 13)))[1]
+parcels_nb_farm14 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 14)))[1]
+parcels_nb_farm15 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 15)))[1]
+parcels_nb_farm16 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 16)))[1]
+farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] / parcels_nb_farm1
+farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] / parcels_nb_farm2
+farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] / parcels_nb_farm3
+farmers_aff[which(farmers_aff$idExpl == 4),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 4),(2:11)] / parcels_nb_farm4
+farmers_aff[which(farmers_aff$idExpl == 5),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 5),(2:11)] / parcels_nb_farm5
+farmers_aff[which(farmers_aff$idExpl == 6),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 6),(2:11)] / parcels_nb_farm6
+farmers_aff[which(farmers_aff$idExpl == 7),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 7),(2:11)] / parcels_nb_farm7
+farmers_aff[which(farmers_aff$idExpl == 8),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 8),(2:11)] / parcels_nb_farm8
+farmers_aff[which(farmers_aff$idExpl == 9),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 9),(2:11)] / parcels_nb_farm9
+farmers_aff[which(farmers_aff$idExpl == 10),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 10),(2:11)] / parcels_nb_farm10
+farmers_aff[which(farmers_aff$idExpl == 11),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 11),(2:11)] / parcels_nb_farm11
+farmers_aff[which(farmers_aff$idExpl == 12),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 12),(2:11)] / parcels_nb_farm12
+farmers_aff[which(farmers_aff$idExpl == 13),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 13),(2:11)] / parcels_nb_farm13
+farmers_aff[which(farmers_aff$idExpl == 14),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 14),(2:11)] / parcels_nb_farm14
+farmers_aff[which(farmers_aff$idExpl == 15),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 15),(2:11)] / parcels_nb_farm15
+farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] / parcels_nb_farm16
+# farmers_act[which(farmers_act$idExpl == 1),(2:11)] <- farmers_act[which(farmers_act$idExpl == 1),(2:11)] / parcels_nb_farm1
+# farmers_act[which(farmers_act$idExpl == 2),(2:11)] <- farmers_act[which(farmers_act$idExpl == 2),(2:11)] / parcels_nb_farm2
+# farmers_act[which(farmers_act$idExpl == 3),(2:11)] <- farmers_act[which(farmers_act$idExpl == 3),(2:11)] / parcels_nb_farm3
+# farmers_act[which(farmers_act$idExpl == 4),(2:11)] <- farmers_act[which(farmers_act$idExpl == 4),(2:11)] / parcels_nb_farm4
+# farmers_act[which(farmers_act$idExpl == 5),(2:11)] <- farmers_act[which(farmers_act$idExpl == 5),(2:11)] / parcels_nb_farm5
+# farmers_act[which(farmers_act$idExpl == 6),(2:11)] <- farmers_act[which(farmers_act$idExpl == 6),(2:11)] / parcels_nb_farm6
+# farmers_act[which(farmers_act$idExpl == 7),(2:11)] <- farmers_act[which(farmers_act$idExpl == 7),(2:11)] / parcels_nb_farm7
+# farmers_act[which(farmers_act$idExpl == 8),(2:11)] <- farmers_act[which(farmers_act$idExpl == 8),(2:11)] / parcels_nb_farm8
+# farmers_act[which(farmers_act$idExpl == 9),(2:11)] <- farmers_act[which(farmers_act$idExpl == 9),(2:11)] / parcels_nb_farm9
+# farmers_act[which(farmers_act$idExpl == 10),(2:11)] <- farmers_act[which(farmers_act$idExpl == 10),(2:11)] / parcels_nb_farm10
+# farmers_act[which(farmers_act$idExpl == 11),(2:11)] <- farmers_act[which(farmers_act$idExpl == 11),(2:11)] / parcels_nb_farm11
+# farmers_act[which(farmers_act$idExpl == 12),(2:11)] <- farmers_act[which(farmers_act$idExpl == 12),(2:11)] / parcels_nb_farm12
+# farmers_act[which(farmers_act$idExpl == 13),(2:11)] <- farmers_act[which(farmers_act$idExpl == 13),(2:11)] / parcels_nb_farm13
+# farmers_act[which(farmers_act$idExpl == 14),(2:11)] <- farmers_act[which(farmers_act$idExpl == 14),(2:11)] / parcels_nb_farm14
+# farmers_act[which(farmers_aff$idExpl == 15),(2:11)] <- farmers_act[which(farmers_act$idExpl == 15),(2:11)] / parcels_nb_farm15
+# farmers_act[which(farmers_act$idExpl == 16),(2:11)] <- farmers_act[which(farmers_act$idExpl == 16),(2:11)] / parcels_nb_farm16
+
 
 ####### 7.2 Get the crops state by farmer [OPTIONAL] #######
 forage_results <- as.data.frame(forage_results)
@@ -259,23 +309,23 @@ aff <- farmers_aff %>%
                                 "Reaping & storing",
                                 "Swathing",
                                 "Tedding"), 
-                     values = c("askAffCounter"="#6A3D9A", 
-                                "doSEAffCounter"="#CAB2D6", 
-                                "floodAffCounter"="#FF7F00", 
-                                "floodDRAffCounter"="#FDBF6F", 
-                                "mowingAffCounter"="#E31A1C",
-                                "pickingAffCounter"="#FB9A99",
-                                "pressingAffCounter"="#33A02C",
-                                "reapingAffCounter"="#B2DF8A",
-                                "swathingAffCounter"="#1F78B4",
-                                "teddingAffCounter"="#A6CEE3")) +
+                     values = c("askAffCounter"="#984ea3", 
+                                "doSEAffCounter"="#000000", 
+                                "floodAffCounter"="#377eb8", 
+                                "floodDRAffCounter"="#e41a1c", 
+                                "mowingAffCounter"="#00441b",
+                                "pickingAffCounter"="#006d2c",
+                                "pressingAffCounter"="#238b45",
+                                "reapingAffCounter"="#41ab5d",
+                                "swathingAffCounter"="#74c476",
+                                "teddingAffCounter"="#a1d99b")) +
   theme_bw() +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+  theme(legend.box = "vertical",  legend.position = c(0.5,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
           panel.grid = element_line(),
           panel.background = element_blank(),
           legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
           plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste(" ",sep = ""), y = paste("Number of affordance", sep = ""))
+  labs(x = paste(" ",sep = ""), y = paste("Number of affordances / Number of farm plots", sep = ""))
 # legend <- get_legend(aff)
   
 ####### 7.4.2 Plot the farmers'actions [OPTIONAL] #######
@@ -295,28 +345,29 @@ act <- farmers_act %>%
                                 "Reaping & storing",
                                 "Swathing",
                                 "Tedding"), 
-                     values = c("askActCounter"="#6A3D9A", 
-                                "doSEActCounter"="#CAB2D6", 
-                                "floodActCounter"="#FF7F00", 
-                                "floodDRActCounter"="#FDBF6F", 
-                                "mowingActCounter"="#E31A1C",
-                                "pickingActCounter"="#FB9A99",
-                                "pressingActCounter"="#33A02C",
-                                "reapingActCounter"="#B2DF8A",
-                                "swathingActCounter"="#1F78B4",
-                                "teddingActCounter"="#A6CEE3")) +
+                     values = c("askActCounter"="#984ea3", 
+                                "doSEActCounter"="#000000", 
+                                "floodActCounter"="#377eb8", 
+                                "floodDRActCounter"="#e41a1c", 
+                                "mowingActCounter"="#00441b",
+                                "pickingActCounter"="#006d2c",
+                                "pressingActCounter"="#238b45",
+                                "reapingActCounter"="#41ab5d",
+                                "swathingActCounter"="#74c476",
+                                "teddingActCounter"="#a1d99b")) +
   theme_bw() +
   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
         panel.grid = element_line(),
         panel.background = element_blank(),
         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
         plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste("DOY",sep = ""), y = paste("Number of action", sep = ""))
+  labs(x = paste("DOY",sep = ""), y = paste("Number of actions / Number of farm plots", sep = ""))
 
 x11()
 aff <- aff + theme(legend.position="none")
 act <- act + theme(legend.position="none")
 grid.arrange(aff,act,ncol=1, nrow = 2) # Ajouter la légende à la main
+savePlot(filename = paste0("save/affordances_plot.png"), device = dev.cur())
 
 ####### 7.4.3 Plot the crop results [OPTIONAL] #######
 forage_results[which(forage_results$idExpl==2),1] <- 1
@@ -476,12 +527,13 @@ sc <- ggplot(springCereal_results, aes(x=day, y=mean_wsi, colour= factor(idExpl)
 
 # x11()
 # grid.arrange(legend_f,legend_m,legend_wc,legend_sc, ncol=4, nrow=1, widths=c(4,4,4,4)) #Pour ajouter une légende à la main
-x11()
 f <- f + theme(legend.position="none")
 m <- m + theme(legend.position="none")
 wc <- wc + theme(legend.position="none")
 sc <- sc + theme(legend.position="none")
+x11()
 grid.arrange(f,m,wc,sc, ncol=1, nrow=4, widths=c(2.5)) #Rest à ajouter une légende à la main
+savePlot(filename = paste0("save/wsi_plot.png"), device = dev.cur())
 
 ####### 7.4.4 Plot the indicator results [OPTIONAL] #######
 q <- ggplot(ind_results, aes(x=day, y=q_cumec)) +
@@ -541,6 +593,7 @@ abandoned <- abandoned + theme(legend.position="none")
 release <- release + theme(legend.position="none")
 x11()
 grid.arrange(q,inquiries,unrespect,abandoned,release, ncol=1, nrow=5, widths=c(2.5)) #Reste à ajouter une légende à la main
+savePlot(filename = paste0("save/indicators_plot.png"), device = dev.cur())
 
 ####### 7.4.5 Map the indicator results [OPTIONAL] #######
 require(maptools) ; require(raster)
@@ -604,4 +657,4 @@ legend("topright",   # location of legend
        legend = levels(factor(rpg@data$abandoned, levels=c('Not abandoned','Abandoned'))), # categories or elements to render in
        # the legend
        fill = c("#ffffff","#ef8a62")) # color palette to use to fill objects in legend.
-
+savePlot(filename = paste0("save/abandonedCrops_plot.png"), device = dev.cur())
