@@ -27,11 +27,11 @@ for (i in 1:dim(plots)[1]) {
     jfsim<-jfsim                                                                      #julian end of simulation day (DOY)
     #2/Soil_params
     ppf<-subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$ppf          #wilting point
-    profx<-plots$EPAIS[i]                                                             #maximum depth between roots and soil profil
-    ru<-plots$RU[i]                                                                   #useful reserve (ru)
-    fc<- (ppf + ru)/ (1000*profx)                                                     #field capacity
+    profx<-plots$EPAIS[i] / 100                                                       #maximum depth between roots and soil profil in meters
+    ru<-plots$RU[i]                                                                   #useful reserve (ru) en mm/m
+    fc<-(ppf + ru) / (1000*profx)                                                     #field capacity
     rkru<-subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$rkru        #ratio between the easily usable reserve (rfu) and the useful reserve (ru)
-    res<-subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$res          #total profile reserve on the day of the start of the simulation (jdsim)
+    res<-plots$MAXSTORAGE[i]                                                         #total profile reserve on the day of the start of the simulation (jdsim)
     rksol<-subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$rksol      #analogous kc for bare ground, "evapotranspiration resistance"
     #3/Temp_params
     base<-subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$base        #base temperature

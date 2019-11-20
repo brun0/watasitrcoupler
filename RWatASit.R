@@ -29,7 +29,7 @@ cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 2.1 Specification of case study, year and duration [REQUIRED] #######
 case_study_name <- "Aspres"
-date_start_sim <- as.Date("2017-05-01", "%Y-%m-%d"); date_end_sim <- as.Date("2017-08-31", "%Y-%m-%d")
+date_start_sim <- as.Date("2017-05-01", "%Y-%m-%d"); date_end_sim <- as.Date("2017-10-15", "%Y-%m-%d")
 
 ####### 2.2 Importation of meteo data input  [REQUIRED] #######
 data_meteo      = read.csv(paste0('climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
@@ -48,7 +48,9 @@ r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
 
 ####### 3.3 Choose of WatASit initial state and time step function (scenarios) [REQUIRED] #######
 r <- setInit("INIT_2017_54x44") # Initialization choice
-r <- setStep("R_goBaselineStep:") # Scenario choice
+# scenario <- "Baseline" # Choose scenario
+scenario <- "Alternative"
+r <- setStep(paste0("R_go",scenario,"Step:"))
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,6 +68,8 @@ forage_results <- data.frame()
 winterCereal_results <- data.frame()
 springCereal_results <- data.frame()
 ind_results <- data.frame()
+farmplots_aff <- data.frame()
+farmplots_act <- data.frame()
   
 ####### 4.3 Run WatASit during the irrigation campaign [REQUIRED] #######
 for (day in 1:dim(input_meteo)[1]){ 
@@ -114,9 +118,37 @@ for (day in 1:dim(input_meteo)[1]){
      f_act10 <- getAttributesOfEntities("teddingActCounter","Efarmer")
      f_act <- data.frame(f_act1, f_act2, f_act3, f_act4, f_act5, f_act6, f_act7, f_act8, f_act9, f_act10, f_idExpl); f_act$day = day
      farmers_act <- farmers_act %>% rbind(f_act)
-  
-     ####### 4.3.4 Get the crop results from Cormas [OPTIONAL] #######
-     ####### 4.3.4.1  By parcel ID [OPTIONAL] #######
+     
+     ####### 4.3.4 Get the farm plots affordances and actions from Cormas [OPTIONAL] #######
+     fp_aff1 <- getAttributesOfEntities("askAffCounter","FarmPlot") 
+     fp_aff2 <- getAttributesOfEntities("doSEAffCounter","FarmPlot") 
+     fp_aff3 <- getAttributesOfEntities("floodAffCounter","FarmPlot") 
+     fp_aff4 <- getAttributesOfEntities("floodDRAffCounter","FarmPlot") 
+     fp_aff5 <- getAttributesOfEntities("mowingAffCounter","FarmPlot") 
+     fp_aff6 <- getAttributesOfEntities("pickingAffCounter","FarmPlot")
+     fp_aff7 <- getAttributesOfEntities("pressingAffCounter","FarmPlot")
+     fp_aff8 <- getAttributesOfEntities("reapingAffCounter","FarmPlot")
+     fp_aff9 <- getAttributesOfEntities("swathingAffCounter","FarmPlot")
+     fp_aff10 <- getAttributesOfEntities("teddingAffCounter","FarmPlot")
+     fp_idExpl <- getAttributesOfEntities("idExpl","FarmPlot")
+     fp_aff <- data.frame(fp_aff1, fp_aff2, fp_aff3, fp_aff4, fp_aff5, fp_aff6, fp_aff7, fp_aff8, fp_aff9, fp_aff10, fp_idExpl); fp_aff$day = day;
+     farmplots_aff <- farmplots_aff %>% rbind(fp_aff)
+     
+     fp_act1 <- getAttributesOfEntities("askActCounter","FarmPlot") 
+     fp_act2 <- getAttributesOfEntities("doSEActCounter","FarmPlot") 
+     fp_act3 <- getAttributesOfEntities("floodActCounter","FarmPlot") 
+     fp_act4 <- getAttributesOfEntities("floodDRActCounter","FarmPlot") 
+     fp_act5 <- getAttributesOfEntities("mowingActCounter","FarmPlot") 
+     fp_act6 <- getAttributesOfEntities("pickingActCounter","FarmPlot")
+     fp_act7 <- getAttributesOfEntities("pressingActCounter","FarmPlot")
+     fp_act8 <- getAttributesOfEntities("reapingActCounter","FarmPlot")
+     fp_act9 <- getAttributesOfEntities("swathingActCounter","FarmPlot")
+     fp_act10 <- getAttributesOfEntities("teddingActCounter","FarmPlot")
+     fp_act <- data.frame(fp_act1, fp_act2, fp_act3, fp_act4, fp_act5, fp_act6, fp_act7, fp_act8, fp_act9, fp_act10, fp_idExpl); fp_act$day = day;
+     farmplots_act <- farmplots_act %>% rbind(fp_act)
+     
+     ####### 4.3.5 Get the crop results from Cormas [OPTIONAL] #######
+     ####### 4.3.5.1  By parcel ID [OPTIONAL] #######
      c_obs1 <- getAttributesOfEntities("labelNb", "Ecrop")
      c_obs2 <- getAttributesOfEntities("irriDailyDose", "Ecrop")
      c_obs3 <- getAttributesOfEntities("lai", "Ecrop")
@@ -130,10 +162,14 @@ for (day in 1:dim(input_meteo)[1]){
      c_obs11 <- getAttributesOfEntities("idParcel", "Ecrop")
      c_obs12<- getAttributesOfEntities("idExpl", "Ecrop")
      c_obs13<- getAttributesOfEntities("unrespectIrrigationCounter", "Ecrop")
-     c_obs <- data.frame(c_obs1, c_obs2, c_obs3, c_obs4, c_obs5, c_obs6, c_obs7, c_obs8, c_obs9, c_obs10, c_obs11, c_obs12, c_obs13); c_obs$day = day
+     c_obs14<- getAttributesOfEntities("failed_irrigations_classA", "Ecrop")
+     c_obs15<- getAttributesOfEntities("failed_irrigations_classB", "Ecrop")
+     c_obs16<- getAttributesOfEntities("failed_irrigations_classC", "Ecrop")
+     c_obs17<- getAttributesOfEntities("failed_irrigations_classD", "Ecrop")
+     c_obs <- data.frame(c_obs1, c_obs2, c_obs3, c_obs4, c_obs5, c_obs6, c_obs7, c_obs8, c_obs9, c_obs10, c_obs11, c_obs12, c_obs13, c_obs14, c_obs15, c_obs16, c_obs17); c_obs$day = day
      crops_results <- crops_results %>% rbind(c_obs)
      
-     ####### 4.3.4.2  By crop ID [OPTIONAL] #######
+     ####### 4.3.5.2  By crop ID [OPTIONAL] #######
      meadow_idExpl <- getAttributesOfEntities("idExpl", "Emeadow")
      meadow_wsi <- getAttributesOfEntities("wsi", "Emeadow")
      meadow_lai <- getAttributesOfEntities("lai", "Emeadow")
@@ -159,7 +195,7 @@ for (day in 1:dim(input_meteo)[1]){
      springCereal <- springCereal %>% group_by(idExpl) %>% summarise(mean_wsi = mean(wsi), mean_lai = mean(lai), n = n()); springCereal$day = day
      springCereal_results <- springCereal_results %>% rbind(springCereal)
      
-     ####### 4.3.5 Get the simulation indicators from Cormas [OPTIONAL] #######
+     ####### 4.3.6 Get the simulation indicators from Cormas [OPTIONAL] #######
      ind1 <- getAttributesOfEntities("q", "EwaterIntake")
      ind2 <- getAttributesOfEntities("inquiries", "IrrigatorAssociation")
      ind3 <- getAttributesOfEntities("nb", "TotalAbandonedCropNb");
@@ -186,7 +222,7 @@ for (day in 1:dim(input_meteo)[1]){
 end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
 "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
 
-
+#stop()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 7. Plot simulation results [OPTIONAL] #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,8 +236,8 @@ is.numeric0 <- function(x) {
   identical(x, numeric(0))
 }
 ####### 7.1 Get the farmers affordances and actions [OPTIONAL] #######
-farmers_aff <- farmers_aff %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
-farmers_act <- farmers_act %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
+# farmers_aff <- farmers_aff %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
+# farmers_act <- farmers_act %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
 parcels_by_farm <- crops_results %>% select(id, idExpl, day) #To identify the number of farmplots (in ASA) by farmer
 parcels_nb_farm1 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 1)))[1]
 parcels_nb_farm2 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 2)))[1]
@@ -219,22 +255,22 @@ parcels_nb_farm13 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl
 parcels_nb_farm14 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 14)))[1]
 parcels_nb_farm15 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 15)))[1]
 parcels_nb_farm16 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 16)))[1]
-farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] / parcels_nb_farm1
-farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] / parcels_nb_farm2
-farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] / parcels_nb_farm3
-farmers_aff[which(farmers_aff$idExpl == 4),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 4),(2:11)] / parcels_nb_farm4
-farmers_aff[which(farmers_aff$idExpl == 5),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 5),(2:11)] / parcels_nb_farm5
-farmers_aff[which(farmers_aff$idExpl == 6),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 6),(2:11)] / parcels_nb_farm6
-farmers_aff[which(farmers_aff$idExpl == 7),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 7),(2:11)] / parcels_nb_farm7
-farmers_aff[which(farmers_aff$idExpl == 8),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 8),(2:11)] / parcels_nb_farm8
-farmers_aff[which(farmers_aff$idExpl == 9),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 9),(2:11)] / parcels_nb_farm9
-farmers_aff[which(farmers_aff$idExpl == 10),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 10),(2:11)] / parcels_nb_farm10
-farmers_aff[which(farmers_aff$idExpl == 11),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 11),(2:11)] / parcels_nb_farm11
-farmers_aff[which(farmers_aff$idExpl == 12),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 12),(2:11)] / parcels_nb_farm12
-farmers_aff[which(farmers_aff$idExpl == 13),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 13),(2:11)] / parcels_nb_farm13
-farmers_aff[which(farmers_aff$idExpl == 14),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 14),(2:11)] / parcels_nb_farm14
-farmers_aff[which(farmers_aff$idExpl == 15),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 15),(2:11)] / parcels_nb_farm15
-farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] / parcels_nb_farm16
+# farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] / parcels_nb_farm1
+# farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] / parcels_nb_farm2
+# farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] / parcels_nb_farm3
+# farmers_aff[which(farmers_aff$idExpl == 4),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 4),(2:11)] / parcels_nb_farm4
+# farmers_aff[which(farmers_aff$idExpl == 5),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 5),(2:11)] / parcels_nb_farm5
+# farmers_aff[which(farmers_aff$idExpl == 6),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 6),(2:11)] / parcels_nb_farm6
+# farmers_aff[which(farmers_aff$idExpl == 7),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 7),(2:11)] / parcels_nb_farm7
+# farmers_aff[which(farmers_aff$idExpl == 8),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 8),(2:11)] / parcels_nb_farm8
+# farmers_aff[which(farmers_aff$idExpl == 9),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 9),(2:11)] / parcels_nb_farm9
+# farmers_aff[which(farmers_aff$idExpl == 10),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 10),(2:11)] / parcels_nb_farm10
+# farmers_aff[which(farmers_aff$idExpl == 11),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 11),(2:11)] / parcels_nb_farm11
+# farmers_aff[which(farmers_aff$idExpl == 12),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 12),(2:11)] / parcels_nb_farm12
+# farmers_aff[which(farmers_aff$idExpl == 13),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 13),(2:11)] / parcels_nb_farm13
+# farmers_aff[which(farmers_aff$idExpl == 14),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 14),(2:11)] / parcels_nb_farm14
+# farmers_aff[which(farmers_aff$idExpl == 15),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 15),(2:11)] / parcels_nb_farm15
+# farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] / parcels_nb_farm16
 # farmers_act[which(farmers_act$idExpl == 1),(2:11)] <- farmers_act[which(farmers_act$idExpl == 1),(2:11)] / parcels_nb_farm1
 # farmers_act[which(farmers_act$idExpl == 2),(2:11)] <- farmers_act[which(farmers_act$idExpl == 2),(2:11)] / parcels_nb_farm2
 # farmers_act[which(farmers_act$idExpl == 3),(2:11)] <- farmers_act[which(farmers_act$idExpl == 3),(2:11)] / parcels_nb_farm3
@@ -252,6 +288,47 @@ farmers_aff[which(farmers_aff$idExpl == 16),(2:11)] <- farmers_aff[which(farmers
 # farmers_act[which(farmers_aff$idExpl == 15),(2:11)] <- farmers_act[which(farmers_act$idExpl == 15),(2:11)] / parcels_nb_farm15
 # farmers_act[which(farmers_act$idExpl == 16),(2:11)] <- farmers_act[which(farmers_act$idExpl == 16),(2:11)] / parcels_nb_farm16
 
+farmplots_aff_df <- as.data.frame(farmplots_aff %>%
+  group_by(idExpl, day) %>%
+  summarize(sum_askAffCounter = sum(askAffCounter, na.rm = TRUE), sum_doSEAffCounter = sum(doSEAffCounter, na.rm = TRUE), sum_floodAffCounter = sum(floodAffCounter, na.rm = TRUE), sum_floodDRAffCounter = sum(floodDRAffCounter, na.rm = TRUE), sum_mowingAffCounter = sum(mowingAffCounter, na.rm = TRUE), sum_pickingAffCounter = sum(pickingAffCounter, na.rm = TRUE), sum_pressingAffCounter = sum(pressingAffCounter, na.rm = TRUE), sum_reapingAffCounter = sum(reapingAffCounter, na.rm = TRUE), sum_swathingAffCounter = sum(swathingAffCounter, na.rm = TRUE), sum_teddingAffCounter = sum(teddingAffCounter, na.rm = TRUE)))
+farmplots_aff_df <- farmplots_aff_df %>% select(-sum_doSEAffCounter, -sum_mowingAffCounter, -sum_pickingAffCounter, -sum_pressingAffCounter, -sum_reapingAffCounter, -sum_swathingAffCounter, -sum_teddingAffCounter)
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 1),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 1),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm1) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 2),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 2),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm3) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 4),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 4),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm4) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 5),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 5),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm5) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 6),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 6),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm6) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 7),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 7),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm7) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 8),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 8),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm8) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 9),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 9),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm9) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 10),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 10),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm10) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 11),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 11),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm11) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 12),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 12),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm12) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 13),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 13),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm13) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 14),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 14),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm14) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 15),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 15),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm15) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 16),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 16),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm16) * 100
+farmplots_aff_df <- subset.data.frame(farmplots_aff_df, idExpl == 2 | idExpl == 3 | idExpl == 5 | idExpl == 6 | idExpl == 7 | idExpl == 10 |idExpl == 11  | idExpl == 12 | idExpl == 14 | idExpl == 16)
+
+farmplots_act_df <- as.data.frame(farmplots_act %>%
+                                    group_by(idExpl, day) %>%
+                                    summarize(sum_askActCounter = sum(askActCounter, na.rm = TRUE), sum_doSEActCounter = sum(doSEActCounter, na.rm = TRUE), sum_floodActCounter = sum(floodActCounter, na.rm = TRUE), sum_floodDRActCounter = sum(floodDRActCounter, na.rm = TRUE), sum_mowingActCounter = sum(mowingActCounter, na.rm = TRUE), sum_pickingActCounter = sum(pickingActCounter, na.rm = TRUE), sum_pressingActCounter = sum(pressingActCounter, na.rm = TRUE), sum_reapingActCounter = sum(reapingActCounter, na.rm = TRUE), sum_swathingActCounter = sum(swathingActCounter, na.rm = TRUE), sum_teddingActCounter = sum(teddingActCounter, na.rm = TRUE)))
+farmplots_act_df <- farmplots_act_df %>% select(-sum_doSEActCounter, -sum_mowingActCounter, -sum_pickingActCounter, -sum_pressingActCounter, -sum_reapingActCounter, -sum_swathingActCounter, -sum_teddingActCounter)
+farmplots_act_df[which(farmplots_act_df$idExpl == 1),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 1),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm1) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 2),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 2),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm3) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 4),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 4),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm4) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 5),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 5),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm5) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 6),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 6),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm6) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 7),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 7),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm7) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 8),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 8),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm8) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 9),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 9),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm9) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 10),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 10),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm10) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 11),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 11),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm11) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 12),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 12),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm12) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 13),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 13),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm13) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 14),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 14),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm14) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 15),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 15),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm15) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 16),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 16),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm16) * 100
+farmplots_act_df <- subset.data.frame(farmplots_act_df, idExpl == 2 | idExpl == 3 | idExpl == 5 | idExpl == 6 | idExpl == 7 | idExpl == 10 |idExpl == 11  | idExpl == 12 | idExpl == 14 | idExpl == 16)
 
 ####### 7.2 Get the crops state by farmer [OPTIONAL] #######
 forage_results <- as.data.frame(forage_results)
@@ -264,6 +341,35 @@ springCereal_results <- as.data.frame(springCereal_results)
 springCereal_results <- subset.data.frame(springCereal_results, (idExpl != 1) & (idExpl != 4) & (idExpl != 8) & (idExpl != 9) & (idExpl != 13) & (idExpl != 15))
 
 ####### 7.3 Get the crops state by parcel [OPTIONAL] #######
+#Au 1er juillet (DOY 61 en partant du 1er mai)
+# crops_results_61 <- subset.data.frame(crops_results, day == 61)
+# crops_results_61[which(crops_results_61$idExpl==2),24] <- 1
+# crops_results_61[which(crops_results_61$idExpl==3),24] <- 2
+# crops_results_61[which(crops_results_61$idExpl==5),24] <- 3
+# crops_results_61[which(crops_results_61$idExpl==6),24] <- 4
+# crops_results_61[which(crops_results_61$idExpl==7),24] <- 5
+# crops_results_61[which(crops_results_61$idExpl==10),24] <- 6
+# crops_results_61[which(crops_results_61$idExpl==11),24] <- 7
+# crops_results_61[which(crops_results_61$idExpl==12),24] <- 8
+# crops_results_61[which(crops_results_61$idExpl==14),24] <- 9
+# crops_results_61[which(crops_results_61$idExpl==16),24] <- 10
+# failed_irrigations_61 <- crops_results_61 %>% select(id, abandonedState, idExpl)
+
+#Au 1er septembre (DOY 123)
+# crops_results_123 <- subset.data.frame(crops_results, day == 123)
+# crops_results_123[which(crops_results_123$idExpl==2),24] <- 1
+# crops_results_123[which(crops_results_123$idExpl==3),24] <- 2
+# crops_results_123[which(crops_results_123$idExpl==5),24] <- 3
+# crops_results_123[which(crops_results_123$idExpl==6),24] <- 4
+# crops_results_123[which(crops_results_123$idExpl==7),24] <- 5
+# crops_results_123[which(crops_results_123$idExpl==10),24] <- 6
+# crops_results_123[which(crops_results_123$idExpl==11),24] <- 7
+# crops_results_123[which(crops_results_123$idExpl==12),24] <- 8
+# crops_results_123[which(crops_results_123$idExpl==14),24] <- 9
+# crops_results_123[which(crops_results_123$idExpl==16),24] <- 10
+# failed_irrigations_123 <- crops_results_123 %>% select(id, abandonedState, idExpl)
+
+#Au 15 octobre
 crops_results_end <- subset.data.frame(crops_results, day == length(unique(crops_results$day)))
 crops_results_end[which(crops_results_end$idExpl==2),24] <- 1
 crops_results_end[which(crops_results_end$idExpl==3),24] <- 2
@@ -275,8 +381,17 @@ crops_results_end[which(crops_results_end$idExpl==11),24] <- 7
 crops_results_end[which(crops_results_end$idExpl==12),24] <- 8
 crops_results_end[which(crops_results_end$idExpl==14),24] <- 9
 crops_results_end[which(crops_results_end$idExpl==16),24] <- 10
-abandoned_plots <- crops_results_end %>% select(id, abandonedState, idExpl)
-unrespect_plots <- crops_results_end %>% select(id, unrespectIrrigationCounter, idExpl)
+# failed_irrigations_ten_end <- crops_results_end %>% select(id, failed_irrigations_ten, idExpl)
+# failed_irrigations_fifteen_end <- crops_results_end %>% select(id, failed_irrigations_fifteen, idExpl)
+# failed_irrigations_twenty_end <- crops_results_end %>% select(id, failed_irrigations_twenty, idExpl)
+# failed_irrigations_thirty_end <- crops_results_end %>% select(id, failed_irrigations_thirty, idExpl)
+# failed_irrigations_fourty_end <- crops_results_end %>% select(id, failed_irrigations_fourty, idExpl)
+# failed_irrigations_fifty_end <- crops_results_end %>% select(id, failed_irrigations_fifty, idExpl)
+# failed_irrigations_sixty_end <- crops_results_end %>% select(id, failed_irrigations_sixty, idExpl)
+failed_irrigations_classA_end <- crops_results_end %>% select(id, failed_irrigations_classA, idExpl)
+failed_irrigations_classB_end <- crops_results_end %>% select(id, failed_irrigations_classB, idExpl)
+failed_irrigations_classC_end <- crops_results_end %>% select(id, failed_irrigations_classC, idExpl)
+failed_irrigations_classD_end <- crops_results_end %>% select(id, failed_irrigations_classD, idExpl)
 
 ####### 7.4 Plot the simulation results [OPTIONAL] #######
 id_names <- c(
@@ -293,81 +408,86 @@ id_names <- c(
 )
 
 ####### 7.4.1 Plot the farmers'affordances [OPTIONAL] #######
-aff <- farmers_aff %>%
-  gather(Affordance,value, askAffCounter,doSEAffCounter,floodAffCounter, floodDRAffCounter, mowingAffCounter, pickingAffCounter, pressingAffCounter, reapingAffCounter, swathingAffCounter, teddingAffCounter) %>%
+aff <- farmplots_aff_df %>%
+  gather(Affordance,value, sum_askAffCounter,sum_floodAffCounter, sum_floodDRAffCounter#, sum_mowingAffCounter, sum_pickingAffCounter, sum_pressingAffCounter, sum_reapingAffCounter, sum_swathingAffCounter, sum_teddingAffCounter
+         ) %>%
   ggplot(aes(x=day, y=value, colour=Affordance)) +
-  facet_wrap(~ factor(idExpl, levels=c('2','3','5','6', '7', '10', '11', '12', '14', '16')), scales = "fixed", ncol = 5, labeller = as_labeller(id_names)) +
-  geom_line() + xlim(c(0, max(farmers_aff$day))) + ylim(c(0, max(farmers_aff$askAffCounter))) +
+  facet_wrap(~ factor(idExpl, levels=c('2','3','5','6', '7', '10', '11', '12', '14', '16')), scales = "fixed", ncol = 4, labeller = as_labeller(id_names)) +
+  geom_line() + xlim(c(0, max(farmplots_aff_df$day))) + #ylim(c(0, max(farmplots_aff_df$sum_askAffCounter))) +
+  theme_bw() +
   scale_color_manual(name="Affordance", 
                      labels = c("Ask more water at plot", 
-                                "Do something else", 
                                 "Flood plot", 
-                                "Flood plot during restriction", 
-                                "Mowing",
-                                "Picking & storing",
-                                "Pressing",
-                                "Reaping & storing",
-                                "Swathing",
-                                "Tedding"), 
-                     values = c("askAffCounter"="#984ea3", 
-                                "doSEAffCounter"="#000000", 
-                                "floodAffCounter"="#377eb8", 
-                                "floodDRAffCounter"="#e41a1c", 
-                                "mowingAffCounter"="#00441b",
-                                "pickingAffCounter"="#006d2c",
-                                "pressingAffCounter"="#238b45",
-                                "reapingAffCounter"="#41ab5d",
-                                "swathingAffCounter"="#74c476",
-                                "teddingAffCounter"="#a1d99b")) +
-  theme_bw() +
+                                "Flood plot during restriction"#, 
+                                # "Mowing",
+                                # "Picking & storing",
+                                # "Pressing",
+                                # "Reaping & storing",
+                                # "Swathing",
+                                # "Tedding"
+                                ), 
+                     values = c("sum_askAffCounter"="#4daf4a", 
+                                "sum_floodAffCounter"="#377eb8", 
+                                "sum_floodDRAffCounter"="#e41a1c"#, 
+                                # "sum_mowingAffCounter"="#00441b",
+                                # "sum_pickingAffCounter"="#006d2c",
+                                # "sum_pressingAffCounter"="#238b45",
+                                # "sum_reapingAffCounter"="#41ab5d",
+                                # "sum_swathingAffCounter"="#74c476",
+                                # "sum_teddingAffCounter"="#a1d99b"
+                                )) +
   theme(legend.box = "vertical",  legend.position = c(0.5,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
           panel.grid = element_line(),
           panel.background = element_blank(),
           legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
           plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste(" ",sep = ""), y = paste("Number of affordances / Number of farm plots", sep = ""))
-# legend <- get_legend(aff)
+  labs(x = paste(" ",sep = ""), y = paste("Farm plots with affordance (%)", sep = "")) + ggtitle(paste0(scenario, " scenario"))
+  # legend <- get_legend(aff)
   
 ####### 7.4.2 Plot the farmers'actions [OPTIONAL] #######
-act <- farmers_act %>%
-  gather(Action,value, askActCounter,doSEActCounter,floodActCounter, floodDRActCounter, mowingActCounter, pickingActCounter, pressingActCounter, reapingActCounter, swathingActCounter, teddingActCounter) %>%
+act <- farmplots_act_df %>%
+  gather(Action,value,sum_askActCounter,#doSEActCounter,
+         sum_floodActCounter, sum_floodDRActCounter#, mowingActCounter, pickingActCounter, pressingActCounter, reapingActCounter, swathingActCounter, teddingActCounter
+         ) %>%
   ggplot(aes(x=day, y=value, colour=Action)) +
-  facet_wrap(~ factor(idExpl, levels=c('2','3','5','6', '7', '10', '11', '12', '14', '16')), scales = "fixed", ncol = 5, labeller = as_labeller(id_names)) +
-  geom_line() + xlim(c(0, max(farmers_act$day))) + ylim(c(0, max(farmers_act$askActCounter))) +
+  facet_wrap(~ factor(idExpl, levels=c('2','3','5','6', '7', '10', '11', '12', '14', '16')), scales = "fixed", ncol = 4, labeller = as_labeller(id_names)) +
+  geom_line() + xlim(c(0, max(farmplots_act_df$day))) + ylim(c(0, max(farmplots_act_df$sum_askActCounter))) +
   scale_color_manual(name="Action", 
                      labels = c("Ask more water at plot", 
-                                "Do something else", 
+                                #"Do something else", 
                                 "Flood plot", 
-                                "Flood plot during restriction", 
-                                "Mowing",
-                                "Picking & storing",
-                                "Pressing",
-                                "Reaping & storing",
-                                "Swathing",
-                                "Tedding"), 
-                     values = c("askActCounter"="#984ea3", 
-                                "doSEActCounter"="#000000", 
-                                "floodActCounter"="#377eb8", 
-                                "floodDRActCounter"="#e41a1c", 
-                                "mowingActCounter"="#00441b",
-                                "pickingActCounter"="#006d2c",
-                                "pressingActCounter"="#238b45",
-                                "reapingActCounter"="#41ab5d",
-                                "swathingActCounter"="#74c476",
-                                "teddingActCounter"="#a1d99b")) +
+                                "Flood plot during restriction"#, 
+                                # "Mowing",
+                                # "Picking & storing",
+                                # "Pressing",
+                                # "Reaping & storing",
+                                # "Swathing",
+                                # "Tedding"
+                                ), 
+                     values = c("sum_askActCounter"="#4daf4a", 
+                                #"doSEActCounter"="#000000", 
+                                "sum_floodActCounter"="#377eb8", 
+                                "sum_floodDRActCounter"="#e41a1c"#, 
+                                # "mowingActCounter"="#00441b",
+                                # "pickingActCounter"="#006d2c",
+                                # "pressingActCounter"="#238b45",
+                                # "reapingActCounter"="#41ab5d",
+                                # "swathingActCounter"="#74c476",
+                                # "teddingActCounter"="#a1d99b"
+                                )) +
   theme_bw() +
   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
         panel.grid = element_line(),
         panel.background = element_blank(),
         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
         plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste("DOY",sep = ""), y = paste("Number of actions / Number of farm plots", sep = ""))
+  labs(x = paste("DOY",sep = ""), y = paste("Farm plots with action (%)", sep = ""))
 
 x11()
 aff <- aff + theme(legend.position="none")
 act <- act + theme(legend.position="none")
 grid.arrange(aff,act,ncol=1, nrow = 2) # Ajouter la légende à la main
-savePlot(filename = paste0("save/affordances_plot.png"), device = dev.cur())
+savePlot(filename = paste0("save/affordances_plot_",scenario,".png"), device = dev.cur())
 
 ####### 7.4.3 Plot the crop results [OPTIONAL] #######
 forage_results[which(forage_results$idExpl==2),1] <- 1
@@ -402,7 +522,7 @@ f <- ggplot(forage_results, aes(x=day, y=mean_wsi, colour= factor(idExpl))) +
                                 "8" ="#B2DF8A",
                                 "9"="#1F78B4",
                                 "10"="#A6CEE3")) +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+  theme(legend.box = "vertical",  legend.position = c(0.5,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
         panel.grid = element_line(),
         panel.background = element_blank(),
         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
@@ -532,68 +652,69 @@ m <- m + theme(legend.position="none")
 wc <- wc + theme(legend.position="none")
 sc <- sc + theme(legend.position="none")
 x11()
-grid.arrange(f,m,wc,sc, ncol=1, nrow=4, widths=c(2.5)) #Rest à ajouter une légende à la main
-savePlot(filename = paste0("save/wsi_plot.png"), device = dev.cur())
+# grid.arrange(f,m,wc,sc, ncol=1, nrow=4, widths=c(2.5)) #Rest à ajouter une légende à la main
+grid.arrange(f,m,wc, ncol=1, nrow=3, widths=c(2.5)) #Rest à ajouter une légende à la main
+savePlot(filename = paste0("save/wsi_plot_",scenario,".png"), device = dev.cur())
 
 ####### 7.4.4 Plot the indicator results [OPTIONAL] #######
-q <- ggplot(ind_results, aes(x=day, y=q_cumec)) +
-  geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$q_cumec))) +
-  theme_bw()  +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
-        panel.grid = element_line(),
-        panel.background = element_blank(),
-        legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste(" ",sep = ""), y = paste("Q [cumec]", sep = ""))
-
-inquiries <- ggplot(ind_results, aes(x=day, y=inquiries)) +
-  geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$inquiries))) +
-  theme_bw()  +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
-        panel.grid = element_line(),
-        panel.background = element_blank(),
-        legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste(" ",sep = ""), y = paste("Farmer inquiries", sep = ""))
-
-unrespect <- ggplot(ind_results, aes(x=day, y=unrespect)) +
-  geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$unrespect))) +
-  theme_bw()  +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
-        panel.grid = element_line(),
-        panel.background = element_blank(),
-        legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste(" ",sep = ""), y = paste("Irrigation under restriction", sep = ""))
-
-abandoned <- ggplot(ind_results, aes(x=day, y=abandoned)) +
-  geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$abandoned))) +
-  theme_bw()  +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
-        panel.grid = element_line(),
-        panel.background = element_blank(),
-        legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste(" ",sep = ""), y = paste("Abandoned plot", sep = ""))
-
-release <- ggplot(ind_results, aes(x=day, y=release_cumec)) +
-  geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$release_cumec))) +
-  theme_bw()  +
-  theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
-        panel.grid = element_line(),
-        panel.background = element_blank(),
-        legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = paste("DOY",sep = ""), y = paste("Release [cumec]", sep = ""))
-
-q <- q + theme(legend.position="none")
-inquiries <- inquiries + theme(legend.position="none")
-unrespect <- unrespect + theme(legend.position="none")
-abandoned <- abandoned + theme(legend.position="none")
-release <- release + theme(legend.position="none")
-x11()
-grid.arrange(q,inquiries,unrespect,abandoned,release, ncol=1, nrow=5, widths=c(2.5)) #Reste à ajouter une légende à la main
-savePlot(filename = paste0("save/indicators_plot.png"), device = dev.cur())
+# q <- ggplot(ind_results, aes(x=day, y=q_cumec)) +
+#   geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$q_cumec))) +
+#   theme_bw()  +
+#   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+#         panel.grid = element_line(),
+#         panel.background = element_blank(),
+#         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
+#         plot.title = element_text(hjust = 0.5)) +
+#   labs(x = paste(" ",sep = ""), y = paste("Q [cumec]", sep = ""))
+# 
+# inquiries <- ggplot(ind_results, aes(x=day, y=inquiries)) +
+#   geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$inquiries))) +
+#   theme_bw()  +
+#   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+#         panel.grid = element_line(),
+#         panel.background = element_blank(),
+#         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
+#         plot.title = element_text(hjust = 0.5)) +
+#   labs(x = paste(" ",sep = ""), y = paste("Farmer inquiries", sep = ""))
+# 
+# unrespect <- ggplot(ind_results, aes(x=day, y=unrespect)) +
+#   geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$unrespect))) +
+#   theme_bw()  +
+#   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+#         panel.grid = element_line(),
+#         panel.background = element_blank(),
+#         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
+#         plot.title = element_text(hjust = 0.5)) +
+#   labs(x = paste(" ",sep = ""), y = paste("Irrigation under restriction", sep = ""))
+# 
+# abandoned <- ggplot(ind_results, aes(x=day, y=abandoned)) +
+#   geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$abandoned))) +
+#   theme_bw()  +
+#   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+#         panel.grid = element_line(),
+#         panel.background = element_blank(),
+#         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
+#         plot.title = element_text(hjust = 0.5)) +
+#   labs(x = paste(" ",sep = ""), y = paste("Abandoned plot", sep = ""))
+# 
+# release <- ggplot(ind_results, aes(x=day, y=release_cumec)) +
+#   geom_line() + xlim(c(0, max(ind_results$day))) + ylim(c(0, max(ind_results$release_cumec))) +
+#   theme_bw()  +
+#   theme(legend.box = "vertical",  legend.position = c(1.1,0.5), plot.margin = unit(c(0.5,0.5,0,0.5), "lines"),
+#         panel.grid = element_line(),
+#         panel.background = element_blank(),
+#         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid"),
+#         plot.title = element_text(hjust = 0.5)) +
+#   labs(x = paste("DOY",sep = ""), y = paste("Release [cumec]", sep = ""))
+# 
+# q <- q + theme(legend.position="none")
+# inquiries <- inquiries + theme(legend.position="none")
+# unrespect <- unrespect + theme(legend.position="none")
+# abandoned <- abandoned + theme(legend.position="none")
+# release <- release + theme(legend.position="none")
+# x11()
+# grid.arrange(q,inquiries,unrespect,abandoned,release, ncol=1, nrow=5, widths=c(2.5)) #Reste à ajouter une légende à la main
+# savePlot(filename = paste0("save/indicators_plot.png"), device = dev.cur())
 
 ####### 7.4.5 Map the indicator results [OPTIONAL] #######
 require(maptools) ; require(raster)
@@ -636,25 +757,140 @@ rpg_df[which(rpg_df$ID_EXPL==14),6] <- 9
 rpg_df[which(rpg_df$ID_EXPL==15),6] <- NA
 rpg_df[which(rpg_df$ID_EXPL==16),6] <- 10
 rpg_df$abandoned <- rpg_df$ID_PARCEL
+
+# #At DOY 61 (Jully 1st)
+# for (i in 1:length(rpg_df$ID_PARCEL)){
+#   id_plot <- rpg_df[i,1] 
+#   id <- which(failed_irrigations_61[,1] == id_plot)
+#   state <- failed_irrigations_61[id,2]
+#   state <- max(state); #if(state>0){state ==1}
+#   if (is.numeric0(state)==F)
+#   rpg_df[i,24] <- state
+# }
+# rpg_df[which(rpg_df$abandoned<=0),24] <- 0
+# #rpg_df[which(rpg_df$abandoned==2),24] <- 1
+# rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
+# # x11(); plot(rpg)
+# # text(coordinates(rpg), labels=rpg$abandoned,font=2,cex=0.5)
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#abdda4"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 2] <- "#ffffbf"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 3] <- "#fdae61"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 4] <- "#d7191c"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = "Failed irrigations on Jully, 1st 2017", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
+# legend("topright",   # location of legend
+#        legend = levels(factor(rpg@data$abandoned, levels=c('Failed irrigation','Not failed'))), # categories or elements to render in
+#        # the legend
+#        fill = c("#ffffff","#ef8a62")) # color palette to use to fill objects in legend.
+# savePlot(filename = paste0("save/failed_irrigations_61.png"), device = dev.cur())
+# 
+# #At DOY 123 (September 1st)
+# for (i in 1:length(rpg_df$ID_PARCEL)){
+#   id_plot <- rpg_df[i,1] 
+#   id <- which(failed_irrigations_123[,1] == id_plot)
+#   state <- failed_irrigations_123[id,2]
+#   state <- sum(state); if(state>0){state ==1}
+#   if (is.numeric0(state)==F)
+#     rpg_df[i,24] <- state
+# }
+# rpg_df[which(rpg_df$abandoned==2),24] <- 1
+# rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
+# # x11(); plot(rpg)
+# # text(coordinates(rpg), labels=rpg$abandoned,font=2,cex=0.5)
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ef8a62"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = "Failed irrigations on September, 1st 2017", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
+# legend("topright",   # location of legend
+#        legend = levels(factor(rpg@data$abandoned, levels=c('Failed irrigation','Not failed'))), # categories or elements to render in
+#        # the legend
+#        fill = c("#ffffff","#ef8a62")) # color palette to use to fill objects in legend.
+# savePlot(filename = paste0("save/failed_irrigations_123.png"), device = dev.cur())
+
+#At the end of the irrigation campaign (October 15)
+#classA
+# for (i in 1:length(rpg_df$ID_PARCEL)){
+#   id_plot <- rpg_df[i,1] 
+#   id <- which(failed_irrigations_classA_end[,1] == id_plot)
+#   state <- failed_irrigations_classA_end[id,2]
+#   state <- max(state);
+#   if (is.numeric0(state)==F)
+#     rpg_df[i,24] <- state
+# }
+# rpg_df[which(rpg_df$abandoned <= 0),24] <- 0
+# rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ef8a62"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = "0 to 10-days failed irrigations", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
+# legend("topright",   
+#        legend = levels(factor(rpg@data$abandoned, levels=c('Not failed','Failed'))), 
+#        fill = c("#ffffff","#ef8a62")) 
+# savePlot(filename = paste0("save/failed_irrigations_classeA_end_",scenario,".png"), device = dev.cur())
+
+#classB
+# for (i in 1:length(rpg_df$ID_PARCEL)){
+#   id_plot <- rpg_df[i,1] 
+#   id <- which(failed_irrigations_classB_end[,1] == id_plot)
+#   state <- failed_irrigations_classB_end[id,2]
+#   state <- max(state);
+#   if (is.numeric0(state)==F)
+#     rpg_df[i,24] <- state
+# }
+# rpg_df[which(rpg_df$abandoned <= 0),24] <- 0
+# rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ef8a62"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = "10 to 20-days failed irrigations", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
+# legend("topright",
+#        legend = levels(factor(rpg@data$abandoned, levels=c('Not failed','Failed'))), 
+#        fill = c("#ffffff","#ef8a62"))
+# savePlot(filename = paste0("save/failed_irrigations_classB_end_",scenario,".png"), device = dev.cur())
+
+#classC
+# for (i in 1:length(rpg_df$ID_PARCEL)){
+#   id_plot <- rpg_df[i,1] 
+#   id <- which(failed_irrigations_classC_end[,1] == id_plot)
+#   state <- failed_irrigations_classC_end[id,2]
+#   state <- max(state);
+#   if (is.numeric0(state)==F)
+#     rpg_df[i,24] <- state
+# }
+# rpg_df[which(rpg_df$abandoned <= 0),24] <- 0
+# rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ef8a62"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = "20 to 30-days failed irrigations", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
+# legend("topright",  
+#        legend = levels(factor(rpg@data$abandoned, levels=c('Not failed','Failed'))), 
+#        fill = c("#ffffff","#ef8a62"))
+# savePlot(filename = paste0("save/failed_irrigations_classC_end_",scenario,".png"), device = dev.cur())
+
+#classD
 for (i in 1:length(rpg_df$ID_PARCEL)){
   id_plot <- rpg_df[i,1] 
-  id <- which(abandoned_plots[,1] == id_plot)
-  state <- abandoned_plots[id,2]
-  state <- sum(state); if(state>0){state ==1}
+  id <- which(failed_irrigations_classD_end[,1] == id_plot)
+  state <- failed_irrigations_classD_end[id,2]
+  state <- max(state);
   if (is.numeric0(state)==F)
-  rpg_df[i,24] <- state
+    rpg_df[i,24] <- state
 }
-rpg_df[which(rpg_df$abandoned==2),24] <- 1
+rpg_df[which(rpg_df$abandoned <= 0),24] <- 0
 rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
-# x11(); plot(rpg)
-# text(coordinates(rpg), labels=rpg$abandoned,font=2,cex=0.5)
 rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
 rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ef8a62"
 x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
-title(main = "Irrigated crop state at the end of the 2017 campaign", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+title(main = paste0(scenario," scenario"), sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
 text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
-legend("topright",   # location of legend
-       legend = levels(factor(rpg@data$abandoned, levels=c('Not abandoned','Abandoned'))), # categories or elements to render in
-       # the legend
-       fill = c("#ffffff","#ef8a62")) # color palette to use to fill objects in legend.
-savePlot(filename = paste0("save/abandonedCrops_plot.png"), device = dev.cur())
+legend("topright",
+       legend = levels(factor(rpg@data$abandoned, levels=c('Not abandoned','Abandoned*'))),
+       fill = c("#ffffff","#ef8a62"))
+savePlot(filename = paste0("save/abandoned_end_",scenario,".png"), device = dev.cur())
