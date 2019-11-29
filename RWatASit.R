@@ -1,7 +1,7 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #################      R WatASit      ################################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# This script pilot the WatASit multi-agent model in Cormas plateform
+# This script makes R to pilot the WatASit multi-agent model in Cormas
 # to test simulations for EMS 2020 paper without Optirrig
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2019, October, by
@@ -41,7 +41,7 @@ input_meteo <- zoo(data_meteo, dates); input_meteo <- window(input_meteo, start 
 ####### 3. WatASit initialization #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model [REQUIRED] #######
-r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
+r <- openModel("COWAT", parcelFile="WatASit[EMSpaper]_bb.pcl")
  
 ####### 3.2 Activation of Cormas probes [OPTIONAL] #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2IrrigatedPlotNb", "f3IrrigatedPlotNb", "f5IrrigatedPlotNb", "f6IrrigatedPlotNb", "f7IrrigatedPlotNb", "f10IrrigatedPlotNb", "f11IrrigatedPlotNb", "f12IrrigatedPlotNb","f14IrrigatedPlotNb", "f16IrrigatedPlotNb")
@@ -130,8 +130,9 @@ for (day in 1:dim(input_meteo)[1]){
      fp_aff8 <- getAttributesOfEntities("reapingAffCounter","FarmPlot")
      fp_aff9 <- getAttributesOfEntities("swathingAffCounter","FarmPlot")
      fp_aff10 <- getAttributesOfEntities("teddingAffCounter","FarmPlot")
+     fp_idParcel <- getAttributesOfEntities("idParcel","FarmPlot")
      fp_idExpl <- getAttributesOfEntities("idExpl","FarmPlot")
-     fp_aff <- data.frame(fp_aff1, fp_aff2, fp_aff3, fp_aff4, fp_aff5, fp_aff6, fp_aff7, fp_aff8, fp_aff9, fp_aff10, fp_idExpl); fp_aff$day = day;
+     fp_aff <- data.frame(fp_aff1, fp_aff2, fp_aff3, fp_aff4, fp_aff5, fp_aff6, fp_aff7, fp_aff8, fp_aff9, fp_aff10, fp_idParcel, fp_idExpl); fp_aff$day = day;
      farmplots_aff <- farmplots_aff %>% rbind(fp_aff)
      
      fp_act1 <- getAttributesOfEntities("askActCounter","FarmPlot") 
@@ -144,7 +145,7 @@ for (day in 1:dim(input_meteo)[1]){
      fp_act8 <- getAttributesOfEntities("reapingActCounter","FarmPlot")
      fp_act9 <- getAttributesOfEntities("swathingActCounter","FarmPlot")
      fp_act10 <- getAttributesOfEntities("teddingActCounter","FarmPlot")
-     fp_act <- data.frame(fp_act1, fp_act2, fp_act3, fp_act4, fp_act5, fp_act6, fp_act7, fp_act8, fp_act9, fp_act10, fp_idExpl); fp_act$day = day;
+     fp_act <- data.frame(fp_act1, fp_act2, fp_act3, fp_act4, fp_act5, fp_act6, fp_act7, fp_act8, fp_act9, fp_act10, fp_idParcel, fp_idExpl); fp_act$day = day;
      farmplots_act <- farmplots_act %>% rbind(fp_act)
      
      ####### 4.3.5 Get the crop results from Cormas [OPTIONAL] #######
@@ -222,7 +223,7 @@ for (day in 1:dim(input_meteo)[1]){
 end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
 "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
 
-#stop()
+stop()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 7. Plot simulation results [OPTIONAL] #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -235,26 +236,35 @@ get_legend<-function(myggplot){
 is.numeric0 <- function(x) {
   identical(x, numeric(0))
 }
+
+####### 7.0 Write simulation results [OPTIONAL] #######
+write.csv(ind_results,"save/ind_results.csv")
+write.csv(crops_results,"save/crops_results.csv")
+write.csv(farmplots_aff,"save/farmplots_aff.csv")
+write.csv(farmplots_act,"save/farmplots_act.csv")
+write.csv(farmers_aff,"save/farmers_aff.csv")
+write.csv(farmers_act,"save/farmers_act.csv")
+
 ####### 7.1 Get the farmers affordances and actions [OPTIONAL] #######
 # farmers_aff <- farmers_aff %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
 # farmers_act <- farmers_act %>% select(-id.1,-id.2,-id.3,-id.4,-id.5,-id.6,-id.7,-id.8,-id.9,-id.10)
-parcels_by_farm <- crops_results %>% select(id, idExpl, day) #To identify the number of farmplots (in ASA) by farmer
-parcels_nb_farm1 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 1)))[1]
-parcels_nb_farm2 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 2)))[1]
-parcels_nb_farm3 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 3)))[1]
-parcels_nb_farm4 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 4)))[1]
-parcels_nb_farm5 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 5)))[1]
-parcels_nb_farm6 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 6)))[1]
-parcels_nb_farm7 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 7)))[1]
-parcels_nb_farm8 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 8)))[1]
-parcels_nb_farm9 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 9)))[1]
-parcels_nb_farm10 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 10)))[1]
-parcels_nb_farm11 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 11)))[1]
-parcels_nb_farm12 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 12)))[1]
-parcels_nb_farm13 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 13)))[1]
-parcels_nb_farm14 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 14)))[1]
-parcels_nb_farm15 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 15)))[1]
-parcels_nb_farm16 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 16)))[1]
+parcels_by_farm <- crops_results %>% select(id, idExpl, irriState, day) #To identify the number of farmplots (in ASA) by farmer
+parcels_nb_farm1 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 1) & (irriState != 0)))[1]
+parcels_nb_farm2 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 2) & (irriState != 0)))[1]
+parcels_nb_farm3 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 3) & (irriState != 0)))[1]
+parcels_nb_farm4 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 4) & (irriState != 0)))[1]
+parcels_nb_farm5 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 5) & (irriState != 0)))[1]
+parcels_nb_farm6 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 6) & (irriState != 0)))[1]
+parcels_nb_farm7 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 7) & (irriState != 0)))[1]
+parcels_nb_farm8 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 8) & (irriState != 0)))[1]
+parcels_nb_farm9 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 9) & (irriState != 0)))[1]
+parcels_nb_farm10 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 10) & (irriState != 0)))[1]
+parcels_nb_farm11 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 11) & (irriState != 0)))[1]
+parcels_nb_farm12 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 12) & (irriState != 0)))[1]
+parcels_nb_farm13 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 13) & (irriState != 0)))[1]
+parcels_nb_farm14 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 14) & (irriState != 0)))[1]
+parcels_nb_farm15 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 15) & (irriState != 0)))[1]
+parcels_nb_farm16 <- dim(subset.data.frame(parcels_by_farm, (day == 1) & (idExpl == 16) & (irriState != 0)))[1]
 # farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 1),(2:11)] / parcels_nb_farm1
 # farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 2),(2:11)] / parcels_nb_farm2
 # farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] <- farmers_aff[which(farmers_aff$idExpl == 3),(2:11)] / parcels_nb_farm3
@@ -293,7 +303,8 @@ farmplots_aff_df <- as.data.frame(farmplots_aff %>%
   summarize(sum_askAffCounter = sum(askAffCounter, na.rm = TRUE), sum_doSEAffCounter = sum(doSEAffCounter, na.rm = TRUE), sum_floodAffCounter = sum(floodAffCounter, na.rm = TRUE), sum_floodDRAffCounter = sum(floodDRAffCounter, na.rm = TRUE), sum_mowingAffCounter = sum(mowingAffCounter, na.rm = TRUE), sum_pickingAffCounter = sum(pickingAffCounter, na.rm = TRUE), sum_pressingAffCounter = sum(pressingAffCounter, na.rm = TRUE), sum_reapingAffCounter = sum(reapingAffCounter, na.rm = TRUE), sum_swathingAffCounter = sum(swathingAffCounter, na.rm = TRUE), sum_teddingAffCounter = sum(teddingAffCounter, na.rm = TRUE)))
 farmplots_aff_df <- farmplots_aff_df %>% select(-sum_doSEAffCounter, -sum_mowingAffCounter, -sum_pickingAffCounter, -sum_pressingAffCounter, -sum_reapingAffCounter, -sum_swathingAffCounter, -sum_teddingAffCounter)
 farmplots_aff_df[which(farmplots_aff_df$idExpl == 1),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 1),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm1) * 100
-farmplots_aff_df[which(farmplots_aff_df$idExpl == 2),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 2),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm3) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 2),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 2),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm2) * 100
+farmplots_aff_df[which(farmplots_aff_df$idExpl == 3),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 3),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm3) * 100
 farmplots_aff_df[which(farmplots_aff_df$idExpl == 4),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 4),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm4) * 100
 farmplots_aff_df[which(farmplots_aff_df$idExpl == 5),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 5),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm5) * 100
 farmplots_aff_df[which(farmplots_aff_df$idExpl == 6),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 6),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm6) * 100
@@ -309,12 +320,73 @@ farmplots_aff_df[which(farmplots_aff_df$idExpl == 15),(3:dim(farmplots_aff_df)[2
 farmplots_aff_df[which(farmplots_aff_df$idExpl == 16),(3:dim(farmplots_aff_df)[2])] <- (farmplots_aff_df[which(farmplots_aff_df$idExpl == 16),(3:dim(farmplots_aff_df)[2])] / parcels_nb_farm16) * 100
 farmplots_aff_df <- subset.data.frame(farmplots_aff_df, idExpl == 2 | idExpl == 3 | idExpl == 5 | idExpl == 6 | idExpl == 7 | idExpl == 10 |idExpl == 11  | idExpl == 12 | idExpl == 14 | idExpl == 16)
 
+
+farmplots_aff_counter_idExpl <- as.data.frame(farmplots_aff %>%
+                                    group_by(idExpl) %>%
+                                    summarize(sum_askAffCounter = sum(askAffCounter, na.rm = TRUE), sum_doSEAffCounter = sum(doSEAffCounter, na.rm = TRUE), sum_floodAffCounter = sum(floodAffCounter, na.rm = TRUE), sum_floodDRAffCounter = sum(floodDRAffCounter, na.rm = TRUE)))
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==1),1] <- NA
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==2),1] <- 1
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==3),1] <- 2
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==4),1] <- NA
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==5),1] <- 3
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==6),1] <- 4
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==7),1] <- 5
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==8),1] <- NA
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==9),1] <- NA
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==10),1] <- 6
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==11),1] <- 7
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==12),1] <- 8
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==13),1] <- NA
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==14),1] <- 9
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==15),1] <- NA
+farmplots_aff_counter_idExpl[which(farmplots_aff_counter_idExpl$idExpl==16),1] <- 10
+write.csv(farmplots_aff_counter_idExpl,"save/farmplots_aff_counter_idExpl.csv") 
+
+farmplots_aff_percent_counter <- as.data.frame(farmplots_aff_df %>%
+                                                  group_by(idExpl) %>%
+                                                  summarize(mean_askAffCounter = mean(sum_askAffCounter, na.rm = TRUE), mean_floodAffCounter = mean(sum_floodAffCounter, na.rm = TRUE), mean_floodDRAffCounter = mean(sum_floodDRAffCounter, na.rm = TRUE))) 
+write.csv(farmplots_aff_percent_counter,"save/farmplots_aff_percent_counter.csv")  
+
+farmplots_aff_counter_idParcel <- as.data.frame(farmplots_aff %>%
+                                         group_by(idParcel) %>%
+                                         summarize(sum_askAffCounter = sum(askAffCounter, na.rm = TRUE), sum_doSEAffCounter = sum(doSEAffCounter, na.rm = TRUE), sum_floodAffCounter = sum(floodAffCounter, na.rm = TRUE), sum_floodDRAffCounter = sum(floodDRAffCounter, na.rm = TRUE)))  
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==1),1] <- NA
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==2),1] <- 1
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==3),1] <- 2
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==4),1] <- NA
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==5),1] <- 3
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==6),1] <- 4
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==7),1] <- 5
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==8),1] <- NA
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==9),1] <- NA
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==10),1] <- 6
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==11),1] <- 7
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==12),1] <- 8
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==13),1] <- NA
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==14),1] <- 9
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==15),1] <- NA
+farmplots_aff_counter_idParcel[which(farmplots_aff_counter_idParcel$idExpl==16),1] <- 10
+write.csv(farmplots_aff_counter_idParcel,"save/farmplots_aff_counter_idParcel.csv") 
+mean_flood_aff_by_irrigated_parcel <- mean(subset(farmplots_aff_counter_idParcel, sum_floodAffCounter !=0)$sum_floodAffCounter)
+write.csv(mean_flood_aff_by_irrigated_parcel,"save/mean_flood_aff_by_irrigated_parcel.csv")
+mean_floodDR_aff_by_irrigated_parcel <- mean(subset(farmplots_aff_counter_idParcel, sum_floodDRAffCounter !=0)$sum_floodDRAffCounter)
+write.csv(mean_floodDR_aff_by_irrigated_parcel,"save/mean_floodDR_aff_by_irrigated_parcel.csv")
+mean_ask_aff_by_irrigated_parcel <- mean(subset(farmplots_aff_counter_idParcel, sum_askAffCounter !=0)$sum_askAffCounter)
+write.csv(mean_ask_aff_by_irrigated_parcel,"save/mean_ask_aff_by_irrigated_parcel.csv")
+
+
+farmplots_act_percent_counter <- as.data.frame(farmplots_act_df %>%
+                                                 group_by(idExpl) %>%
+                                                 summarize(mean_askActCounter = mean(sum_askActCounter, na.rm = TRUE), mean_floodActCounter = mean(sum_floodActCounter, na.rm = TRUE), mean_floodDRActCounter = mean(sum_floodDRActCounter, na.rm = TRUE))) 
+write.csv(farmplots_act_percent_counter,"save/farmplots_act_percent_counter.csv")  
+
 farmplots_act_df <- as.data.frame(farmplots_act %>%
                                     group_by(idExpl, day) %>%
                                     summarize(sum_askActCounter = sum(askActCounter, na.rm = TRUE), sum_doSEActCounter = sum(doSEActCounter, na.rm = TRUE), sum_floodActCounter = sum(floodActCounter, na.rm = TRUE), sum_floodDRActCounter = sum(floodDRActCounter, na.rm = TRUE), sum_mowingActCounter = sum(mowingActCounter, na.rm = TRUE), sum_pickingActCounter = sum(pickingActCounter, na.rm = TRUE), sum_pressingActCounter = sum(pressingActCounter, na.rm = TRUE), sum_reapingActCounter = sum(reapingActCounter, na.rm = TRUE), sum_swathingActCounter = sum(swathingActCounter, na.rm = TRUE), sum_teddingActCounter = sum(teddingActCounter, na.rm = TRUE)))
 farmplots_act_df <- farmplots_act_df %>% select(-sum_doSEActCounter, -sum_mowingActCounter, -sum_pickingActCounter, -sum_pressingActCounter, -sum_reapingActCounter, -sum_swathingActCounter, -sum_teddingActCounter)
 farmplots_act_df[which(farmplots_act_df$idExpl == 1),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 1),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm1) * 100
-farmplots_act_df[which(farmplots_act_df$idExpl == 2),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 2),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm3) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 2),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 2),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm2) * 100
+farmplots_act_df[which(farmplots_act_df$idExpl == 3),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 3),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm3) * 100
 farmplots_act_df[which(farmplots_act_df$idExpl == 4),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 4),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm4) * 100
 farmplots_act_df[which(farmplots_act_df$idExpl == 5),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 5),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm5) * 100
 farmplots_act_df[which(farmplots_act_df$idExpl == 6),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 6),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm6) * 100
@@ -329,6 +401,54 @@ farmplots_act_df[which(farmplots_act_df$idExpl == 14),(3:dim(farmplots_act_df)[2
 farmplots_act_df[which(farmplots_act_df$idExpl == 15),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 15),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm15) * 100
 farmplots_act_df[which(farmplots_act_df$idExpl == 16),(3:dim(farmplots_act_df)[2])] <- (farmplots_act_df[which(farmplots_act_df$idExpl == 16),(3:dim(farmplots_act_df)[2])] / parcels_nb_farm16) * 100
 farmplots_act_df <- subset.data.frame(farmplots_act_df, idExpl == 2 | idExpl == 3 | idExpl == 5 | idExpl == 6 | idExpl == 7 | idExpl == 10 |idExpl == 11  | idExpl == 12 | idExpl == 14 | idExpl == 16)
+
+farmplots_act_counter_idExpl <- as.data.frame(farmplots_act %>%
+                                    group_by(idExpl) %>%
+                                    summarize(sum_askActCounter = sum(askActCounter, na.rm = TRUE), sum_doSEActCounter = sum(doSEActCounter, na.rm = TRUE), sum_floodActCounter = sum(floodActCounter, na.rm = TRUE), sum_floodDRActCounter = sum(floodDRActCounter, na.rm = TRUE)))
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==1),1] <- NA
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==2),1] <- 1
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==3),1] <- 2
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==4),1] <- NA
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==5),1] <- 3
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==6),1] <- 4
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==7),1] <- 5
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==8),1] <- NA
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==9),1] <- NA
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==10),1] <- 6
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==11),1] <- 7
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==12),1] <- 8
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==13),1] <- NA
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==14),1] <- 9
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==15),1] <- NA
+farmplots_act_counter_idParcel[which(farmplots_act_counter_idParcel$idExpl==16),1] <- 10
+write.csv(farmplots_act_counter_idExpl,"save/farmplots_act_counter_idExpl.csv")
+
+farmplots_act_counter_idParcel <- as.data.frame(farmplots_act %>%
+                                                group_by(idParcel) %>%
+                                                summarize(sum_askActCounter = sum(askActCounter, na.rm = TRUE), sum_doSEActCounter = sum(doSEActCounter, na.rm = TRUE), sum_floodActCounter = sum(floodActCounter, na.rm = TRUE), sum_floodDRActCounter = sum(floodDRActCounter, na.rm = TRUE)))
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==1),1] <- NA
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==2),1] <- 1
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==3),1] <- 2
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==4),1] <- NA
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==5),1] <- 3
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==6),1] <- 4
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==7),1] <- 5
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==8),1] <- NA
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==9),1] <- NA
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==10),1] <- 6
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==11),1] <- 7
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==12),1] <- 8
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==13),1] <- NA
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==14),1] <- 9
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==15),1] <- NA
+farmplots_act_counter_idExpl[which(farmplots_act_counter_idExpl$idExpl==16),1] <- 10
+write.csv(farmplots_act_counter_idParcel,"save/farmplots_act_counter_idParcel.csv")
+mean_flood_act_by_irrigated_parcel <- mean(subset(farmplots_act_counter_idParcel, sum_floodActCounter !=0)$sum_floodActCounter)
+write.csv(mean_flood_act_by_irrigated_parcel,"save/mean_flood_act_by_irrigated_parcel.csv")
+mean_floodDR_act_by_irrigated_parcel <- mean(subset(farmplots_act_counter_idParcel, sum_floodDRActCounter !=0)$sum_floodDRActCounter)
+write.csv(mean_floodDR_act_by_irrigated_parcel,"save/mean_floodDR_act_by_irrigated_parcel.csv")
+mean_ask_act_by_irrigated_parcel <- mean(subset(farmplots_act_counter_idParcel, sum_askActCounter !=0)$sum_askActCounter)
+write.csv(mean_ask_act_by_irrigated_parcel,"save/mean_ask_act_by_irrigated_parcel.csv")
 
 ####### 7.2 Get the crops state by farmer [OPTIONAL] #######
 forage_results <- as.data.frame(forage_results)
@@ -371,15 +491,21 @@ springCereal_results <- subset.data.frame(springCereal_results, (idExpl != 1) & 
 
 #Au 15 octobre
 crops_results_end <- subset.data.frame(crops_results, day == length(unique(crops_results$day)))
+crops_results_end[which(crops_results_end$idExpl==1),24] <- NA
 crops_results_end[which(crops_results_end$idExpl==2),24] <- 1
 crops_results_end[which(crops_results_end$idExpl==3),24] <- 2
+crops_results_end[which(crops_results_end$idExpl==4),24] <- NA
 crops_results_end[which(crops_results_end$idExpl==5),24] <- 3
 crops_results_end[which(crops_results_end$idExpl==6),24] <- 4
 crops_results_end[which(crops_results_end$idExpl==7),24] <- 5
+crops_results_end[which(crops_results_end$idExpl==8),24] <- NA
+crops_results_end[which(crops_results_end$idExpl==9),24] <- NA
 crops_results_end[which(crops_results_end$idExpl==10),24] <- 6
 crops_results_end[which(crops_results_end$idExpl==11),24] <- 7
 crops_results_end[which(crops_results_end$idExpl==12),24] <- 8
+crops_results_end[which(crops_results_end$idExpl==13),24] <- NA
 crops_results_end[which(crops_results_end$idExpl==14),24] <- 9
+crops_results_end[which(crops_results_end$idExpl==15),24] <- NA
 crops_results_end[which(crops_results_end$idExpl==16),24] <- 10
 # failed_irrigations_ten_end <- crops_results_end %>% select(id, failed_irrigations_ten, idExpl)
 # failed_irrigations_fifteen_end <- crops_results_end %>% select(id, failed_irrigations_fifteen, idExpl)
@@ -392,6 +518,47 @@ failed_irrigations_classA_end <- crops_results_end %>% select(id, failed_irrigat
 failed_irrigations_classB_end <- crops_results_end %>% select(id, failed_irrigations_classB, idExpl)
 failed_irrigations_classC_end <- crops_results_end %>% select(id, failed_irrigations_classC, idExpl)
 failed_irrigations_classD_end <- crops_results_end %>% select(id, failed_irrigations_classD, idExpl)
+unrespect_irrigations_end <- crops_results_end %>% select(id, unrespectIrrigationCounter, idExpl)
+
+crops_results_DR <- subset.data.frame(crops_results, irriState == 3) #To identify days with unregular irrigations
+crops_results_DR[which(crops_results_DR$idExpl==1),24] <- NA
+crops_results_DR[which(crops_results_DR$idExpl==2),24] <- 1
+crops_results_DR[which(crops_results_DR$idExpl==3),24] <- 2
+crops_results_DR[which(crops_results_DR$idExpl==4),24] <- NA
+crops_results_DR[which(crops_results_DR$idExpl==5),24] <- 3
+crops_results_DR[which(crops_results_DR$idExpl==6),24] <- 4
+crops_results_DR[which(crops_results_DR$idExpl==7),24] <- 5
+crops_results_DR[which(crops_results_DR$idExpl==8),24] <- NA
+crops_results_DR[which(crops_results_DR$idExpl==9),24] <- NA
+crops_results_DR[which(crops_results_DR$idExpl==10),24] <- 6
+crops_results_DR[which(crops_results_DR$idExpl==11),24] <- 7
+crops_results_DR[which(crops_results_DR$idExpl==12),24] <- 8
+crops_results_DR[which(crops_results_DR$idExpl==13),24] <- NA
+crops_results_DR[which(crops_results_DR$idExpl==14),24] <- 9
+crops_results_DR[which(crops_results_DR$idExpl==15),24] <- NA
+crops_results_DR[which(crops_results_DR$idExpl==16),24] <- 10
+unregular_dates <- crops_results_DR %>% select(id, day, idExpl)
+
+crops_results_104 <- subset.data.frame(crops_results, day == 104)
+crops_results_104[which(crops_results_104$idExpl==1),24] <- NA
+crops_results_104[which(crops_results_104$idExpl==2),24] <- 1
+crops_results_104[which(crops_results_104$idExpl==3),24] <- 2
+crops_results_104[which(crops_results_104$idExpl==4),24] <- NA
+crops_results_104[which(crops_results_104$idExpl==5),24] <- 3
+crops_results_104[which(crops_results_104$idExpl==6),24] <- 4
+crops_results_104[which(crops_results_104$idExpl==7),24] <- 5
+crops_results_104[which(crops_results_104$idExpl==8),24] <- NA
+crops_results_104[which(crops_results_104$idExpl==9),24] <- NA
+crops_results_104[which(crops_results_104$idExpl==10),24] <- 6
+crops_results_104[which(crops_results_104$idExpl==11),24] <- 7
+crops_results_104[which(crops_results_104$idExpl==12),24] <- 8
+crops_results_104[which(crops_results_104$idExpl==13),24] <- NA
+crops_results_104[which(crops_results_104$idExpl==14),24] <- 9
+crops_results_104[which(crops_results_104$idExpl==15),24] <- NA
+crops_results_104[which(crops_results_104$idExpl==16),24] <- 10
+irri_state_104 <- crops_results_104 %>% select(id, irriState, idExpl)
+crops_results_104_f7 <- subset.data.frame(crops_results_104, idExpl == 7)
+irri_state_104_f7 <- crops_results_104_f7 %>% select(id, irriState, idExpl)
 
 ####### 7.4 Plot the simulation results [OPTIONAL] #######
 id_names <- c(
@@ -756,7 +923,17 @@ rpg_df[which(rpg_df$ID_EXPL==13),6] <- NA
 rpg_df[which(rpg_df$ID_EXPL==14),6] <- 9
 rpg_df[which(rpg_df$ID_EXPL==15),6] <- NA
 rpg_df[which(rpg_df$ID_EXPL==16),6] <- 10
-rpg_df$abandoned <- rpg_df$ID_PARCEL
+rpg_df$abandoned      <- rpg_df$ID_PARCEL
+rpg_df$unrespect      <- rpg_df$ID_PARCEL
+rpg_df$irriStateF7136 <- rpg_df$ID_PARCEL
+rpg_df$irriState136   <- rpg_df$ID_PARCEL
+rpg_df$unregularDates <- rpg_df$ID_PARCEL
+rpg_df$askAff         <- rpg_df$ID_PARCEL
+rpg_df$floodAff       <- rpg_df$ID_PARCEL
+rpg_df$floodDRAff     <- rpg_df$ID_PARCEL
+rpg_df$askAct         <- rpg_df$ID_PARCEL
+rpg_df$floodAct       <- rpg_df$ID_PARCEL
+rpg_df$floodDRAct     <- rpg_df$ID_PARCEL
 
 # #At DOY 61 (Jully 1st)
 # for (i in 1:length(rpg_df$ID_PARCEL)){
@@ -883,14 +1060,236 @@ for (i in 1:length(rpg_df$ID_PARCEL)){
   if (is.numeric0(state)==F)
     rpg_df[i,24] <- state
 }
-rpg_df[which(rpg_df$abandoned <= 0),24] <- 0
+rpg_df[which(rpg_df$abandoned < 0),24] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(unrespect_irrigations_end[,1] == id_plot)
+  state <- unrespect_irrigations_end[id,2]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,25] <- state
+}
+rpg_df[which(rpg_df$unrespect <= 0),25] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(irri_state_104_f7[,1] == id_plot)
+  state <- irri_state_104_f7[id,2]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,26] <- state
+}
+rpg_df[which(rpg_df$irriStateF7104 <= 0),26] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(irri_state_104[,1] == id_plot)
+  state <- irri_state_104[id,2]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,27] <- state
+}
+rpg_df[which(rpg_df$irriState104 <= 0),27] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(unregular_dates[,1] == id_plot)
+  state <- unregular_dates[id,2]
+  state <- min(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,28] <- state
+}
+rpg_df[which(rpg_df$unregularDates == Inf),28] <- NA
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(farmplots_aff_counter_idParcel[,1] == id_plot)
+  state <- farmplots_aff_counter_idParcel[id,2]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,29] <- state
+}
+rpg_df[which(rpg_df$askAff <= 0),29] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(farmplots_aff_counter_idParcel[,1] == id_plot)
+  state <- farmplots_aff_counter_idParcel[id,4]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,30] <- state
+}
+rpg_df[which(rpg_df$floodAff <= 0),30] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(farmplots_aff_counter_idParcel[,1] == id_plot)
+  state <- farmplots_aff_counter_idParcel[id,5]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,31] <- state
+}
+rpg_df[which(rpg_df$floodDRAff <= 0),31] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(farmplots_act_counter_idParcel[,1] == id_plot)
+  state <- farmplots_act_counter_idParcel[id,2]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,32] <- state
+}
+rpg_df[which(rpg_df$askAct <= 0),32] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(farmplots_act_counter_idParcel[,1] == id_plot)
+  state <- farmplots_act_counter_idParcel[id,4]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,33] <- state
+}
+rpg_df[which(rpg_df$floodAct <= 0),33] <- 0
+
+for (i in 1:length(rpg_df$ID_PARCEL)){
+  id_plot <- rpg_df[i,1] 
+  id <- which(farmplots_act_counter_idParcel[,1] == id_plot)
+  state <- farmplots_act_counter_idParcel[id,5]
+  state <- max(state);
+  if (is.numeric0(state)==F)
+    rpg_df[i,34] <- state
+}
+rpg_df[which(rpg_df$floodDRAct <= 0),34] <- 0
+
+
 rpg = SpatialPolygonsDataFrame(as(rpg, "SpatialPolygons"), data=rpg_df, match.ID=F)
-rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 0] <- "#ffffff"
-rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ef8a62"
-x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
-title(main = paste0(scenario," scenario"), sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
-text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.5)
-legend("topright",
-       legend = levels(factor(rpg@data$abandoned, levels=c('Not abandoned','Abandoned*'))),
-       fill = c("#ffffff","#ef8a62"))
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) <= 0] <- "#bdbdbd"
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$abandoned))) == 1] <- "#ce1256"
+x11(); plot(rpg, col=rpg@data$COLOUR, border = NA, axes = F)
+title(main = "Abandoned irrigation", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65, col="black")
+legend("top",
+       legend = levels(factor(rpg@data$abandoned, levels=c('Abandoned crop', 'Other crop'))),
+       fill = c("#ce1256","#bdbdbd"))
 savePlot(filename = paste0("save/abandoned_end_",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$unrespect))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$unrespect))) >= 1] <- "#ef6548"
+x11(); plot(rpg, col=rpg@data$COLOUR, border = NA, axes = F)
+title(main = "Unregular irrigation", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65, col="black")
+legend("top",
+       legend = levels(factor(rpg@data$unrespect, levels=c('Unregular','Other'))),
+       fill = c("#ef6548","#bdbdbd"))
+savePlot(filename = paste0("save/unregular_end_",scenario,".png"), device = dev.cur())
+
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriStateF7104))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriStateF7104))) == 1] <- "#2b83ba"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriStateF7104))) == 2] <- "#abdda4"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriStateF7104))) == 3] <- "#d7191c"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriStateF7104))) == 4] <- "#404040"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = paste0(scenario," scenario"), sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.8)
+# legend("topright",
+#        legend = levels(factor(rpg@data$irriStateF7104, levels=c('Not served by network','Regular irrigation','No irrigation','Unregular irrigation','Abandoned irrigation'))),
+#        fill = c("#ffffff","#2b83ba","#abdda4","#d7191c","#404040"))
+# savePlot(filename = paste0("save/irriState_104_f7_",scenario,".png"), device = dev.cur())
+
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriState104))) == 0] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriState104))) == 1] <- "#2b83ba"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriState104))) == 2] <- "#abdda4"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriState104))) == 3] <- "#d7191c"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$irriState104))) == 4] <- "#404040"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = paste0(scenario," scenario"), sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg$ID_EXPL,font=2,cex=0.8)
+# legend("topright",
+#        legend = levels(factor(rpg@data$irriState104, levels=c('Not served by network','Regular irrigation','No irrigation','Unregular irrigation','Abandoned irrigation'))),
+#        fill = c("#ffffff","#2b83ba","#abdda4","#d7191c","#404040"))
+# savePlot(filename = paste0("save/irriState_104_",scenario,".png"), device = dev.cur())
+
+
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$unregularDates))) == Inf] <- "#ffffff"
+# rpg@data$COLOUR[(as.numeric(as.character(rpg@data$unregularDates))) >= 1] <- "#d7191c"
+# x11(); plot(rpg, col=rpg@data$COLOUR, axes = T)
+# title(main = paste0(scenario," scenario"), sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+# text(coordinates(rpg), labels=rpg@data$unregularDates,font=2,cex=0.8)
+# legend("topright",
+#        legend = levels(factor(rpg@data$unregularDates, levels=c('Regular irrigation','Unregular'))),
+#        fill = c("#ffffff","#d7191c"))
+# savePlot(filename = paste0("save/unregularDates",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$askAff))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$askAff))) >0) & ((as.numeric(as.character(rpg@data$askAff))) <= 20)] <- "#c2e699"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$askAff))) >20) & ((as.numeric(as.character(rpg@data$askAff))) <= 40)] <- "#78c679"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$askAff))) >40)] <- "#238443"
+x11(); plot(rpg, col=rpg@data$COLOUR, border=NA,axes = F)
+title(main = "Ask water affordance", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65,col="black")
+legend("top",
+       legend = levels(factor(rpg@data$askAff, levels=c('0','] 0 ; 20 ]', '] 20 ; 40 ]', '> 40'))),
+       fill = c("#bdbdbd","#c2e699","#78c679","#238443"))
+savePlot(filename = paste0("save/askAff",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$floodAff))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodAff))) >0) & ((as.numeric(as.character(rpg@data$floodAff))) <= 50)] <- "#bdd7e7"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodAff))) >50) & ((as.numeric(as.character(rpg@data$floodAff))) <= 100)] <- "#6baed6"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodAff))) >100)] <- "#2171b5"
+x11(); plot(rpg, col=rpg@data$COLOUR, border=NA,axes = F)
+title(main = "Flood affordance", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65,col="black")
+legend("top",
+       legend = levels(factor(rpg@data$floodAff, levels=c('0','] 0 ; 50 ]', '] 50 ; 100 ]', '> 100'))),
+       fill = c("#bdbdbd","#bdd7e7","#6baed6","#2171b5"))
+savePlot(filename = paste0("save/floodAff",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$floodDRAff))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodDRAff))) >0) & ((as.numeric(as.character(rpg@data$floodDRAff))) <= 10)] <- "#fdcc8a"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodDRAff))) >10) & ((as.numeric(as.character(rpg@data$floodDRAff))) <= 20)] <- "#fc8d59"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodDRAff))) >20)] <- "#d7301f"
+x11(); plot(rpg, col=rpg@data$COLOUR, border=NA,axes = F)
+title(main = "Unregular flood affordance", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65,col="black")
+legend("top",
+       legend = levels(factor(rpg@data$floodDRAff, levels=c('0','] 0 ; 10 ]', '] 10 ; 20 ]', '> 20'))),
+       fill = c("#bdbdbd","#fdcc8a","#fc8d59","#d7301f"))
+savePlot(filename = paste0("save/floodDRAff",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$askAct))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$askAct))) >0) & ((as.numeric(as.character(rpg@data$askAct))) <= 5)] <- "#c2e699"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$askAct))) >5) & ((as.numeric(as.character(rpg@data$askAct))) <= 10)] <- "#78c679"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$askAct))) >10)] <- "#238443"
+x11(); plot(rpg, col=rpg@data$COLOUR, border=NA,axes = F)
+title(main = "Ask water action", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65,col="black")
+legend("top",
+       legend = levels(factor(rpg@data$askAct, levels=c('0','] 0 ; 5 ]', '] 5 ; 10 ]', '> 10'))),
+       fill = c("#bdbdbd","#c2e699","#78c679","#238443"))
+savePlot(filename = paste0("save/askAct",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$floodAct))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodAct))) >0) & ((as.numeric(as.character(rpg@data$floodAct))) <= 5)] <- "#bdd7e7"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodAct))) >5) & ((as.numeric(as.character(rpg@data$floodAct))) <= 10)] <- "#6baed6"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodAct))) >10)] <- "#2171b5"
+x11(); plot(rpg, col=rpg@data$COLOUR, border=NA,axes = F)
+title(main = "Flood action", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65,col="black")
+legend("top",
+       legend = levels(factor(rpg@data$floodAct, levels=c('0','] 0 ; 5 ]', '] 5 ; 10 ]', '> 10'))),
+       fill = c("#bdbdbd","#bdd7e7","#6baed6","#2171b5"))
+savePlot(filename = paste0("save/floodAct",scenario,".png"), device = dev.cur())
+
+rpg@data$COLOUR[(as.numeric(as.character(rpg@data$floodDRAct))) == 0] <- "#bdbdbd"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodDRAct))) >0) & ((as.numeric(as.character(rpg@data$floodDRAct))) <= 2)] <- "#fdcc8a"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodDRAct))) >2) & ((as.numeric(as.character(rpg@data$floodDRAct))) <= 4)] <- "#fc8d59"
+rpg@data$COLOUR[((as.numeric(as.character(rpg@data$floodDRAct))) >4)] <- "#d7301f"
+x11(); plot(rpg, col=rpg@data$COLOUR, border=NA,axes = F)
+title(main = "Unregular flood action", sub = "(Fingers are farmer ID, parcels with no ID are not part \n of farms using the collective irrigation network)")
+text(coordinates(rpg), labels=rpg$ID_EXPL,font=1,cex=0.65,col="black")
+legend("top",
+       legend = levels(factor(rpg@data$floodDRAct, levels=c('0','] 0 ; 2 ]', '] 2 ; 4 ]', '> 4'))),
+       fill = c("#bdbdbd","#fdcc8a","#fc8d59","#d7301f"))
+savePlot(filename = paste0("save/floodDRAct",scenario,".png"), device = dev.cur())
