@@ -4,6 +4,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(devtools)
+library(RJSONIO)
 
 genDictElement <- function(name, value) {
     return(paste0('"', name, '": "', value, '"'))
@@ -41,5 +42,16 @@ j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
 # what can be "hru" or "reach"
 j2kGet <- function(what, ip="localhost", port="9999") {
     res = askJ2K(c("command", "key"), c("get", what), ip, port)
-    return(res[[2]])
+    df = j2kDictListToDataframe(res[[2]])
+    return(df)
+}
+
+j2kDictListToDataframe <- function(str) {
+    js = fromJSON(str)
+    js = lapply(js, function(x) {
+        x[sapply(x, is.null)] <- NA
+        unlist(x)
+    })
+    df = do.call("rbind", js)
+    return(df);
 }
