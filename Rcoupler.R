@@ -2,19 +2,19 @@
 #################      R coupler      ################################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # This script makes the WatASit model from Cormas plateform to communicate
-# with the Optirrig model implemented in R Software to generate 
+# with the Optirrig model implemented in R Software to generate
 # simulations for EMS 2020 paper
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2019, October, by
 # B. Bonté -> make RCormas function to get/set Cormas attributes/probes
-# M. Delmas -> make adapted daily Optirrig function, adapt it for 
+# M. Delmas -> make adapted daily Optirrig function, adapt it for
 # meadows
 # B. Richard -> make work together, make optiParams funcion and
 # generate Optirrig climate file with specific R script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-rm(list=ls()); 
+rm(list=ls());
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1. R Settings #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +54,7 @@ list_idParcel <- optiParams(paste0(wd,'paramfiles/'), case_study_name, 'watasit.
 ####### 3.1 Connexion and opening of WatASit model #######
 # r <- openModel("COWAT", parcelFile="WatASit[v8].pcl")
 r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
- 
+
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
 # for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
@@ -67,18 +67,18 @@ r <- setStep("R_goBaselineStep:") # Scenario choice
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 4. Initialization of Optirrig model #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-param_frame <- data.frame(); irr <- data.frame()
-for (i in 1:length(list_idParcel)){
-  ####### 4.1 Load params of each plot #######
-  param = read.csv(paste0(wd,'paramfiles/paramfiles_',case_study_name,'/',list_idParcel[i],'/parF', list_idParcel[i],'.csv'), header = TRUE,sep=",",dec = ".",stringsAsFactor=FALSE)
-  
-  ####### 4.2 Create frame with all parameters #######
-  param_frame <- rbind(param_frame, param)
-  
-  ####### 4.3 Create frame with all irrigation vectors  #######
- I1   = as.vector(meteo$day) ; I1[] = 0; I2 = I1 # I1 is surface irrigation and I2  I2 is deep buried irrigation (I2 is null)
- irr = rbind(irr,I1)
-}
+#param_frame <- data.frame(); irr <- data.frame()
+#for (i in 1:length(list_idParcel)){
+#  ####### 4.1 Load params of each plot #######
+#  param = read.csv(paste0(wd,'paramfiles/paramfiles_',case_study_name,'/',list_idParcel[i],'/parF', list_idParcel[i],'.csv'), header = TRUE,sep=",",dec = ".",stringsAsFactor=FALSE)
+#
+#  ####### 4.2 Create frame with all parameters #######
+#  param_frame <- rbind(param_frame, param)
+#
+#  ####### 4.3 Create frame with all irrigation vectors  #######
+# I1   = as.vector(meteo$day) ; I1[] = 0; I2 = I1 # I1 is surface irrigation and I2  I2 is deep buried irrigation (I2 is null)
+# irr = rbind(irr,I1)
+#}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 5. Run simulatin #######
@@ -90,50 +90,56 @@ r <- initSimu() #initialize Cormas simulation
 crop_results <- data.frame(idParcel = NULL, wsi = NULL, lai = NULL, hi = NULL, cropMaturitySignal = NULL)
 farmers_results<- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL, dosCounter = NULL)
 
-####### 5.3 Run Optirrig simulation without WataSit from 1 DOY to DOY 120 (1er mai) to simulate the new state of crops out of irrigation campaign #######
-# for (day in 1:120){
-for (day in 1:10){ # For testing
+##### J2K
 
-  ####### 5.3.1 Initialize optirrig on day 1 #######
-  if (day == 1) {
-    cstes_list <- list()
-    inval_list <- list()
-    vect_list <- list()
-    for (i in 1:length(list_idParcel)){
-      init <- init_optirr(param_frame[i,], meteo)
-      cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
-      inval = init$inval; inval_list <-  rbind(inval_list, inval) # Calculation values for which the history is not required (list of values)
-      vect  = init$vect ; vect_list <-  rbind(vect_list, vect) # Vector of stored state variables as time series in vectors (list of vectors)
-    }
-  }
-  
-  ####### 5.3.2 Simulate Optirrig on other days #######
-  if (day != 1) {
-    inval2_list <- list()
-    vect2_list <- list()
-    for (i in 1:length(list_idParcel)){
-      cat("Simulation of day",day, "and parcel number",i,"(idParcel =",list_idParcel[i],")","\n")
-      I1 = I2 # I2 is deep irrigation (buried drip), I2 is null
-      param<-param_frame[i,]; cstes<-cstes_list[i,];  inval<-inval_list[i,]; vect<-vect_list[i,]
-      optirday = daily_optirr(param,
-                              meteo,
-                              cstes,
-                              inval,
-                              vect,
-                              I1, # Surface irrigation
-                              I2, # Deep irrigation (buried drip)
-                              day) # Time step
-      inval2 = optirday$inval ; inval2_list <- rbind(inval2_list, inval2) ; inval_list[i,] <- inval2 # New constants
-      vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
-    }
-  } 
-}
+# make it run until whatasit begin simu time
+j2kMakeStep(nbstep=N, ip, port)
+reachQTable = j2kGetReachInfo(reachID)
+
+####### 5.3 Run Optirrig simulation without WataSit from 1 DOY to DOY 120 (1er mai) to simulate the new state of crops out of irrigation campaign #######
+## for (day in 1:120){
+#for (day in 1:10){ # For testing
+#
+#  ####### 5.3.1 Initialize optirrig on day 1 #######
+#  if (day == 1) {
+#    cstes_list <- list()
+#    inval_list <- list()
+#    vect_list <- list()
+#    for (i in 1:length(list_idParcel)){
+#      init <- init_optirr(param_frame[i,], meteo)
+#      cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
+#      inval = init$inval; inval_list <-  rbind(inval_list, inval) # Calculation values for which the history is not required (list of values)
+#      vect  = init$vect ; vect_list <-  rbind(vect_list, vect) # Vector of stored state variables as time series in vectors (list of vectors)
+#    }
+#  }
+#
+#  ####### 5.3.2 Simulate Optirrig on other days #######
+#  if (day != 1) {
+#    inval2_list <- list()
+#    vect2_list <- list()
+#    for (i in 1:length(list_idParcel)){
+#      cat("Simulation of day",day, "and parcel number",i,"(idParcel =",list_idParcel[i],")","\n")
+#      I1 = I2 # I2 is deep irrigation (buried drip), I2 is null
+#      param<-param_frame[i,]; cstes<-cstes_list[i,];  inval<-inval_list[i,]; vect<-vect_list[i,]
+#      optirday = daily_optirr(param,
+#                              meteo,
+#                              cstes,
+#                              inval,
+#                              vect,
+#                              I1, # Surface irrigation
+#                              I2, # Deep irrigation (buried drip)
+#                              day) # Time step
+#      inval2 = optirday$inval ; inval2_list <- rbind(inval2_list, inval2) ; inval_list[i,] <- inval2 # New constants
+#      vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
+#    }
+#  }
+#}
 
 ####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
 #for (day in 121:(121+simDayNb)){
 for (day in 11:(10 + cormas_sim_day_nb)){
       ####### 5.4.1 Update Cormas Meteo #######
-      P<-meteo$P; setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day 
+      P<-meteo$P; setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
       p_forecast = sum(c(P[day],P[day+1],P[day+2]), na.rm = TRUE); if (p_forecast > 0) {p_forecast = 1}; setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
       # setAttributesOfEntities("p_forecast", "Meteo", 1, 1)
       # if (day == 1) {p_cumTenDays = 0}
@@ -167,14 +173,14 @@ for (day in 11:(10 + cormas_sim_day_nb)){
      obs2 <- getAttributesOfEntities("dosCounter","Efarmer")
      obs <- left_join(obs1,obs2, by = "id")
      obs$day = day
-     farmers_results <- farmers_results %>% 
+     farmers_results <- farmers_results %>%
        bind_rows(obs)
-     
+
       ####### 5.4.3 Get the state of crops from Cormas #######
       idParcel      <- getAttributesOfEntities("idParcel", "Ecrop");  list_idParcel <- idParcel$idParcel
       harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
       irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
-      
+
       ####### 5.4.4 Simulate the new state of crops with Optirrig #######
                 if (day != 1) { inval2_list <- list(); vect2_list <- list()
                   for (i in 1:length(list_idParcel)){
@@ -192,16 +198,16 @@ for (day in 11:(10 + cormas_sim_day_nb)){
                     inval2 = optirday$inval; inval2_list <- rbind(inval2_list, inval2);  inval_list[i,] <- inval2 # News constants
                     vect2  = optirday$vect; vect2_list <- rbind(vect2_list, vect2); vect_list[i,] <- vect2 # New vectors
                   }
-                } 
-      
-      
+                }
+
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ####### 6.Get new crop state from Optirrig simulations #######
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ####### 6.1 Get new crop states #######
   # newLAI<-vectList
   # newCropState <- data.frame(list_idParcel, vect2Frame$wsi, vect2Frame$lai, vect2Frame$hi, vect2Frame$cropMaturitySignal) # Tableau final avec les  sorties Optirrig pour chaque idParcel
-  
+
   ####### 6.2 Set the new state of crops in cormas #######
   #setAttributesOfEntities("wsi", "Ecrop", idParcel$id, newCropState$wsi)    # Vérifier qu'on prend bien les bonnes parcelles!!!!
   # setAttributesOfEntities("lai", "Ecrop", idParcel$id, newCropState$lai)
@@ -240,14 +246,14 @@ for (day in 11:(10 + cormas_sim_day_nb)){
 # f15IrrigatedPlotNb <- getNumericProbe("f15IrrigatedPlotNb","COWAT")
 # f16IrrigatedPlotNb <- getNumericProbe("f16IrrigatedPlotNb","COWAT")
 
-# cropResults %>% 
+# cropResults %>%
 #   tbl_df() # To do in Cormas
-# 
-# cropResults %>% 
+#
+# cropResults %>%
 #   ggplot() +
 #   geom_line(aes(x = day, y = lai, color=id)) # Just to see that parcells has different values of lais:
-# 
-# cropResults %>% 
+#
+# cropResults %>%
 #   ggplot() +
 #   geom_line(aes(x = day, y = hi, color=id))
 
