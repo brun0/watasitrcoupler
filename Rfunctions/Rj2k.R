@@ -18,34 +18,6 @@ genJsonDict <- function(names, values) {
     return(result)
 }
 
-askJ2K <- function(argNames = c(), argValues = c(), ip, port) {
-    payload <- genJsonDict(argNames, argValues)
-    result <- POST(paste0("http://", ip, ":", port), body = payload)
-    return(list(payload, content(result)))
-}
-
-j2kMakeStep <- function(nbStep=1, ip="localhost", port="9999") {
-    askJ2K(c("command", "nbStep"), c("step", nbStep), ip, port)
-}
-
-j2kFree <- function(ip="localhost", port="9999") {
-    askJ2K(c("command"), c("free"), ip, port)
-}
-
-# what parameter can be infiltration, aspersion, drip, surface (keys are HRU ids)
-# and also reachin, reachout (keys are reach ids)
-j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
-    dict = genJsonDict(keys, values)
-    askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
-}
-
-# what can be "hru" or "reach"
-j2kGet <- function(what, ip="localhost", port="9999") {
-    res = askJ2K(c("command", "key"), c("get", what), ip, port)
-    df = j2kDictListToDataframe(res[[2]])
-    return(df)
-}
-
 j2kDictListToDataframe <- function(str) {
     js = fromJSON(str)
     js = lapply(js, function(x) {
@@ -54,4 +26,38 @@ j2kDictListToDataframe <- function(str) {
     })
     df = do.call("rbind", js)
     return(df);
+}
+
+askJ2K <- function(argNames = c(), argValues = c(), ip, port) {
+    payload <- genJsonDict(argNames, argValues)
+    result <- POST(paste0("http://", ip, ":", port), body = payload)
+    return(list(payload, content(result)))
+}
+
+##################### Here are the end user functions #######################
+
+# tell j2k to make N steps
+j2kMakeStep <- function(nbStep=1, ip="localhost", port="9999") {
+    askJ2K(c("command", "nbStep"), c("step", nbStep), ip, port)
+}
+
+# free j2k model so it runs until the end
+j2kFree <- function(ip="localhost", port="9999") {
+    askJ2K(c("command"), c("free"), ip, port)
+}
+
+# set values for all hrus or all reach
+# what parameter can be infiltration, aspersion, drip, surface (keys are HRU ids)
+# and also reachin, reachout (keys are reach ids)
+j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
+    dict = genJsonDict(keys, values)
+    askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
+}
+
+# get values for all hrus or all reachs
+# what can be "hru" or "reach"
+j2kGet <- function(what, ip="localhost", port="9999") {
+    res = askJ2K(c("command", "key"), c("get", what), ip, port)
+    df = j2kDictListToDataframe(res[[2]])
+    return(df)
 }
