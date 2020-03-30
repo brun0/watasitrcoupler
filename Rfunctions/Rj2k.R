@@ -31,7 +31,7 @@ j2kDictListToDataframe <- function(str) {
 askJ2K <- function(argNames = c(), argValues = c(), ip, port) {
     payload <- genJsonDict(argNames, argValues)
     result <- POST(paste0("http://", ip, ":", port), body = payload)
-    return(list(payload, content(result)))
+    return(list(payload, content(result, encoding='UTF-8')))
 }
 
 ##################### Here are the end user functions #######################
@@ -60,4 +60,32 @@ j2kGet <- function(what, ip="localhost", port="9999") {
     res = askJ2K(c("command", "key"), c("get", what), ip, port)
     df = j2kDictListToDataframe(res[[2]])
     return(df)
+}
+
+# get one attribute for all hrus
+# what can be "netrain", "etpot"...
+j2kGetOneValueAllHrus <- function(what, ip="localhost", port="9999") {
+    res = askJ2K(c("command", "key"), c("getHru", what), ip, port)
+    if (startsWith(res[[2]], '[')) {
+        df = j2kDictListToDataframe(res[[2]])
+        return(df)
+    }
+    else {
+        cat(res[[2]], '\n')
+        return(NULL)
+    }
+}
+
+# get one attribute for all reachs
+# what can be "actRD1", "Runoff"...
+j2kGetOneValueAllReachs <- function(what, ip="localhost", port="9999") {
+    res = askJ2K(c("command", "key"), c("getReach", what), ip, port)
+    if (startsWith(res[[2]], '[')) {
+        df = j2kDictListToDataframe(res[[2]])
+        return(df)
+    }
+    else {
+        cat(res[[2]], '\n')
+        return(NULL)
+    }
 }
