@@ -19,10 +19,11 @@ rm(list=ls());
 ####### 1. R Settings #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1.1 Set directory for coupling #######
-wd <- "/home/bastien/Documents/2017-2020_These_GEAU/Work_Optirrig/Optirrig/WatASit/WatASit_Rcoupler/" ; setwd(wd)
+# Not necessary if you open watasit_rcoupler.Rproject 
+wd <- getwd()
 
 ####### 1.2 Load functions #######
-wd_Functions <- paste0(wd,"Rfunctions/")
+wd_Functions <- file.path(wd,"Rfunctions/")
 for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions,FileName)); }
 
 ####### 1.3 Load libraries #######
@@ -35,24 +36,44 @@ cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 2. Simulation Settings and inputs #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+####### 2.0 specify wether Otirrig is used or not and simu starts #######
+with_optirrig <- F
+cormas_doy_start <- 121 # day of the year of first step in cormas
+J2k_doy_start <- 1 # day of the year of first step in J2K
+optirrig_doy_start <- NA # day of the year of first step in Optirrig
+
 ####### 2.1 Specification of case study, year and duration #######
 case_study_name <- "Aspres"
 year_sim <- 2017
 cormas_sim_day_nb <- 4
 
 ####### 2.2 Importation of meteo data input  #######
-input_meteo      = read.csv(paste0(wd, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
+input_meteo      = read.csv(file.path(wd, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
 meteo      = input_meteo[which(input_meteo$year == year_sim),] ; str(meteo)
 
 ####### 2.3 Generation of an Optirrig paramfile for each WatASit plots  #######
-list_idParcel <- optiParams(paste0(wd,'paramfiles/'), case_study_name, 'watasit.csv', 'paramDB.csv','climate_buech_2017.csv', year_sim, 1, 365, 'irrig_file_watasit.dat')
-
+list_idParcel <- NULL
+if (with_optirrig) {
+  list_idParcel <- optiParams(paste0(wd,'paramfiles/'), 
+                              case_study_name,
+                              'watasit.csv',
+                              'paramDB.csv',
+                              'climate_buech_2017.csv',
+                              year_sim,
+                              1,
+                              365,
+                              'irrig_file_watasit.dat')
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 3. WatASit initialization #######
+####### 3. WatASit initialization and J2K initialisation #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
-# r <- openModel("COWAT", parcelFile="WatASit[v8].pcl")
+# Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
+# Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
+# Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
+# Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
 r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
 
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
@@ -60,13 +81,25 @@ r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
 # for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
 
 ####### 3.3 Choose of WatASit initial state and time step function (scenarios) #######
+# Note that the model is not initialized, we just set the init method..
 r <- setInit("INIT_2017_54x44") # Initialization choice
 r <- setStep("R_goBaselineStep:") # Scenario choice
 
+####### 3.4 Initialize Cormas model #######
+r <- initSimu() 
+
+####### 3.5 Initialize J2K model #######
+# Lancer J2K de la manière suivante. 
+# En étant dans le dossier "superjams" (qui vient de l'archive superjams.zip) :
+# java -jar jams-starter.jar -m data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam -n
+# et hop ça lance juste le modèle, pas d'interface graphique, pas  d'éditeur de modèle. Pour l'arrêter : CTRL+C . 
+# S'il s'arrête tout seul  au bout de 2 minutes d'inactivité : CTRL+C et on peut le relancer avec la même commande.
+#  "Rfunctions/Rj2k.R".
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 4. Initialization of Optirrig model #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if (with_optirrig) {
 #param_frame <- data.frame(); irr <- data.frame()
 #for (i in 1:length(list_idParcel)){
 #  ####### 4.1 Load params of each plot #######
@@ -79,26 +112,26 @@ r <- setStep("R_goBaselineStep:") # Scenario choice
 # I1   = as.vector(meteo$day) ; I1[] = 0; I2 = I1 # I1 is surface irrigation and I2  I2 is deep buried irrigation (I2 is null)
 # irr = rbind(irr,I1)
 #}
+}
+
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 5. Run simulatin #######
+####### 5. Run simulation #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ####### 5.1 Create results dataFrame #######
-r <- initSimu() #initialize Cormas simulation
-
-####### 5.2 Create results dataFrame #######
 crop_results <- data.frame(idParcel = NULL, wsi = NULL, lai = NULL, hi = NULL, cropMaturitySignal = NULL)
 farmers_results<- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL, dosCounter = NULL)
 
-##### J2K
 
-# make it run until whatasit begin simu time
-j2kMakeStep(nbstep=N, ip, port)
-reachQTable = j2kGetReachInfo(reachID)
+####### 5.2 Run J2K from 1 DOY to DOY 120 (1er mai) to simulate the new state of the watershed before the irrigation campaign #######  #######
+j2kMakeStep(cormas_doy_start - 1)
+reachQTable = j2kGet("reach")
 
 ####### 5.3 Run Optirrig simulation without WataSit from 1 DOY to DOY 120 (1er mai) to simulate the new state of crops out of irrigation campaign #######
-## for (day in 1:120){
-#for (day in 1:10){ # For testing
+if (with_optirrig) {
+## for (day in optirrig_doy_start:(cormas_doy_start - 1)){
 #
 #  ####### 5.3.1 Initialize optirrig on day 1 #######
 #  if (day == 1) {
@@ -134,10 +167,10 @@ reachQTable = j2kGetReachInfo(reachID)
 #    }
 #  }
 #}
+}
 
 ####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
-#for (day in 121:(121+simDayNb)){
-for (day in 11:(10 + cormas_sim_day_nb)){
+for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)){
       ####### 5.4.1 Update Cormas Meteo #######
       P<-meteo$P; setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
       p_forecast = sum(c(P[day],P[day+1],P[day+2]), na.rm = TRUE); if (p_forecast > 0) {p_forecast = 1}; setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
@@ -169,8 +202,8 @@ for (day in 11:(10 + cormas_sim_day_nb)){
      r <- runSimu(duration = 24)
      response <- gettext(r[[2]])
      if (response != "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns=\"urn:vwservices\"><SOAP-ENV:Body><ns:RunSimuResponse><ns:result>true</ns:result></ns:RunSimuResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>") {stop("RUN STOPPED",call.=FALSE)} # To check if runSimu is done
-     obs1 <- getAttributesOfEntities("nbFloodPlotAffToday","Efarmer")
-     obs2 <- getAttributesOfEntities("dosCounter","Efarmer")
+     obs1 <- getAttributesOfEntities("floodAffCounter","Efarmer")
+     obs2 <- getAttributesOfEntities("floodActCounter","Efarmer")
      obs <- left_join(obs1,obs2, by = "id")
      obs$day = day
      farmers_results <- farmers_results %>%
@@ -182,6 +215,7 @@ for (day in 11:(10 + cormas_sim_day_nb)){
       irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
 
       ####### 5.4.4 Simulate the new state of crops with Optirrig #######
+      if (with_optirrig) {
                 if (day != 1) { inval2_list <- list(); vect2_list <- list()
                   for (i in 1:length(list_idParcel)){
                     cat("Simulation of day",day, "and parcel number",i,"(idParcel =",list_idParcel[i],")","\n")
@@ -199,11 +233,22 @@ for (day in 11:(10 + cormas_sim_day_nb)){
                     vect2  = optirday$vect; vect2_list <- rbind(vect2_list, vect2); vect_list[i,] <- vect2 # New vectors
                   }
                 }
-
+      }   
+        ####### 5.4.5 Set the irrigation in J2K #######
+        #j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+                                                  # récupérés ci-dessus depuis cormas
+      #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:  
+      
+        ####### 5.4.6 Simulate the new state of watershed with J2K #######
+        j2kMakeStep(1)
+        reachQTable = j2kGet("reach")
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # ATTENTION JE NE COMPRENDS PAS POURQUOI CETTE SECTION N'EST PAS
+      # EN  5.4.7 vu qu'elle fait partie du pas de temps journalier..
   ####### 6.Get new crop state from Optirrig simulations #######
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (with_optirrig) {
   ####### 6.1 Get new crop states #######
   # newLAI<-vectList
   # newCropState <- data.frame(list_idParcel, vect2Frame$wsi, vect2Frame$lai, vect2Frame$hi, vect2Frame$cropMaturitySignal) # Tableau final avec les  sorties Optirrig pour chaque idParcel
@@ -218,19 +263,21 @@ for (day in 11:(10 + cormas_sim_day_nb)){
   # newCropState$irrigation <- irriDailyDose$values
   # newCropState$day <- day
   # cropResults <- rbind(cropResults, newCropState )
+  }
+
 }
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 7. Observe the evolution of coupled dynamics #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- abandonedCropEvent <- getNumericProbe("abandonedCropEvent","COWAT")
- ASAinquiries <- getNumericProbe("ASAinquiries","COWAT")
- exceedMaxWithdrawalEvent <- getNumericProbe("exceedMaxWithdrawalEvent","COWAT")
- qIntake <- getNumericProbe("qIntake","COWAT")
- unrespectRestrictionEvent <- getNumericProbe("unrespectRestrictionEvent","COWAT")
- f1IrrigatedPlotNb <- getNumericProbe("f1IrrigatedPlotNb","COWAT")
- f2IrrigatedPlotNb <- getNumericProbe("f2irrigatedPlotNb","COWAT")
+# abandonedCropEvent <- getNumericProbe("abandonedCropEvent","COWAT")
+#  ASAinquiries <- getNumericProbe("ASAinquiries","COWAT")
+#  exceedMaxWithdrawalEvent <- getNumericProbe("exceedMaxWithdrawalEvent","COWAT")
+#  qIntake <- getNumericProbe("qIntake","COWAT")
+#  unrespectRestrictionEvent <- getNumericProbe("unrespectRestrictionEvent","COWAT")
+#  f1IrrigatedPlotNb <- getNumericProbe("f1IrrigatedPlotNb","COWAT")
+#  f2IrrigatedPlotNb <- getNumericProbe("f2irrigatedPlotNb","COWAT")
 # f3IrrigatedPlotNb <- getNumericProbe("f3IrrigatedPlotNb","COWAT")
 # f4IrrigatedPlotNb <- getNumericProbe("f4IrrigatedPlotNb","COWAT")
 # f5IrrigatedPlotNb <- getNumericProbe("f5IrrigatedPlotNb","COWAT")
