@@ -7,7 +7,13 @@ library(devtools)
 library(RJSONIO)
 
 genDictElement <- function(name, value) {
-    return(paste0('"', name, '": "', value, '"'))
+    strValue = as.character(value)
+    if (startsWith(strValue, '[') || startsWith(strValue, '{')) {
+        return(paste0('"', name, '": ', value))
+    }
+    else {
+        return(paste0('"', name, '": "', value, '"'))
+    }
 }
 
 genJsonDict <- function(names, values) {
@@ -52,6 +58,7 @@ j2kFree <- function(ip="localhost", port="9999") {
 j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
     dict = genJsonDict(keys, values)
     askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
+    return(TRUE)
 }
 
 # get values for all hrus or all reachs
