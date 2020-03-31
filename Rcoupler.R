@@ -19,7 +19,7 @@ rm(list=ls());
 ####### 1. R Settings #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1.1 Set directory for coupling #######
-# Not necessary if you open watasit_rcoupler.Rproject 
+# Not necessary if you open watasit_rcoupler.Rproject
 wd <- getwd()
 
 ####### 1.2 Load functions #######
@@ -55,7 +55,7 @@ meteo      = input_meteo[which(input_meteo$year == year_sim),] ; str(meteo)
 ####### 2.3 Generation of an Optirrig paramfile for each WatASit plots  #######
 list_idParcel <- NULL
 if (with_optirrig) {
-  list_idParcel <- optiParams(paste0(wd,'paramfiles/'), 
+  list_idParcel <- optiParams(paste0(wd,'paramfiles/'),
                               case_study_name,
                               'watasit.csv',
                               'paramDB.csv',
@@ -86,13 +86,13 @@ r <- setInit("INIT_2017_54x44") # Initialization choice
 r <- setStep("R_goBaselineStep:") # Scenario choice
 
 ####### 3.4 Initialize Cormas model #######
-r <- initSimu() 
+r <- initSimu()
 
 ####### 3.5 Initialize J2K model #######
-# Lancer J2K de la manière suivante. 
+# Lancer J2K de la manière suivante.
 # En étant dans le dossier "superjams" (qui vient de l'archive superjams.zip) :
 # java -jar jams-starter.jar -m data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam -n
-# et hop ça lance juste le modèle, pas d'interface graphique, pas  d'éditeur de modèle. Pour l'arrêter : CTRL+C . 
+# et hop ça lance juste le modèle, pas d'interface graphique, pas  d'éditeur de modèle. Pour l'arrêter : CTRL+C .
 # S'il s'arrête tout seul  au bout de 2 minutes d'inactivité : CTRL+C et on peut le relancer avec la même commande.
 #  "Rfunctions/Rj2k.R".
 
@@ -233,12 +233,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)){
                     vect2  = optirday$vect; vect2_list <- rbind(vect2_list, vect2); vect_list[i,] <- vect2 # New vectors
                   }
                 }
-      }   
+      }
         ####### 5.4.5 Set the irrigation in J2K #######
         #j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
                                                   # récupérés ci-dessus depuis cormas
-      #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:  
-      
+      #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:
+
         ####### 5.4.6 Simulate the new state of watershed with J2K #######
         j2kMakeStep(1)
         reachQTable = j2kGet("reach")
