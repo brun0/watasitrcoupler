@@ -129,7 +129,7 @@ farmers_results <- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL,
 
 
 ####### 5.2 Run J2K from 1 DOY to DOY 120 (1er mai) to simulate the new state of the watershed before the irrigation campaign #######  #######
-j2kMakeStep(cormas_doy_start - 1)
+cmdResult = j2kMakeStep(cormas_doy_start - 1)
 reachQTable = j2kGet("reach")
 
 ####### 5.3 Run Optirrig simulation without WataSit from 1 DOY to DOY 120 (1er mai) to simulate the new state of crops out of irrigation campaign #######
@@ -272,8 +272,18 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   # C'est bon ça roule maintenant
 
   ####### 5.4.6 Simulate the new state of watershed with J2K #######
-  j2kMakeStep(1)
+  # cette fonction fait un step si on lui donne pas de paramètre
+  j2kMakeStep()
+  # on peut aussi faire N steps comme ça
+  #j2kMakeStep(20)
+  # cette fonction est sensée récupérer les valeurs de tous les attributs pour tous les reachs
+  # mais pour l'instant ça récupère juste actRD1
   reachQTable = j2kGet("reach")
+  # et celle là récupère juste netrain
+  hruQTable = j2kGet("hru")
+  # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
+  reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
+  hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # ATTENTION JE NE COMPRENDS PAS POURQUOI CETTE SECTION N'EST PAS
@@ -336,3 +346,5 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
 #   ggplot() +
 #   geom_line(aes(x = day, y = hi, color=id))
 
+
+j2kStop()

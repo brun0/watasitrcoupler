@@ -44,12 +44,23 @@ askJ2K <- function(argNames = c(), argValues = c(), ip, port) {
 
 # tell j2k to make N steps
 j2kMakeStep <- function(nbStep=1, ip="localhost", port="9999") {
-    askJ2K(c("command", "nbStep"), c("step", nbStep), ip, port)
+    res = askJ2K(c("command", "nbStep"), c("step", nbStep), ip, port)
+    res = paste("[J2K]", res[[2]])
+    return(res)
 }
 
 # free j2k model so it runs until the end
 j2kFree <- function(ip="localhost", port="9999") {
-    askJ2K(c("command"), c("free"), ip, port)
+    res = askJ2K(c("command"), c("free"), ip, port)
+    res = paste("[J2K]", res[[2]])
+    return(res)
+}
+
+# free j2k model so it runs until the end
+j2kStop <- function(ip="localhost", port="9999") {
+    res = askJ2K(c("command"), c("stop"), ip, port)
+    res = paste("[J2K]", res[[2]])
+    return(res)
 }
 
 # set values for all hrus or all reach
@@ -57,8 +68,9 @@ j2kFree <- function(ip="localhost", port="9999") {
 # and also reachin, reachout (keys are reach ids)
 j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
     dict = genJsonDict(keys, values)
-    askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
-    return(TRUE)
+    res = askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
+    res = paste("[J2K]", res[[2]])
+    return(res)
 }
 
 # get values for all hrus or all reachs
