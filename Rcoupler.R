@@ -74,6 +74,14 @@ if (with_optirrig) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
 # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
+cormasInVW7dir <- "/home/bruno/vw7.6ncnovo/cormas2020"
+wd <- getwd()
+setwd(cormasInVW7dir)
+# Open Cormas listenning for instruction
+system('wine ../bin/win/visual.exe cormas.im -doit "CormasNS.Kernel.Cormas current startWSForR" ', wait = F)
+Sys.sleep(1)
+setwd(wd)
+
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
@@ -182,19 +190,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
     p_forecast = 1
   }
   setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
-  # setAttributesOfEntities("p_forecast", "Meteo", 1, 1)
-  # if (day == 1) {p_cumTenDays = 0}
-  # if (day == 2) {p_cumTenDays = P[day-1]}
-  # if (day == 3) {p_cumTenDays = sum(c(P[day-1],P[day-2]), na.rm = TRUE)}
-  # if (day == 4) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3]), na.rm = TRUE)}
-  # if (day == 5) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4]), na.rm = TRUE)}
-  # if (day == 6) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5]), na.rm = TRUE)}
-  # if (day == 7) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6]), na.rm = TRUE)}
-  # if (day == 8) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7]), na.rm = TRUE)}
-  # if (day == 9) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8]), na.rm = TRUE)}
-  # if (day == 10) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8], P[day-9]), na.rm = TRUE)}
   if (day >= 11) {
     p_cumTenDays = sum(c(P[day-1], P[day-2], P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8], P[day-9], P[day-10]), na.rm = TRUE)
+  } else {
+    # day need to be more than 10 otherwise you need to set manualy the forcast values (see commentaries at the end of the file)
   }
   setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
   # setAttributesOfEntities("p_cumTenDays", "Meteo", 1, 10)
@@ -221,10 +220,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   }
   obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
   obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
+  if (!((is.null(obs1) | is.null(obs2)))) {
   obs <- left_join(obs1, obs2, by = "id")
   obs$day = day
   farmers_results <- farmers_results %>%
     bind_rows(obs)
+  }
 
   ####### 5.4.3 Get the state of crops from Cormas #######
   idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
@@ -348,3 +349,16 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
 
 
 j2kStop()
+
+# Setting meteo if starting day of Cormas is lower than 10:
+# setAttributesOfEntities("p_forecast", "Meteo", 1, 1)
+# if (day == 1) {p_cumTenDays = 0}
+# if (day == 2) {p_cumTenDays = P[day-1]}
+# if (day == 3) {p_cumTenDays = sum(c(P[day-1],P[day-2]), na.rm = TRUE)}
+# if (day == 4) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3]), na.rm = TRUE)}
+# if (day == 5) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4]), na.rm = TRUE)}
+# if (day == 6) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5]), na.rm = TRUE)}
+# if (day == 7) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6]), na.rm = TRUE)}
+# if (day == 8) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7]), na.rm = TRUE)}
+# if (day == 9) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8]), na.rm = TRUE)}
+# if (day == 10) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8], P[day-9]), na.rm = TRUE)}

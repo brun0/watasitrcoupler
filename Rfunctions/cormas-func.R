@@ -268,10 +268,13 @@ getAttributesOfEntities <- function(attributeName, className, num = T){
                                0))[[2]]
   stringRes <- xml_text(xml_find_all(content(answer),xpath=".//ns:result"))
   idsValues <- strsplit(stringRes, split = ";")[[1]]
+  res <- NULL
+  if (nchar(idsValues[1]) > 0) {
   res <- data.frame(id = unlist(strsplit(idsValues[1], split = ",")),
                     value = unlist(strsplit(idsValues[2], split = ",")))
   if (num) {res$value <- as.numeric(as.character(res$value))}
   colnames(res)<- c("id", attributeName)
+  }
   return(res)
 }
 
