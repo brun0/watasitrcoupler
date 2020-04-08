@@ -21,10 +21,14 @@ rm(list=ls());
 ####### 1.1 Set directory for coupling #######
 # Not necessary if you open watasit_rcoupler.Rproject
 wd <- getwd()
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+script.dirname <- dirname(script.name)
 
 ####### 1.2 Load functions #######
-wd_Functions <- file.path(wd,"Rfunctions/")
-for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions,FileName)); }
+wd_Functions <- file.path(script.dirname, "Rfunctions/")
+for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
 
 ####### 1.3 Load libraries #######
 load <- c(require(zoo), require (multiplex), require(tidyr),require(ggplot2),require(dplyr),require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
@@ -33,10 +37,11 @@ load <- c(require(zoo), require (multiplex), require(tidyr),require(ggplot2),req
 cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 
 ####### 1.5 Read config file #######
+library(R.utils)
 library(ConfigParser)
 args = commandArgs(trailingOnly=TRUE)
 DEBUG = FALSE
-configFilePath = "rcoupler.cfg"
+configFilePath = "./rcoupler.cfg"
 for (arg in args) {
   if (arg == '-d') {
     DEBUG = TRUE
@@ -44,6 +49,8 @@ for (arg in args) {
     configFilePath = arg
   }
 }
+configFileName = basename(configFilePath)
+configFileDir = dirname(configFilePath)
 stderrP = FALSE
 stdoutP = FALSE
 if (DEBUG) {
@@ -52,11 +59,20 @@ if (DEBUG) {
 }
 config = ConfigParser$new(NULL)
 config$read(configFilePath)
+
 jamsRootPath = config$get("jamsRoot", NA, "tools")
+if (!isAbsolutePath(jamsRootPath)) {
+  jamsRootPath = paste(configFileDir, jamsRootPath, sep="/")
+}
 jamsStarterPath = paste(jamsRootPath, "jams-starter.jar", sep="/")
+
 cormasRootPath = config$get("cormasRoot", NA, "tools")
+if (!isAbsolutePath(cormasRootPath)) {
+  cormasRootPath = paste(configFileDir, cormasRootPath, sep="/")
+}
 cormasPath = paste(cormasRootPath, "cormas.im", sep="/")
 vwPath = paste(cormasRootPath, "..", "bin", "win", "visual.exe", sep="/")
+
 requiredFiles = c(jamsStarterPath, cormasPath, vwPath)
 for (path in requiredFiles) {
   if (!file.exists(path)) {
@@ -82,7 +98,7 @@ year_sim <- 2017
 cormas_sim_day_nb <- 4
 
 ####### 2.2 Importation of meteo data input  #######
-input_meteo = read.csv(file.path(wd, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
+input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
 meteo = input_meteo[which(input_meteo$year == year_sim),]
 str(meteo)
 
@@ -90,7 +106,7 @@ str(meteo)
 list_idParcel <- NULL
 if (with_optirrig) {
   list_idParcel <- optiParams(
-    paste0(wd,'paramfiles/'),
+    paste0(script.dirname, 'paramfiles/'),
     case_study_name,
     'watasit.csv',
     'paramDB.csv',
@@ -406,7 +422,7 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
 
 
 j2kStop()
-Sys.sleep(5)
+Sys.sleep(3)
 killJ2K()
 
 # ça ne marche pas
