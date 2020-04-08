@@ -35,10 +35,20 @@ cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 ####### 1.5 Read config file #######
 library(ConfigParser)
 args = commandArgs(trailingOnly=TRUE)
-if (length(args)==0) {
-  configFilePath = "rcoupler.cfg"
-} else {
-  configFilePath = args[1]
+DEBUG = FALSE
+configFilePath = "rcoupler.cfg"
+for (arg in args) {
+  if (arg == '-d') {
+    DEBUG = TRUE
+  } else {
+    configFilePath = arg
+  }
+}
+stderrP = FALSE
+stdoutP = FALSE
+if (DEBUG) {
+  stderrP = ""
+  stdoutP = ""
 }
 config = ConfigParser$new(NULL)
 config$read(configFilePath)
@@ -100,9 +110,13 @@ if (with_optirrig) {
 cormasInVW7dir = cormasRootPath
 setwd(cormasInVW7dir)
 # try to kill cormas, just in case it's open
-system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"))
+system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"), stdout=stdoutP, stderr=stderrP)
 # Open Cormas listenning for instruction
-system2('wine', args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit',  '"CormasNS.Kernel.Cormas current startWSForR"'), wait=F, stdout=FALSE)
+system2(
+  'wine',
+  args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+  wait=F, stdout=stdoutP, stderr=stderrP
+)
 cat('\n\nWaiting 5 seconds to make sure cormas starts listening...')
 Sys.sleep(5)
 setwd(wd)
@@ -136,7 +150,11 @@ r <- initSimu()
 # kill jams if it's running
 killJ2K()
 setwd(jamsRootPath)
-system2('java', args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'), wait=F, stdout=FALSE)
+system2(
+  'java',
+  args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'),
+  wait=F, stdout=stdoutP, stderr=stderrP
+)
 cat('\n\nWaiting 5 seconds to make sure J2K coupling module starts listening...')
 Sys.sleep(5)
 setwd(wd)
@@ -385,10 +403,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
 
 
 j2kStop()
-Sys.sleep(3)
+Sys.sleep(5)
 killJ2K()
 
-system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"))
+system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"), stdout=stdoutP, stderr=stderrP)
 
 # Setting meteo if starting day of Cormas is lower than 10:
 # setAttributesOfEntities("p_forecast", "Meteo", 1, 1)
