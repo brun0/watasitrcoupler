@@ -50,7 +50,7 @@ vwPath = paste(cormasRootPath, "..", "bin", "win", "visual.exe", sep="/")
 requiredFiles = c(jamsStarterPath, cormasPath, vwPath)
 for (path in requiredFiles) {
   if (!file.exists(path)) {
-    cat("File " + path + " not found.")
+    cat(paste("File ", path, " not found.\n", sep=""))
     quit(status=1)
   }
 }
