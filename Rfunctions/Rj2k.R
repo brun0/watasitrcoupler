@@ -108,3 +108,9 @@ j2kGetOneValueAllReachs <- function(what, ip="localhost", port="9999") {
         return(NULL)
     }
 }
+
+############## UTILS ###############
+
+killJ2K <- function() {
+    system2('kill', args=c('-9', "$(ps aux | grep -i 'jams-starter' | grep java | awk '{print $2}')"), wait=F)
+}
