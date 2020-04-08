@@ -32,6 +32,29 @@ load <- c(require(zoo), require (multiplex), require(tidyr),require(ggplot2),req
 ####### 1.4 Core parallelism #######
 cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 
+####### 1.5 Read config file #######
+library(ConfigParser)
+args = commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  configFilePath = "rcoupler.cfg"
+} else {
+  configFilePath = args[1]
+}
+config = ConfigParser$new(NULL)
+config$read(configFilePath)
+jamsRootPath = config$get("jamsRoot", NA, "tools")
+jamsStarterPath = paste(jamsRootPath, "jams-starter.jar", sep="/")
+cormasRootPath = config$get("cormasRoot", NA, "tools")
+cormasPath = paste(cormasRootPath, "cormas.im", sep="/")
+vwPath = paste(cormasRootPath, "..", "bin", "win", "visual.exe", sep="/")
+requiredFiles = c(jamsStarterPath, cormasPath, vwPath)
+for (path in requiredFiles) {
+  if (!file.exists(path)) {
+    cat("File " + path + " not found.")
+    quit(status=1)
+  }
+}
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 2. Simulation Settings and inputs #######
@@ -74,12 +97,12 @@ if (with_optirrig) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
 # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
-cormasInVW7dir <- "/home/bruno/vw7.6ncnovo/cormas2020"
-wd <- getwd()
+cormasInVW7dir = cormasRootPath
 setwd(cormasInVW7dir)
 # Open Cormas listenning for instruction
 system('wine ../bin/win/visual.exe cormas.im -doit "CormasNS.Kernel.Cormas current startWSForR" ', wait = F)
-Sys.sleep(1)
+cat('Waiting 5 seconds to make sure cormas starts listening...')
+Sys.sleep(5)
 setwd(wd)
 
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
@@ -100,12 +123,18 @@ r <- setStep("R_goBaselineStep:") # Scenario choice
 r <- initSimu()
 
 ####### 3.5 Initialize J2K model #######
-# Lancer J2K de la manière suivante.
+# On laisse le coupleur lancer JAMS/J2K
+# On aussi peut lancer J2K manuellement de la manière suivante.
 # En étant dans le dossier "superjams" (qui vient de l'archive superjams.zip) :
 # java -jar jams-starter.jar -m data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam -n
 # et hop ça lance juste le modèle, pas d'interface graphique, pas  d'éditeur de modèle. Pour l'arrêter : CTRL+C .
 # S'il s'arrête tout seul  au bout de 2 minutes d'inactivité : CTRL+C et on peut le relancer avec la même commande.
 #  "Rfunctions/Rj2k.R".
+setwd(jamsRootPath)
+system('java -jar jams-starter.jar -m data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam -n', wait = F)
+cat('Waiting 5 seconds to make sure J2K coupling module starts listening...')
+Sys.sleep(5)
+setwd(wd)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 4. Initialization of Optirrig model #######
