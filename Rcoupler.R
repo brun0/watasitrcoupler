@@ -115,6 +115,9 @@ system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{pr
 system2(
   'wine',
   args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+  # adding headless successfully launches cormas and the model loading appears to be working
+  # but at some point Rcoupler crashes
+  #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
 cat('\n\nWaiting 5 seconds to make sure cormas starts listening...')
@@ -408,7 +411,7 @@ killJ2K()
 
 # ça ne marche pas
 #closeVisualWorks()
-# le problème avec tuer visualworks est que ça met ensuite environ une minute à libérer le port 4920
+# le problème après avoir tué visualworks est que ça met ensuite environ une minute à libérer le port 4920
 system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"), stdout=stdoutP, stderr=stderrP)
 
 # Setting meteo if starting day of Cormas is lower than 10:
