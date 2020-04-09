@@ -133,7 +133,7 @@ system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{pr
 # Open Cormas listenning for instruction
 system2(
   'wine',
-  args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+    args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
   # adding headless successfully launches cormas and the model loading appears to be working
   # but at some point Rcoupler crashes
   #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
@@ -146,7 +146,7 @@ setwd(wd)
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
-r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
+r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
 
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
@@ -433,8 +433,12 @@ j2kStop()
 Sys.sleep(3)
 killJ2K()
 
-# ça ne marche pas
-#closeVisualWorks()
+# The Coupler instance created at the init of the simulation
+# close connexion (and frees "port") 2 sec after its closeConnexion attributes 
+# has been changed to 1.
+setAttributesOfEntities("closeConnexion", "Coupler", c(1), c(1))
+getAttributesOfEntities("closeConnexion", "Coupler")
+Sys.sleep(3)
 # le problème après avoir tué visualworks est que ça met ensuite environ une minute à libérer le port 4920
 system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"), stdout=stdoutP, stderr=stderrP)
 
