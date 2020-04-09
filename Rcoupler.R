@@ -25,6 +25,9 @@ initial.options <- commandArgs(trailingOnly = FALSE)
 file.arg.name <- "--file="
 script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
 script.dirname <- dirname(script.name)
+if (paste0(script.dirname, "runInConsole") == "runInConsole") 
+  script.dirname <- wd
+
 
 ####### 1.2 Load functions #######
 wd_Functions <- file.path(script.dirname, "Rfunctions/")
@@ -95,7 +98,7 @@ optirrig_doy_start <- NA # day of the year of first step in Optirrig
 ####### 2.1 Specification of case study, year and duration #######
 case_study_name <- "Aspres"
 year_sim <- 2017
-cormas_sim_day_nb <- 4
+cormas_sim_day_nb <- 30 * 3
 
 ####### 2.2 Importation of meteo data input  #######
 input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
@@ -179,7 +182,6 @@ Sys.sleep(5)
 setwd(wd)
 
 cat('\nRunning simulation!!!\n')
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 4. Initialization of Optirrig model #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -253,8 +255,14 @@ if (with_optirrig) {
 #}
 }
 
+cat('\nSarting coupled simulation simulation!!!\n')
+simuProgress <- txtProgressBar(min = cormas_doy_start, 
+                               max = cormas_doy_start + cormas_sim_day_nb, 
+                               style = 3)
+
 ####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
 for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
+  setTxtProgressBar(simuProgress, day)
   ####### 5.4.1 Update Cormas Meteo #######
   P <- meteo$P
   setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
