@@ -2,8 +2,7 @@
 #################      R coupler      ################################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # This script makes the WatASit model from Cormas plateform to communicate
-# with the Optirrig model implemented in R Software to generate 
-# simulations for EMS 2020 paper
+# with the Optirrig model implemented in R Software to generate
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2019, October, by
 # B. Bonté -> make RCormas function to get/set Cormas attributes/probes

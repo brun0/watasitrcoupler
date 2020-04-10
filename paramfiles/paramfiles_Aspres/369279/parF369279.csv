@@ -1,2 +1,2 @@
 climate,annee,jdsim,jfsim,fc,ppf,profx,rkru,res,rksol,base,tseuil0,xt0,tjdc,tjfc,tm,tfmat,taux,rkcm,rlaimax,rmg,hi,coefas0,cwx,alpha1,alpha2,gama,dens,densopt,rlcrit,xl1,pourc,jsem,jrecol,rscx,gge,itest,irrigfile,th_w,dosap,dosem,jdir,jfir,quota,selini,ssel,csel,ciw,css,f1,f2,f3
-climate_buech_2016-2017.csv,2017,1,365,0.116166666666667,0.12,0.36,0.6,154,0.3,0,450,100,900,2100,1700,2400,0.01,1.2,6,1,0.5,1.25,1.25,2,2,6,400,400,3,0.1,15,1,364,0,0,0,irrig_file_watasit.dat,100,0,0,198,365,10000,0,0,0,0,0,0,0,0
+climate_buech_2016-2017.csv,2017,1,365,0.116166666666667,0.12,0.36,0.6,154,0.3,0,450,100,900,2100,1700,2400,0.01,1.2,6,1,0.5,1.25,1.25,2,2,6,400,400,3,0.1,15,1,364,0,0,0,irrig_file_irrigation15d.dat,100,0,0,198,365,10000,0,0,0,0,0,0,0,0

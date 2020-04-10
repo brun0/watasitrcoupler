@@ -2,8 +2,7 @@
 #################      R coupler OPTIRRIG paper      ######################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # This script makes the WatASit model from Cormas plateform to communicate 
-# with the Optirrig model implemented in R Software to generate 
-# simulations for EMS 2020 paper
+# with the Optirrig model implemented in R Software
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2019, October, by
 # B. Bonté -> make RCormas function to get/set Cormas attributes/probes
@@ -25,7 +24,7 @@ is.numeric0 <- function(x) {
   identical(x, numeric(0))
 }
 ####### 1.2 Load libraries [REQUIRED] #######
-load <- c(require(gridExtra), require(RColorBrewer), require(zoo), require (multiplex), require(tidyr),require(ggplot2),require(dplyr),require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
+load <- c(require(matrixStats), require(gridExtra), require(RColorBrewer), require(zoo), require (multiplex), require(tidyr),require(ggplot2),require(dplyr),require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
 
 ####### 1.3 Core parallelism [OPTIONAL] #######
 cores <- parallel:::detectCores(); registerDoParallel(cores-2);
@@ -55,7 +54,8 @@ input_meteo$T <- as.numeric(as.character(input_meteo$T))
 str(input_meteo)
 
 ####### 2.3 Generation of an Optirrig paramfile for each WatASit plots  #######
-list_idParcel <- optiParams('paramfiles/', case_study_name, 'watasit_winterCereals.csv', 'paramDBTemp2.csv','climate_buech_2016-2017.csv', as.numeric(format(date_end_sim,"%Y")), 1, 365, 'irrig_file_watasit.dat')
+# list_idParcel <- optiParams('paramfiles/', case_study_name, 'watasit_winterCereals.csv', 'paramDBAllCereals.csv','climate_buech_2016-2017.csv', as.numeric(format(date_end_sim,"%Y")), 1, 365, 'irrig_file_watasit.dat')
+list_idParcel <- optiParams('paramfiles/', case_study_name, 'watasit_allIrrigatedCereals.csv', 'paramDBAllCereals.csv','climate_buech_2016-2017.csv', as.numeric(format(date_end_sim,"%Y")), 1, 365, 'irrig_file_noirrigation.dat')
 
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -91,6 +91,14 @@ for (i in 1:length(list_idParcel)){
     vect_list <- list()
     lai_list <- list()
     wsi_list <- list()
+    etr_list<- list()
+    etm_list <- list()
+    tt_list <- list()
+    tt_p_list <- list()
+    lai_p_list <- list()
+    tdm_list <- list()
+    tdm_p_list <- list()
+    
     for (i in 1:length(list_idParcel)){
       init <- init_optirr(param_frame[i,], input_meteo)
       cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
@@ -118,31 +126,189 @@ for (i in 1:length(list_idParcel)){
       # vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
       inval2 = optirday$inval ; inval2_list[[i]] <- inval2 ; inval_list[i,] <- inval2 # New constants
       vect2  = optirday$vect ; vect2_list[[i]] <- vect2 ; vect_list[i,] <- vect2 # New vectors
-      lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai
+      lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai; etr_list[[i]]<-vect2$ETR
+      etm_list[[i]]<-vect2$ETM; tt_list[[i]]<- vect2$TT; tt_p_list[[i]]<-vect2$TT_p; lai_p_list[[i]]<- vect2$LAI_p
+      tdm_list[[i]]<- vect2$TDM; tdm_p_list[[i]]<- vect2$TDM_p
     }
   } 
 
     ####### 4.1.3 Savings #######  
-res_without_irrig <- vect2_list
-lai_without_irrig <- lai_list
-wsi_without_irrig <- wsi_list
+  # res_without_irrig <- vect2_list; write.csv(res_without_irrig,"save/simulations_iEMSs2020/res_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  lai_without_irrig <- lai_list#; write.csv(lai_without_irrig,"save/simulations_iEMSs2020/lai_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  wsi_without_irrig <- wsi_list#; write.csv(wsi_without_irrig,"save/simulations_iEMSs2020/wsi_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  etr_without_irrig <- etr_list#; write.csv(etr_without_irrig,"save/simulations_iEMSs2020/etr_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  etm_without_irrig <- etm_list#; write.csv(etm_without_irrig,"save/simulations_iEMSs2020/etm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  tt_without_irrig <- tt_list#; write.csv(tt_without_irrig,"save/simulations_iEMSs2020/tt_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  tt_p_without_irrig <- tt_p_list#; write.csv(tt_p_without_irrig,"save/simulations_iEMSs2020/tt_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  lai_p_without_irrig <- lai_p_list#; write.csv(lai_p_without_irrig,"save/simulations_iEMSs2020/lai_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  tdm_without_irrig <- tdm_list#; write.csv(tdm_without_irrig,"save/simulations_iEMSs2020/tdm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  tdm_p_without_irrig <- tdm_p_list#; write.csv(tdm_p_without_irrig,"save/simulations_iEMSs2020/tdm_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n") 
+  
 # mean_lai_without_irrig <- sapply( lai_without_irrig, FUN=function(items) {mean( unlist(items))})    
-mean_lai_without_irrig <-sapply(lai_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
-row_mean_lai_without_irrig <- rowMeans(mean_lai_without_irrig) #Moyenne de l'ensemble des parcelles par jour
-mean_wsi_without_irrig <-sapply(wsi_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
-row_mean_wsi_without_irrig <- rowMeans(mean_wsi_without_irrig) #Moyenne de l'ensemble des parcelles par jour
-X11()
-plot(row_mean_lai_without_irrig, type = "l")
-X11()
-plot(row_mean_wsi_without_irrig, type = "l")
+lai_without_irrig_allplots <-sapply(lai_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)})
+write.csv(lai_without_irrig_allplots,"save/simulations_iEMSs2020/lai_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_lai_without_irrig <- rowMeans(lai_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_lai_without_irrig,"save/simulations_iEMSs2020/row_mean_lai_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_lai_without_irrig <- rowMins(lai_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_lai_without_irrig,"save/simulations_iEMSs2020/row_min_lai_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_lai_without_irrig <- rowMaxs(lai_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_lai_without_irrig,"save/simulations_iEMSs2020/row_max_lai_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 
+lai_without_irrig_wintercereals <-lai_without_irrig_allplots[,c(2,3,4,6,7,8,9,10,11,12,14,15,17,19,20,21,22,23,24,25)]
+row_mean_lai_without_irrig_wintercereals <- rowMeans(lai_without_irrig_wintercereals) #Moyenne de l'ensemble des parcelles par jour
+lai_without_irrig_springcereals <-lai_without_irrig_allplots[,c(1,5,16,18)]
+row_mean_lai_without_irrig_springcereals <- rowMeans(lai_without_irrig_springcereals) #Moyenne de l'ensemble des parcelles par jour
+lai_without_irrig_corn <-lai_without_irrig_allplots[,c(13, 13)]
+row_mean_lai_without_irrig_corn <- rowMeans(lai_without_irrig_corn) #Moyenne de l'ensemble des parcelles par jour
 
+wsi_without_irrig_allplots <-sapply(wsi_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(wsi_without_irrig_allplots,"save/simulations_iEMSs2020/wsi_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_wsi_without_irrig <- rowMeans(wsi_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_wsi_without_irrig,"save/simulations_iEMSs2020/row_mean_wsi_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_wsi_without_irrig <- rowMins(wsi_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_wsi_without_irrig,"save/simulations_iEMSs2020/row_min_wsi_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_wsi_without_irrig <- rowMaxs(wsi_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_wsi_without_irrig,"save/simulations_iEMSs2020/row_max_wsi_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 
+wsi_without_irrig_wintercereals <-wsi_without_irrig_allplots[,c(2,3,4,6,7,8,9,10,11,12,14,15,17,19,20,21,22,23,24,25)]
+row_mean_wsi_without_irrig_wintercereals <- rowMeans(wsi_without_irrig_wintercereals) #Moyenne de l'ensemble des parcelles par jour
+wsi_without_irrig_springcereals <-wsi_without_irrig_allplots[,c(1,5,16,18)]
+row_mean_wsi_without_irrig_springcereals <- rowMeans(wsi_without_irrig_springcereals) #Moyenne de l'ensemble des parcelles par jour
+wsi_without_irrig_corn <-wsi_without_irrig_allplots[,c(13, 13)]
+row_mean_wsi_without_irrig_corn <- rowMeans(wsi_without_irrig_corn) #Moyenne de l'ensemble des parcelles par jour
 
+etr_without_irrig_allplots <-sapply(etr_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(etr_without_irrig_allplots,"save/simulations_iEMSs2020/etr_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_etr_without_irrig <- rowMeans(etr_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_etr_without_irrig,"save/simulations_iEMSs2020/row_mean_etr_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_etr_without_irrig <- rowMins(etr_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_etr_without_irrig,"save/simulations_iEMSs2020/row_min_etr_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_etr_without_irrig <- rowMaxs(etr_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_etr_without_irrig,"save/simulations_iEMSs2020/row_max_etr_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+etm_without_irrig_allplots <-sapply(etm_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(etm_without_irrig_allplots,"save/simulations_iEMSs2020/etm_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_etm_without_irrig <- rowMeans(etm_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_etm_without_irrig,"save/simulations_iEMSs2020/row_mean_etm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_etm_without_irrig <- rowMins(etm_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_etm_without_irrig,"save/simulations_iEMSs2020/row_mins_etm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_etm_without_irrig <- rowMaxs(etm_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_etm_without_irrig,"save/simulations_iEMSs2020/row_max_etm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tt_without_irrig_allplots <-sapply(tt_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tt_without_irrig_allplots,"save/simulations_iEMSs2020/tt_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tt_without_irrig <- rowMeans(tt_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tt_without_irrig,"save/simulations_iEMSs2020/row_mean_tt_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tt_without_irrig <- rowMins(tt_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tt_without_irrig,"save/simulations_iEMSs2020/row_min_tt_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tt_without_irrig <- rowMaxs(tt_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tt_without_irrig,"save/simulations_iEMSs2020/row_max_tt_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tt_p_without_irrig_allplots <-sapply(tt_p_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tt_p_without_irrig_allplots,"save/simulations_iEMSs2020/tt_p_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tt_p_without_irrig <- rowMeans(tt_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tt_p_without_irrig,"save/simulations_iEMSs2020/row_mean_tt_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tt_p_without_irrig <- rowMins(tt_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tt_p_without_irrig,"save/simulations_iEMSs2020/row_min_tt_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tt_p_without_irrig <- rowMaxs(tt_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tt_p_without_irrig,"save/simulations_iEMSs2020/row_max_tt_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+lai_p_without_irrig_allplots <-sapply(lai_p_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(lai_p_without_irrig_allplots,"save/simulations_iEMSs2020/lai_p_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_lai_p_without_irrig <- rowMeans(lai_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_lai_p_without_irrig,"save/simulations_iEMSs2020/row_mean_lai_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_lai_p_without_irrig <- rowMins(lai_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_lai_p_without_irrig,"save/simulations_iEMSs2020/row_min_lai_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_lai_p_without_irrig <- rowMaxs(lai_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_lai_p_without_irrig,"save/simulations_iEMSs2020/row_max_lai_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tdm_without_irrig_allplots <-sapply(tdm_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tdm_without_irrig_allplots,"save/simulations_iEMSs2020/tdm_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tdm_without_irrig <- rowMeans(tdm_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_without_irrig,"save/simulations_iEMSs2020/row_mean_tdm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tdm_without_irrig <- rowMins(tdm_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_without_irrig,"save/simulations_iEMSs2020/row_mean_tdm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tdm_without_irrig <- rowMaxs(tdm_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tdm_without_irrig,"save/simulations_iEMSs2020/row_max_tdm_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tdm_p_without_irrig_allplots <-sapply(tdm_p_without_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tdm_p_without_irrig_allplots,"save/simulations_iEMSs2020/tdm_p_without_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tdm_p_without_irrig <- rowMeans(tdm_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_p_without_irrig,"save/simulations_iEMSs2020/row_mean_tdm_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tdm_p_without_irrig <- rowMins(tdm_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tdm_p_without_irrig,"save/simulations_iEMSs2020/row_min_tdm_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tdm_p_without_irrig <- rowMaxs(tdm_p_without_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tdm_p_without_irrig,"save/simulations_iEMSs2020/row_max_tdm_p_without_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_without_irrig, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_min_lai_without_irrig, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_max_lai_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_without_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Max", "Mean", "Min"))
+savePlot(filename = "save/simulations_iEMSs2020/lai.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_without_irrig_wintercereals, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_mean_lai_without_irrig_springcereals, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_mean_lai_without_irrig_corn, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_without_irrig_wintercereals,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Corn", "WinterCereals", "SpringCereals"))
+# savePlot(filename = "save/simulations_iEMSs2020/lai_comp_cereals.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_without_irrig, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_min_wsi_without_irrig, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_max_wsi_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_without_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Max", "Mean", "Min"))
+savePlot(filename = "save/simulations_iEMSs2020/wsi.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_without_irrig_wintercereals, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_mean_wsi_without_irrig_springcereals, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_mean_wsi_without_irrig_corn, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_without_irrig_wintercereals,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Corn", "WinterCereals", "SpringCereals"))
+# savePlot(filename = "save/simulations_iEMSs2020/wsi_comp_cereals.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_etr_without_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Evapotranspiration");
+lines(as.Date(input_meteo$Date),row_mean_etm_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_etr_without_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Max (ETM)", "Real (ETR"))
+savePlot(filename = "save/simulations_iEMSs2020/et.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tt_without_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Temperature sum (degree-day)");
+lines(as.Date(input_meteo$Date),row_mean_tt_p_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tt_without_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/tt.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_without_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_mean_lai_p_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_without_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_comp.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tdm_without_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Dry matter content");
+lines(as.Date(input_meteo$Date),row_mean_tdm_p_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tdm_without_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/tdm.png", device = dev.cur())
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ####### B - Optirrig with irrigation every 15 days #######
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+list_idParcel <- optiParams('paramfiles/', case_study_name, 'watasit_allIrrigatedCereals.csv', 'paramDBAllCereals.csv','climate_buech_2016-2017.csv', as.numeric(format(date_end_sim,"%Y")), 1, 365, 'irrig_file_irrigation15d.dat')
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,8 +323,8 @@ for (i in 1:length(list_idParcel)){
   param_frame <- rbind(param_frame, param)
   
   ####### 3.3 Create frame with all irrigation vectors  #######
-  I1   = as.vector(input_meteo$day) ; I1[] = 0; I2 = I1 # I1 is surface irrigation and I2  I2 is deep buried irrigation (I2 is null)
-  I1[200] = 30; I1[215] = 30; I1[230] = 30; I1[245] = 30; I1[260] = 30; I1[275] = 30; I1[290] = 30; I1[305] = 30; I1[320] = 30;
+  I1   = as.vector(input_meteo$day) ; I1[] = 0; I2 = I1 # I1 is surface irrigation and I2 is deep buried irrigation (I2 is null)
+  I1[200] = 44; I1[215] = 44; I1[230] = 44; I1[245] = 44; I1[260] = 44; I1[275] = 44; I1[290] = 44; I1[305] = 44; I1[320] = 44;
   irr = rbind(irr,I1)
 }
 
@@ -174,6 +340,13 @@ inval_list <- list()
 vect_list <- list()
 lai_list <- list()
 wsi_list <- list()
+etr_list<- list()
+etm_list <- list()
+tt_list <- list()
+tt_p_list <- list()
+lai_p_list <- list()
+tdm_list <- list()
+tdm_p_list <- list()
 for (i in 1:length(list_idParcel)){
   init <- init_optirr(param_frame[i,], input_meteo)
   cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
@@ -201,26 +374,166 @@ for (day in 2:dim(input_meteo)[1]){
     # vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
     inval2 = optirday$inval ; inval2_list[[i]] <- inval2 ; inval_list[i,] <- inval2 # New constants
     vect2  = optirday$vect ; vect2_list[[i]] <- vect2 ; vect_list[i,] <- vect2 # New vectors
-    lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai
+    lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai; etr_list[[i]]<-vect2$ETR
+    etm_list[[i]]<-vect2$ETM; tt_list[[i]]<- vect2$TT; tt_p_list[[i]]<-vect2$TT_p; lai_p_list[[i]]<- vect2$LAI_p
+    tdm_list[[i]]<- vect2$TDM; tdm_p_list[[i]]<- vect2$TDM_p
   }
 } 
 ####### 4.1.3 Savings #######
-res_with_irrig <- vect2_list
 lai_with_irrig <- lai_list
-wsi_with_irrig <- wsi_list
-# mean_lai_without_irrig <- sapply( lai_without_irrig, FUN=function(items) {mean( unlist(items))})    
-mean_lai_with_irrig <-sapply(lai_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
-row_mean_lai_with_irrig <- rowMeans(mean_lai_with_irrig) #Moyenne de l'ensemble des parcelles par jour
-mean_wsi_with_irrig <-sapply(wsi_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
-row_mean_wsi_with_irrig <- rowMeans(mean_wsi_with_irrig) #Moyenne de l'ensemble des parcelles par jour
-X11()
-plot(row_mean_lai_without_irrig, type = "l", col="red")
-lines(row_mean_lai_with_irrig, col="blue")
-X11()
-plot(row_mean_wsi_without_irrig, type = "l", col="red")
-lines(row_mean_wsi_with_irrig, col="blue")
+wsi_with_irrig <- wsi_list 
+etr_with_irrig <- etr_list
+etm_with_irrig <- etm_list
+tt_with_irrig <- tt_list
+tt_p_with_irrig <- tt_p_list 
+lai_p_with_irrig <- lai_p_list
+tdm_with_irrig <- tdm_list
+tdm_p_with_irrig <- tdm_p_list
+  
+lai_with_irrig_allplots <-sapply(lai_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)})
+write.csv(lai_with_irrig_allplots,"save/simulations_iEMSs2020/lai_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_lai_with_irrig <- rowMeans(lai_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_lai_with_irrig,"save/simulations_iEMSs2020/row_mean_lai_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_lai_with_irrig <- rowMins(lai_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_lai_with_irrig,"save/simulations_iEMSs2020/row_min_lai_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_lai_with_irrig <- rowMaxs(lai_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_lai_with_irrig,"save/simulations_iEMSs2020/row_max_lai_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 
+wsi_with_irrig_allplots <-sapply(wsi_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(wsi_with_irrig_allplots,"save/simulations_iEMSs2020/wsi_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_wsi_with_irrig <- rowMeans(wsi_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_wsi_with_irrig,"save/simulations_iEMSs2020/row_mean_wsi_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_wsi_with_irrig <- rowMins(wsi_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_wsi_with_irrig,"save/simulations_iEMSs2020/row_min_wsi_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_wsi_with_irrig <- rowMaxs(wsi_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_wsi_with_irrig,"save/simulations_iEMSs2020/row_max_wsi_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 
+etr_with_irrig_allplots <-sapply(etr_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(etr_with_irrig_allplots,"save/simulations_iEMSs2020/etr_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_etr_with_irrig <- rowMeans(etr_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_etr_with_irrig,"save/simulations_iEMSs2020/row_mean_etr_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_etr_with_irrig <- rowMins(etr_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_etr_with_irrig,"save/simulations_iEMSs2020/row_min_etr_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_etr_with_irrig <- rowMaxs(etr_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_etr_with_irrig,"save/simulations_iEMSs2020/row_max_etr_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+etm_with_irrig_allplots <-sapply(etm_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(etm_with_irrig_allplots,"save/simulations_iEMSs2020/etm_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_etm_with_irrig <- rowMeans(etm_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_etm_with_irrig,"save/simulations_iEMSs2020/row_mean_etm_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_etm_with_irrig <- rowMins(etm_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_etm_with_irrig,"save/simulations_iEMSs2020/row_mins_etm_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_etm_with_irrig <- rowMaxs(etm_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_etm_with_irrig,"save/simulations_iEMSs2020/row_max_etm_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tt_with_irrig_allplots <-sapply(tt_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tt_with_irrig_allplots,"save/simulations_iEMSs2020/tt_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tt_with_irrig <- rowMeans(tt_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tt_with_irrig,"save/simulations_iEMSs2020/row_mean_tt_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tt_with_irrig <- rowMins(tt_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tt_with_irrig,"save/simulations_iEMSs2020/row_min_tt_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tt_with_irrig <- rowMaxs(tt_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tt_with_irrig,"save/simulations_iEMSs2020/row_max_tt_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tt_p_with_irrig_allplots <-sapply(tt_p_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tt_p_with_irrig_allplots,"save/simulations_iEMSs2020/tt_p_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tt_p_with_irrig <- rowMeans(tt_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tt_p_with_irrig,"save/simulations_iEMSs2020/row_mean_tt_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tt_p_with_irrig <- rowMins(tt_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tt_p_with_irrig,"save/simulations_iEMSs2020/row_min_tt_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tt_p_with_irrig <- rowMaxs(tt_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tt_p_with_irrig,"save/simulations_iEMSs2020/row_max_tt_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+lai_p_with_irrig_allplots <-sapply(lai_p_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(lai_p_with_irrig_allplots,"save/simulations_iEMSs2020/lai_p_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_lai_p_with_irrig <- rowMeans(lai_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_lai_p_with_irrig,"save/simulations_iEMSs2020/row_mean_lai_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_lai_p_with_irrig <- rowMins(lai_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_lai_p_with_irrig,"save/simulations_iEMSs2020/row_min_lai_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_lai_p_with_irrig <- rowMaxs(lai_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_lai_p_with_irrig,"save/simulations_iEMSs2020/row_max_lai_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tdm_with_irrig_allplots <-sapply(tdm_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tdm_with_irrig_allplots,"save/simulations_iEMSs2020/tdm_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tdm_with_irrig <- rowMeans(tdm_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_with_irrig,"save/simulations_iEMSs2020/row_mean_tdm_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tdm_with_irrig <- rowMins(tdm_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_with_irrig,"save/simulations_iEMSs2020/row_mean_tdm_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tdm_with_irrig <- rowMaxs(tdm_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tdm_with_irrig,"save/simulations_iEMSs2020/row_max_tdm_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tdm_p_with_irrig_allplots <-sapply(tdm_p_with_irrig, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tdm_p_with_irrig_allplots,"save/simulations_iEMSs2020/tdm_p_with_irrig_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tdm_p_with_irrig <- rowMeans(tdm_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_p_with_irrig,"save/simulations_iEMSs2020/row_mean_tdm_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tdm_p_with_irrig <- rowMins(tdm_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tdm_p_with_irrig,"save/simulations_iEMSs2020/row_min_tdm_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tdm_p_with_irrig <- rowMaxs(tdm_p_with_irrig_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tdm_p_with_irrig,"save/simulations_iEMSs2020/row_max_tdm_p_with_irrig.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_with_irrig, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_min_lai_with_irrig, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_max_lai_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Max", "Mean", "Min"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_irrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_with_irrig, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_min_wsi_with_irrig, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_max_wsi_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Max", "Mean", "Min"))
+savePlot(filename = "save/simulations_iEMSs2020/wsi_irrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_etr_with_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Evapotranspiration");
+lines(as.Date(input_meteo$Date),row_mean_etm_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_etr_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Max (ETM)", "Real (ETR"))
+savePlot(filename = "save/simulations_iEMSs2020/et_irrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tt_with_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Temperature sum (degree-day)");
+lines(as.Date(input_meteo$Date),row_mean_tt_p_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tt_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/tt_irrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_with_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_mean_lai_p_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_comp_irrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tdm_with_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Dry matter content");
+lines(as.Date(input_meteo$Date),row_mean_tdm_p_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tdm_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/tdm_irrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_with_irrig, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_mean_lai_without_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_with_irrig,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Not irrigated", "Irrigated"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_irrig_vs_not.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_without_irrig, type = "l", lwd=1.5, , lty = "dotted", axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_mean_wsi_with_irrig, col="blue", lwd=1.5)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_without_irrig,type="l",lwd=1.5,col="red", lty = "dotted"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Not irrigated", "Irrigated"))
+savePlot(filename = "save/simulations_iEMSs2020/wsi_irrig_vs_not.png", device = dev.cur())
 
 
 
@@ -255,6 +568,14 @@ inval_list <- list()
 vect_list <- list()
 lai_list <- list()
 wsi_list <- list()
+etr_list<- list()
+etm_list <- list()
+tt_list <- list()
+tt_p_list <- list()
+lai_p_list <- list()
+tdm_list <- list()
+tdm_p_list <- list()
+
 for (i in 1:length(list_idParcel)){
   init <- init_optirr(param_frame[i,], input_meteo)
   cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
@@ -282,7 +603,9 @@ for (day in 2:197){
     # vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
     inval2 = optirday$inval ; inval2_list[[i]] <- inval2 ; inval_list[i,] <- inval2 # New constants
     vect2  = optirday$vect ; vect2_list[[i]] <- vect2 ; vect_list[i,] <- vect2 # New vectors
-    lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai
+    lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai; etr_list[[i]]<-vect2$ETR
+    etm_list[[i]]<-vect2$ETM; tt_list[[i]]<- vect2$TT; tt_p_list[[i]]<-vect2$TT_p; lai_p_list[[i]]<- vect2$LAI_p
+    tdm_list[[i]]<- vect2$TDM; tdm_p_list[[i]]<- vect2$TDM_p
   }
 } 
 
@@ -473,7 +796,9 @@ for (day in 198:dim(input_meteo)[1]){
                     inval2 = optirday$inval ; inval2_list[[i]] <- inval2 ; inval_list[i,] <- inval2 # New constants
                     vect2  = optirday$vect ; vect2_list[[i]] <- vect2 ; vect_list[i,] <- vect2 # New vectors
                     lai_list[[i]] <- vect2$LAI; wsi_list[[i]]<- vect2$Sw_lai
-                    lai_day_list[[i]] <- vect2$LAI[day]; wsi_day_list[[i]]<- vect2$Sw_lai[day]
+                    lai_day_list[[i]] <- vect2$LAI[day]; wsi_day_list[[i]]<- vect2$Sw_lai[day]; etr_list[[i]]<-vect2$ETR
+                    etm_list[[i]]<-vect2$ETM; tt_list[[i]]<- vect2$TT; tt_p_list[[i]]<-vect2$TT_p; lai_p_list[[i]]<- vect2$LAI_p
+                    tdm_list[[i]]<- vect2$TDM; tdm_p_list[[i]]<- vect2$TDM_p
                     
                   }
                 } 
@@ -507,10 +832,209 @@ cat('Simulation of day:', day, "/", dim(input_meteo)[1],"....",input_meteo$date[
 end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
                                                                 "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
 
+lai_coupled <- lai_list
+wsi_coupled <- wsi_list 
+etr_coupled <- etr_list
+etm_coupled <- etm_list
+tt_coupled <- tt_list
+tt_p_coupled <- tt_p_list 
+lai_p_coupled <- lai_p_list
+tdm_coupled <- tdm_list
+tdm_p_coupled <- tdm_p_list
 
-res_with_watasit <- vect2_list
-lai_with_watasit <- lai_list
-wsi_with_watasit <- wsi_list
+lai_coupled_allplots <-sapply(lai_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)})
+write.csv(lai_coupled_allplots,"save/simulations_iEMSs2020/lai_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_lai_coupled <- rowMeans(lai_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_lai_coupled,"save/simulations_iEMSs2020/row_mean_lai_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_lai_coupled <- rowMins(lai_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_lai_coupled,"save/simulations_iEMSs2020/row_min_lai_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_lai_coupled <- rowMaxs(lai_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_lai_coupled,"save/simulations_iEMSs2020/row_max_lai_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+wsi_coupled_allplots <-sapply(wsi_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(wsi_coupled_allplots,"save/simulations_iEMSs2020/wsi_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_wsi_coupled <- rowMeans(wsi_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_wsi_coupled,"save/simulations_iEMSs2020/row_mean_wsi_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_wsi_coupled <- rowMins(wsi_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_wsi_coupled,"save/simulations_iEMSs2020/row_min_wsi_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_wsi_coupled <- rowMaxs(wsi_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_wsi_coupled,"save/simulations_iEMSs2020/row_max_wsi_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+etr_coupled_allplots <-sapply(etr_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(etr_coupled_allplots,"save/simulations_iEMSs2020/etr_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_etr_coupled <- rowMeans(etr_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_etr_coupled,"save/simulations_iEMSs2020/row_mean_etr_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_etr_coupled <- rowMins(etr_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_etr_coupled,"save/simulations_iEMSs2020/row_min_etr_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_etr_coupled <- rowMaxs(etr_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_etr_coupled,"save/simulations_iEMSs2020/row_max_etr_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+etm_coupled_allplots <-sapply(etm_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(etm_coupled_allplots,"save/simulations_iEMSs2020/etm_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_etm_coupled <- rowMeans(etm_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_etm_coupled,"save/simulations_iEMSs2020/row_mean_etm_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_etm_coupled <- rowMins(etm_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_etm_coupled,"save/simulations_iEMSs2020/row_mins_etm_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_etm_coupled <- rowMaxs(etm_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_etm_coupled,"save/simulations_iEMSs2020/row_max_etm_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tt_coupled_allplots <-sapply(tt_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tt_coupled_allplots,"save/simulations_iEMSs2020/tt_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tt_coupled <- rowMeans(tt_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tt_coupled,"save/simulations_iEMSs2020/row_mean_tt_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tt_coupled <- rowMins(tt_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tt_coupled,"save/simulations_iEMSs2020/row_min_tt_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tt_coupled <- rowMaxs(tt_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tt_coupled,"save/simulations_iEMSs2020/row_max_tt_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tt_p_coupled_allplots <-sapply(tt_p_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tt_p_coupled_allplots,"save/simulations_iEMSs2020/tt_p_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tt_p_coupled <- rowMeans(tt_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tt_p_coupled,"save/simulations_iEMSs2020/row_mean_tt_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tt_p_coupled <- rowMins(tt_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tt_p_coupled,"save/simulations_iEMSs2020/row_min_tt_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tt_p_coupled <- rowMaxs(tt_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tt_p_coupled,"save/simulations_iEMSs2020/row_max_tt_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+lai_p_coupled_allplots <-sapply(lai_p_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(lai_p_coupled_allplots,"save/simulations_iEMSs2020/lai_p_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_lai_p_coupled <- rowMeans(lai_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_lai_p_coupled,"save/simulations_iEMSs2020/row_mean_lai_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_lai_p_coupled <- rowMins(lai_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_lai_p_coupled,"save/simulations_iEMSs2020/row_min_lai_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_lai_p_coupled <- rowMaxs(lai_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_lai_p_coupled,"save/simulations_iEMSs2020/row_max_lai_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tdm_coupled_allplots <-sapply(tdm_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tdm_coupled_allplots,"save/simulations_iEMSs2020/tdm_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tdm_coupled <- rowMeans(tdm_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_coupled,"save/simulations_iEMSs2020/row_mean_tdm_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tdm_coupled <- rowMins(tdm_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_coupled,"save/simulations_iEMSs2020/row_mean_tdm_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tdm_coupled <- rowMaxs(tdm_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tdm_coupled,"save/simulations_iEMSs2020/row_max_tdm_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+tdm_p_coupled_allplots <-sapply(tdm_p_coupled, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
+write.csv(tdm_p_coupled_allplots,"save/simulations_iEMSs2020/tdm_p_coupled_allplots.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_mean_tdm_p_coupled <- rowMeans(tdm_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_mean_tdm_p_coupled,"save/simulations_iEMSs2020/row_mean_tdm_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_min_tdm_p_coupled <- rowMins(tdm_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_min_tdm_p_coupled,"save/simulations_iEMSs2020/row_min_tdm_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+row_max_tdm_p_coupled <- rowMaxs(tdm_p_coupled_allplots) #Moyenne de l'ensemble des parcelles par jour
+write.csv(row_max_tdm_p_coupled,"save/simulations_iEMSs2020/row_max_tdm_p_coupled.csv", row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_coupled, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_min_lai_coupled, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_max_lai_coupled, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Max", "Mean", "Min"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_coupled.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_coupled, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_min_wsi_coupled, col="black", lty = "dotted", lwd=1); lines(as.Date(input_meteo$Date),row_max_wsi_coupled, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(3,1), col=c("red", "blue","black"),
+       legend = c("Max", "Mean", "Min"))
+savePlot(filename = "save/simulations_iEMSs2020/wsi_coupled.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_etr_coupled, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Evapotranspiration");
+lines(as.Date(input_meteo$Date),row_mean_etm_coupled, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_etr_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Max (ETM)", "Real (ETR"))
+savePlot(filename = "save/simulations_iEMSs2020/et_coupled.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tt_coupled, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Temperature sum (degree-day)");
+lines(as.Date(input_meteo$Date),row_mean_tt_p_coupled, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tt_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/tt_coupled.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_coupled, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_mean_lai_p_coupled, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_comp_coupled.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tdm_coupled, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Dry matter content");
+lines(as.Date(input_meteo$Date),row_mean_tdm_p_coupled, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tdm_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("Potential", "Real"))
+savePlot(filename = "save/simulations_iEMSs2020/tdm_coupled.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_lai_coupled, type = "l", lwd=1, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Leaf Area Index");
+lines(as.Date(input_meteo$Date),row_mean_lai_with_irrig, col="red", lty = "dotted", lwd=1)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_lai_coupled,type="l",lwd=1.5,col="blue"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("WatASit*Optirrig", "Optirrig"))
+savePlot(filename = "save/simulations_iEMSs2020/lai_coupled_vs_not.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_coupled, type = "l", lwd=1.5, , lty = "dotted", axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_mean_wsi_with_irrig, col="blue", lwd=1.5)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_coupled,type="l",lwd=1.5,col="red", lty = "dotted"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("WatASit*Optirrig", "Optirrig"))
+savePlot(filename = "save/simulations_iEMSs2020/wsi_coupled_vs_not.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tdm_coupled, type = "l", lwd=1.5, , lty = "dotted", axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Dry matter content");
+lines(as.Date(input_meteo$Date),row_mean_tdm_with_irrig, col="blue", lwd=1.5)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tdm_coupled,type="l",lwd=1.5,col="red", lty = "dotted"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("WatASit*Optirrig", "Optirrig"))
+savePlot(filename = "save/simulations_iEMSs2020/tdm_coupled_vs_not.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_etr_coupled, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "ETR");
+lines(as.Date(input_meteo$Date),row_mean_etr_with_irrig, col="blue", lwd=1.5)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_etr_coupled,type="l",lwd=1.5,col="red"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("WatASit*Optirrig", "Optirrig"))
+savePlot(filename = "save/simulations_iEMSs2020/etr_coupled_vs_not.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_tt_coupled, type = "l", lwd=1.5, axes=FALSE, xaxt= "n", xlab = "Month", ylab= "ETR");
+lines(as.Date(input_meteo$Date),row_mean_tt_with_irrig, col="blue", lwd=1.5)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_tt_coupled,type="l",lwd=1.5,col="red"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("topleft", lty=c(2,1), col=c("red", "blue"),
+       legend = c("WatASit*Optirrig", "Optirrig"))
+savePlot(filename = "save/simulations_iEMSs2020/tt_coupled_vs_not.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_coupled, type = "l", lwd=1.5, , lty = "dotted", axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+lines(as.Date(input_meteo$Date),row_mean_wsi_with_irrig, col="blue", lwd=1.5)
+lines(as.Date(input_meteo$Date),row_mean_wsi_without_irrig, col="green", lwd=1.5)
+axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+points(as.Date(input_meteo$Date),row_mean_wsi_coupled,type="l",lwd=1.5,col="red", lty = "dotted"); axis(2); axis.Date(1,at=seq(min(as.Date(input_meteo$Date)),max(as.Date(input_meteo$Date))+1,by="1 mon"),format="%m")
+legend("bottomleft", lty=c(3,1), col=c("red", "blue","green"),
+       legend = c("Collective irrigation", "Individual irrigation", "Pluvial"))
+savePlot(filename = "save/simulations_iEMSs2020/wsi_coll_vs_ind_vs_notirrig.png", device = dev.cur())
+
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_coupled, type = "l", lwd=1.5, col="black", axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_with_irrig, type = "l", lwd=1.5, col="blue",axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+X11(); plot(as.Date(input_meteo$Date),row_mean_wsi_without_irrig, type = "l", lwd=1.5,col="green", axes=FALSE, xaxt= "n", xlab = "Month", ylab= "Water Stress Index");
+
+
+
+
+
+
+
+
+
+
+
+
 # mean_lai_without_irrig <- sapply( lai_without_irrig, FUN=function(items) {mean( unlist(items))})    
 mean_lai_with_watasit <-sapply(lai_with_watasit, FUN=function(top){ apply( as.data.frame(top), 1, mean)}) 
 row_mean_lai_with_watasit <- rowMeans(mean_lai_with_watasit) #Moyenne de l'ensemble des parcelles par jour

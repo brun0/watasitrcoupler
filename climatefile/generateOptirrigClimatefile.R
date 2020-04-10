@@ -5,13 +5,14 @@
 # of the Aspres case study, and fill in RG from Meteo France mean monthly data (1990-2011)
 # Oct 2019 - BR
 ############################################################
+require(zoo)
 
 wd <- "/home/bastien/Documents/2017-2020_These_GEAU/Work_Optirrig/Optirrig/WatASit/WatASit_Rcoupler/"
 
 # Extract meteo from J2K variables
 folder="/home/bastien/Documents/JAMS-3.9_02-bin/JAMS/data/J2K_BuechRef/output/"
-filename <-"41_buechRef_2017.sdat" #SAFRAN meteo time series from J2K variables extracted at the case study (ID 41 in J2K: "Les Vierges" water intake)
-dateStart <- as.Date("2017-01-01"); dateEnd <- as.Date("2017-12-31")
+filename <-"41_buechRef_2016-2017.sdat" #SAFRAN meteo time series from J2K variables extracted at the case study (ID 41 in J2K: "Les Vierges" water intake)
+dateStart <- as.Date("2016-01-01"); dateEnd <- as.Date("2017-12-31")
 
 # Lecture du .dat issue de JADE
 temp <- read.table(paste(folder,filename,sep=""), as.is = TRUE, skip = 3, header =F, sep = "", comment.char = "#", na.strings = "-9999.0")
@@ -32,4 +33,4 @@ Rg <- month ; Rg[which(Rg == 1)]<-16498/31 ; Rg[which(Rg == 2)]<- 25652/28 ; Rg[
 
 # Format and write climatefile
 meteo <- data.frame(date,year,month,day,doy,P,etp,Rg,T)
-write.csv(meteo,paste0(wd,'climatefile/climate_buech_',month <- as.numeric(format(dateStart,"%Y")),'.csv'), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+write.csv(meteo,paste0(wd,'climatefile/climate_buech_',as.numeric(format(dateStart,"%Y")),"-",as.numeric(format(dateEnd,"%Y")),'.csv'), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
