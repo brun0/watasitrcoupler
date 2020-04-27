@@ -109,6 +109,12 @@ j2kGetOneValueAllReachs <- function(what, ip="localhost", port="9999") {
     }
 }
 
+# get HRU bilan
+j2kBilan <- function(ip="localhost", port="9999") {
+    res = askJ2K(c("command"), c("bilan"), ip, port)
+    return(as.numeric(res[[2]]))
+}
+
 ############## UTILS ###############
 
 killJ2K <- function() {
