@@ -146,6 +146,8 @@ setwd(wd)
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
 r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
+# just for test purpose
+#r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
 
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
@@ -254,9 +256,9 @@ if (with_optirrig) {
 #}
 }
 
-cat('\nSarting coupled simulation simulation!!!\n')
-simuProgress <- txtProgressBar(min = cormas_doy_start, 
-                               max = cormas_doy_start + cormas_sim_day_nb, 
+cat('\nStarting coupled simulation simulation!!!\n')
+simuProgress <- txtProgressBar(min = cormas_doy_start,
+                               max = cormas_doy_start + cormas_sim_day_nb,
                                style = 3)
 
 ####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
@@ -427,7 +429,7 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
 #   ggplot() +
 #   geom_line(aes(x = day, y = hi, color=id))
 
-
+cat('\n')
 j2kStop()
 Sys.sleep(3)
 killJ2K()
