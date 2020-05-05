@@ -280,13 +280,10 @@ getAttributesOfEntities <- function(attributeName, className, num = T){
 }
 
 # Testing Cormas status
-
 isCormasListening <- function() {
     answer <- try(getAttributesOfEntities("test", "Test"))
     return(!str_detect(answer[[1]], "Failed to connect to localhost port 4920"))
 }
-
-
 
 # OPENING VISUALWORKS FROM R ----------------------------------------------
 #Not working at the moment, user need to open cormas manually

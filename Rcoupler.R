@@ -24,7 +24,7 @@ initial.options <- commandArgs(trailingOnly = FALSE)
 file.arg.name <- "--file="
 script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
 script.dirname <- dirname(script.name)
-if (paste0(script.dirname, "runInConsole") == "runInConsole") 
+if (paste0(script.dirname, "runInConsole") == "runInConsole")
   script.dirname <- wd
 
 
@@ -127,25 +127,27 @@ if (with_optirrig) {
 # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
 cormasInVW7dir = cormasRootPath
 setwd(cormasInVW7dir)
-# try to kill cormas, just in case it's open
-system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"), stdout=stdoutP, stderr=stderrP)
-# Open Cormas listenning for instruction
-system2(
-  'wine',
-    args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-  # adding headless successfully launches cormas and the model loading appears to be working
-  # but at some point Rcoupler crashes
-  #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-  wait=F, stdout=stdoutP, stderr=stderrP
-)
-cat('\n\nWaiting 5 seconds to make sure cormas starts listening...')
-Sys.sleep(5)
+if (!isCormasListening()) {
+  # Open Cormas listenning for instruction
+  system2(
+    'wine',
+      args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+    # adding headless successfully launches cormas and the model loading appears to be working
+    # but at some point Rcoupler crashes
+    #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+    wait=F, stdout=stdoutP, stderr=stderrP
+  )
+  cat('\n\nWaiting 5 seconds to make sure cormas starts listening...')
+  Sys.sleep(5)
+}
 setwd(wd)
 
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
 r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
+# just for test purpose
+#r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
 
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
@@ -254,9 +256,9 @@ if (with_optirrig) {
 #}
 }
 
-cat('\nSarting coupled simulation simulation!!!\n')
-simuProgress <- txtProgressBar(min = cormas_doy_start, 
-                               max = cormas_doy_start + cormas_sim_day_nb, 
+cat('\nStarting coupled simulation simulation!!!\n')
+simuProgress <- txtProgressBar(min = cormas_doy_start,
+                               max = cormas_doy_start + cormas_sim_day_nb,
                                style = 3)
 
 ####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
@@ -427,19 +429,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
 #   ggplot() +
 #   geom_line(aes(x = day, y = hi, color=id))
 
-
+cat('\n')
 j2kStop()
 Sys.sleep(3)
 killJ2K()
-
-# The Coupler instance created at the init of the simulation
-# close connexion (and frees "port") 2 sec after its closeConnexion attributes 
-# has been changed to 1.
-setAttributesOfEntities("closeConnexion", "Coupler", c(1), c(1))
-getAttributesOfEntities("closeConnexion", "Coupler")
-Sys.sleep(3)
-# le problème après avoir tué visualworks est que ça met ensuite environ une minute à libérer le port 4920
-system2('kill', args=c('-9', "$(ps aux | grep -i cormas | grep visual | awk '{print $2}')"), stdout=stdoutP, stderr=stderrP)
 
 # Setting meteo if starting day of Cormas is lower than 10:
 # setAttributesOfEntities("p_forecast", "Meteo", 1, 1)
