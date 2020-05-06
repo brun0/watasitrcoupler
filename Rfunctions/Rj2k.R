@@ -66,6 +66,7 @@ j2kStop <- function(ip="localhost", port="9999") {
 # set values for all hrus or all reach
 # what parameter can be infiltration, aspersion, drip, surface (keys are HRU ids)
 # and also reachin, reachout (keys are reach ids)
+# !! all values need to be in litres !!
 j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
     dict = genJsonDict(keys, values)
     res = askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
