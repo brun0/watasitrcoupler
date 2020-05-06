@@ -29,7 +29,8 @@ dbStuffExample <- function() {
     mtcars$car_names <- rownames(mtcars)
     rownames(mtcars) <- c()
     # print first rows of our dummy dataframe
-    head(mtcars)
+    print(head(mtcars))
+    print('AND')
 
     # export it to a SQLite3 file
     exportOrAppendToDB(mtcars, 'plop', 'exp.db')
@@ -37,5 +38,5 @@ dbStuffExample <- function() {
     # import all tables from this file into a list of dataframes
     l = importDbToDataframes('exp.db')
     # check that first rows are correct
-    head(l[[1]])
+    print(head(l[[1]]))
 }
