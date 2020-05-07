@@ -319,8 +319,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   if (response != "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns=\"urn:vwservices\"><SOAP-ENV:Body><ns:RunSimuResponse><ns:result>true</ns:result></ns:RunSimuResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>") {
     stop("RUN STOPPED", call.=FALSE)
   }
-  obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
-  obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
+  obs1 <- NULL
+  obs2 <- NULL
+  #obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
+  #obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
   if (!((is.null(obs1) | is.null(obs2)))) {
   obs <- left_join(obs1, obs2, by = "id")
   obs$day = day
@@ -329,10 +331,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   }
 
   ####### 5.4.3 Get the state of crops from Cormas #######
-  idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
-  list_idParcel <- idParcel$idParcel
-  harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
-  irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
+  #idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
+  #list_idParcel <- idParcel$idParcel
+  #harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
+  #irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
 
   ####### 5.4.4 Simulate the new state of crops with Optirrig #######
   if (with_optirrig) {
@@ -380,12 +382,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   #j2kMakeStep(20)
   # cette fonction est sensée récupérer les valeurs de tous les attributs pour tous les reachs
   # mais pour l'instant ça récupère juste actRD1
-  reachQTable = j2kGet("reach")
+  #reachQTable = j2kGet("reach")
   # et celle là récupère juste netrain
-  hruQTable = j2kGet("hru")
+  #hruQTable = j2kGet("hru")
   # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
-  reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
-  hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
+  #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
+  #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # ATTENTION JE NE COMPRENDS PAS POURQUOI CETTE SECTION N'EST PAS
