@@ -33,14 +33,14 @@ wd_Functions <- file.path(script.dirname, "Rfunctions/")
 for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
 
 ####### 1.3 Load libraries #######
-load <- c(require(zoo), require (multiplex), require(tidyr),require(ggplot2),require(dplyr),require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
+load <- c(require(ConfigParser), require(R.utils)
+, require(ConfigParser)
+,require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr),require(ggplot2),require(dplyr),require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
 
 ####### 1.4 Core parallelism #######
 cores <- parallel:::detectCores(); registerDoParallel(cores-2);
 
 ####### 1.5 Read config file #######
-library(R.utils)
-library(ConfigParser)
 args = commandArgs(trailingOnly=TRUE)
 DEBUG = FALSE
 configFilePath = "./rcoupler.cfg"
@@ -148,7 +148,7 @@ setwd(wd)
 r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
 # just for test purpose
 #r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
-
+  
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
 # for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
@@ -178,8 +178,8 @@ system2(
   args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
-cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
-Sys.sleep(3)
+cat('\n\nWaiting 5 seconds to make sure J2K coupling module starts listening...')
+Sys.sleep(5)
 setwd(wd)
 
 cat('\nRunning simulation!!!\n')
