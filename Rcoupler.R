@@ -97,7 +97,7 @@ optirrig_doy_start <- NA # day of the year of first step in Optirrig
 ####### 2.1 Specification of case study, year and duration #######
 case_study_name <- "Aspres"
 year_sim <- 2017
-cormas_sim_day_nb <- 30 * 3
+cormas_sim_day_nb <- 30 * 2
 
 ####### 2.2 Importation of meteo data input  #######
 input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
@@ -137,8 +137,8 @@ if (!isCormasListening()) {
     #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
     wait=F, stdout=stdoutP, stderr=stderrP
   )
-  cat('\n\nWaiting 5 seconds to make sure cormas starts listening...')
-  Sys.sleep(5)
+  cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
+  Sys.sleep(3)
 }
 setwd(wd)
 
@@ -178,8 +178,8 @@ system2(
   args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
-cat('\n\nWaiting 5 seconds to make sure J2K coupling module starts listening...')
-Sys.sleep(5)
+cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
+Sys.sleep(3)
 setwd(wd)
 
 cat('\nRunning simulation!!!\n')
@@ -264,35 +264,54 @@ simuProgress <- txtProgressBar(min = cormas_doy_start,
 ####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
 for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   setTxtProgressBar(simuProgress, day)
-  ####### 5.4.1 Update Cormas Meteo #######
-  P <- meteo$P
-  setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
-  p_forecast = sum(c(P[day], P[day+1], P[day+2]), na.rm = TRUE)
-  if (p_forecast > 0) {
-    p_forecast = 1
-  }
-  setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
-  if (day >= 11) {
-    p_cumTenDays = sum(c(P[day-1], P[day-2], P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8], P[day-9], P[day-10]), na.rm = TRUE)
-  } else {
-    # day need to be more than 10 otherwise you need to set manualy the forcast values (see commentaries at the end of the file)
-  }
-  setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
-  # setAttributesOfEntities("p_cumTenDays", "Meteo", 1, 10)
-  # if (day <= 11) {p_cumFifteenDays = p_cumTenDays}
-  # if (day == 12) {p_cumFifteenDays = sum(c(p_cumTenDays,P[day-11]), na.rm = TRUE)}
-  # if (day == 13) {p_cumFifteenDays = sum(c(p_cumTenDays,P[day-11], P[day-12]), na.rm = TRUE)}
-  # if (day == 14) {p_cumFifteenDays = sum(c(p_cumTenDays,P[day-11], P[day-12], P[day-13]), na.rm = TRUE)}
-  # if (day == 15) {p_cumFifteenDays = sum(c(p_cumTenDays,P[day-11], P[day-12], P[day-13], P[day-14]), na.rm = TRUE)}
-  if (day >= 16) {
-    p_cumFifteenDays = sum(c(p_cumTenDays, P[day-11], P[day-12], P[day-13], P[day-14], P[day-15]), na.rm = TRUE)
-  }
-  else {
-    p_cumFifteenDays = sum(c(p_cumTenDays, P[day-1], P[day-2], P[day-3], P[day-4], P[day-5]), na.rm = TRUE)
-  }
-  setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
-  # setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, 50)
+  ####### 5.4.1 Update Cormas Meteo and flow in riverReachs#######
+    ## Updating meteo
+    P <- meteo$P
+    setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
+    p_forecast = sum(c(P[day:(day +2)]), na.rm = TRUE)
+    if (p_forecast > 0) {
+      p_forecast = 1
+    }
+    setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
+    if (day >= 2) {
+      p_cumTenDays = sum(c(P[max(1,(day-10)):(day-1)]), na.rm = TRUE)
+      p_cumFifteenDays = sum(c(p_cumTenDays, P[max(1,(day-15)):max(2,(day-11))]), na.rm = TRUE)
+    } else {
+      p_cumTenDays = 0
+      p_cumFifteenDays = 0
+    }
+    setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
+    setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
+    
+    ## Updating river flow
+    # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
+    cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
+    
+    # TODO: supprimer la ligne suivante, qui est juste pour le test
+    # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
+    # (l'idReach de watasit n'existe pas dans le modèle j2k)
+    cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
+    
+    # Getting flows from J2k
+    #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
+    j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
+      as.data.frame() %>%
+      mutate(Runoff = as.numeric(as.character(Runoff))) %>%
+      mutate(ID = as.numeric(as.character(ID))) %>%
+      tbl_df()
 
+    # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days      
+    reachsToUpdate <- cormasRiverReachs %>%
+      rename(cormasId = id, 
+             ID = idReach) %>% 
+      inner_join(j2kReachRunoff, by = "ID") %>%
+      mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
+    
+    setAttributesOfEntities("q", 
+                            "RiverReach", 
+                            reachsToUpdate$cormasId, 
+                            reachsToUpdate$q)
+  
   ####### 5.4.2 Run coupled simulation of 24 hours #######
   r <- runSimu(duration = 24)
   response <- gettext(r[[2]])
@@ -433,16 +452,3 @@ cat('\n')
 j2kStop()
 Sys.sleep(3)
 killJ2K()
-
-# Setting meteo if starting day of Cormas is lower than 10:
-# setAttributesOfEntities("p_forecast", "Meteo", 1, 1)
-# if (day == 1) {p_cumTenDays = 0}
-# if (day == 2) {p_cumTenDays = P[day-1]}
-# if (day == 3) {p_cumTenDays = sum(c(P[day-1],P[day-2]), na.rm = TRUE)}
-# if (day == 4) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3]), na.rm = TRUE)}
-# if (day == 5) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4]), na.rm = TRUE)}
-# if (day == 6) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5]), na.rm = TRUE)}
-# if (day == 7) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6]), na.rm = TRUE)}
-# if (day == 8) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7]), na.rm = TRUE)}
-# if (day == 9) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8]), na.rm = TRUE)}
-# if (day == 10) {p_cumTenDays = sum(c(P[day-1],P[day-2],P[day-3], P[day-4], P[day-5], P[day-6], P[day-7], P[day-8], P[day-9]), na.rm = TRUE)}
