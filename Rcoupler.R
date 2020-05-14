@@ -148,7 +148,7 @@ setwd(wd)
 r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
 # just for test purpose
 #r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
-  
+
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
 # for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
@@ -282,16 +282,16 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
     }
     setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
     setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
-    
+
     ## Updating river flow
     # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
     cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
-    
+
     # TODO: supprimer la ligne suivante, qui est juste pour le test
     # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
     # (l'idReach de watasit n'existe pas dans le modèle j2k)
     cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
-    
+
     # Getting flows from J2k
     #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
     j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
@@ -300,18 +300,18 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
       mutate(ID = as.numeric(as.character(ID))) %>%
       tbl_df()
 
-    # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days      
+    # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days
     reachsToUpdate <- cormasRiverReachs %>%
-      rename(cormasId = id, 
-             ID = idReach) %>% 
+      rename(cormasId = id,
+             ID = idReach) %>%
       inner_join(j2kReachRunoff, by = "ID") %>%
       mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
-    
-    setAttributesOfEntities("q", 
-                            "RiverReach", 
-                            reachsToUpdate$cormasId, 
+
+    setAttributesOfEntities("q",
+                            "RiverReach",
+                            reachsToUpdate$cormasId,
                             reachsToUpdate$q)
-  
+
   ####### 5.4.2 Run coupled simulation of 24 hours #######
   r <- runSimu(duration = 24)
   response <- gettext(r[[2]])
