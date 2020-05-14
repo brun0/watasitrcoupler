@@ -175,7 +175,7 @@ killJ2K()
 setwd(jamsRootPath)
 system2(
   'java',
-  args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'),
+  args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/exemple_aspersion_lai.jam', '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
 cat('\n\nWaiting 5 seconds to make sure J2K coupling module starts listening...')
@@ -374,6 +374,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
                                               # récupérés ci-dessus depuis cormas
   #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:
   # C'est bon ça roule maintenant
+
+  # set actLai
+  j2kSet('actLaiCom', c(10363, 10362, 8934), c(100, 100, 100))
+  print(' ')
+  print('actLAI of some HRUs :')
+  print(head(j2kGetOneValueAllHrus('actLAI'), 10))
 
   ####### 5.4.6 Simulate the new state of watershed with J2K #######
   # cette fonction fait un step si on lui donne pas de paramètre
