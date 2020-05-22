@@ -25,10 +25,9 @@ RCormas = function(case_study_name, day, DOY_start_coupling, DOY_stop_coupling, 
   for (i in 3:10){if (day == i){ p_cumTenDays = sum(as.numeric(P[(day-(i-1)):(day-1)]), na.rm = TRUE) }}
   if (day >= 11) {p_cumTenDays = sum(as.numeric(P[(day-10):(day-1)]), na.rm = TRUE)}
   setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
-  if (day <= 11) {p_cumFifteenDays = p_cumTenDays}
-  if (day == 12) {p_cumFifteenDays = sum(c(p_cumTenDays,as.numeric(P[day-11])), na.rm = TRUE)}
-  for (i in 13:15){if (day == i){ p_cumFifteenDays = sum(c(p_cumTenDays,as.numeric(P[(day-(i-1)):(day-1)])), na.rm = TRUE) }}
-  if (day >= 16) {p_cumFifteenDays = sum(c(p_cumTenDays,as.numeric(P[(day-15):(day-1)])), na.rm = TRUE)}
+  p_cumTwelveDays = sum(c(p_cumTenDays,as.numeric(P[(day-12):(day-11)])), na.rm = TRUE)
+  setAttributesOfEntities("p_cumTwelveDays", "Meteo", 1, p_cumTwelveDays) # Calculate cumulative precipitation for the last 12 days
+  p_cumFifteenDays = sum(c(p_cumTwelveDays,as.numeric(P[(day-15):(day-13)])), na.rm = TRUE)
   setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
   
   ####### 5 Run coupled simulation of 24 hours #######

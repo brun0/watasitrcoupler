@@ -178,8 +178,8 @@ system2(
   args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
-cat('\n\nWaiting 5 seconds to make sure J2K coupling module starts listening...')
-Sys.sleep(5)
+cat('\n\nWaiting 10 seconds to make sure J2K coupling module starts listening...')
+Sys.sleep(10)
 setwd(wd)
 
 cat('\nRunning simulation!!!\n')
