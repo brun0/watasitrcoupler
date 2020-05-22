@@ -76,7 +76,7 @@ j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
 
 # get values for all hrus or all reachs
 # what can be "hru" or "reach"
-#TODO: Attention chez moi cette fonction ne renvoie qu'une valeur 
+#TODO: Attention chez moi cette fonction ne renvoie qu'une valeur
 # (la colonne s'appelle actRD1 pour les reach par exemple)
 # Maintenant qu'on a des fonctions pour avoir les valeurs une par une
 # je propose que cette fonction renvoie toutes les variables pour hru ou reach

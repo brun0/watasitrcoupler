@@ -148,7 +148,7 @@ setwd(wd)
 r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
 # just for test purpose
 #r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
-  
+
 ####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
 # probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
 # for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
@@ -175,7 +175,7 @@ killJ2K()
 setwd(jamsRootPath)
 system2(
   'java',
-  args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam', '-n'),
+  args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/exemple_aspersion_lai.jam', '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
 cat('\n\nWaiting 10 seconds to make sure J2K coupling module starts listening...')
@@ -282,16 +282,16 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
     }
     setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
     setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
-    
+
     ## Updating river flow
     # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
     cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
-    
+
     # TODO: supprimer la ligne suivante, qui est juste pour le test
     # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
     # (l'idReach de watasit n'existe pas dans le modèle j2k)
     cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
-    
+
     # Getting flows from J2k
     #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
     j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
@@ -300,18 +300,18 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
       mutate(ID = as.numeric(as.character(ID))) %>%
       tbl_df()
 
-    # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days      
+    # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days
     reachsToUpdate <- cormasRiverReachs %>%
-      rename(cormasId = id, 
-             ID = idReach) %>% 
+      rename(cormasId = id,
+             ID = idReach) %>%
       inner_join(j2kReachRunoff, by = "ID") %>%
       mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
-    
-    setAttributesOfEntities("q", 
-                            "RiverReach", 
-                            reachsToUpdate$cormasId, 
+
+    setAttributesOfEntities("q",
+                            "RiverReach",
+                            reachsToUpdate$cormasId,
                             reachsToUpdate$q)
-  
+
   ####### 5.4.2 Run coupled simulation of 24 hours #######
   r <- runSimu(duration = 24)
   response <- gettext(r[[2]])
@@ -319,8 +319,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   if (response != "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns=\"urn:vwservices\"><SOAP-ENV:Body><ns:RunSimuResponse><ns:result>true</ns:result></ns:RunSimuResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>") {
     stop("RUN STOPPED", call.=FALSE)
   }
-  obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
-  obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
+  obs1 <- NULL
+  obs2 <- NULL
+  #obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
+  #obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
   if (!((is.null(obs1) | is.null(obs2)))) {
   obs <- left_join(obs1, obs2, by = "id")
   obs$day = day
@@ -329,10 +331,10 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   }
 
   ####### 5.4.3 Get the state of crops from Cormas #######
-  idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
-  list_idParcel <- idParcel$idParcel
-  harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
-  irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
+  #idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
+  #list_idParcel <- idParcel$idParcel
+  #harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
+  #irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
 
   ####### 5.4.4 Simulate the new state of crops with Optirrig #######
   if (with_optirrig) {
@@ -373,6 +375,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:
   # C'est bon ça roule maintenant
 
+  # set actLai
+  j2kSet('actLaiCom', c(10363, 10362, 8934), c(100, 100, 100))
+  print(' ')
+  print('actLAI of some HRUs :')
+  print(head(j2kGetOneValueAllHrus('actLAI'), 10))
+
   ####### 5.4.6 Simulate the new state of watershed with J2K #######
   # cette fonction fait un step si on lui donne pas de paramètre
   j2kMakeStep()
@@ -380,12 +388,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   #j2kMakeStep(20)
   # cette fonction est sensée récupérer les valeurs de tous les attributs pour tous les reachs
   # mais pour l'instant ça récupère juste actRD1
-  reachQTable = j2kGet("reach")
+  #reachQTable = j2kGet("reach")
   # et celle là récupère juste netrain
-  hruQTable = j2kGet("hru")
+  #hruQTable = j2kGet("hru")
   # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
-  reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
-  hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
+  #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
+  #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
 
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # ATTENTION JE NE COMPRENDS PAS POURQUOI CETTE SECTION N'EST PAS
