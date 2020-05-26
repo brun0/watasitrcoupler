@@ -126,7 +126,7 @@ for (day in 2:dim(input_meteo)[1]){
   inval2_list <- list()
   vect2_list <- list()
   
-  if (coupling == 1) { if (day >= DOY_start_coupling && day <= DOY_stop_coupling) { irriDailyDose <- RCormas(case_study_name = case_study_name, day = day, DOY_start_coupling = DOY_start_coupling, DOY_stop_coupling = DOY_stop_coupling, input_meteo = input_meteo, modelName = "COWAT", parcelFile = "WatASit[2.0_LAI].pcl", init = "INIT_2017_54x44", scenario = coupling_scenario) 
+  if (coupling == 1) { if (day >= DOY_start_coupling && day <= DOY_stop_coupling) { irriDailyDose <- RCormas(case_study_name = case_study_name, day = day, DOY_start_coupling = DOY_start_coupling, DOY_stop_coupling = DOY_stop_coupling, input_meteo = input_meteo, modelName = "COWAT", parcelFile = "WatASit[2.0_TT].pcl", init = "INIT_2017_54x44", scenario = coupling_scenario) 
   } } # make coupling with Cormas
   
   for (i in 1:length(list_idParcel)){
@@ -162,7 +162,7 @@ for (day in 2:dim(input_meteo)[1]){
   }
   ####### 4.3 Set the new crop LAI in WatASit #######
   if (coupling == 1) { if (day >= DOY_start_coupling && day <= DOY_stop_coupling) {
-    setAttributesOfEntities("lai", "Ecrop", as.numeric(list_idParcel), as.numeric(LAI_mat[day,])) }}
+    setAttributesOfEntities("tt", "Ecrop", as.numeric(list_idParcel), as.numeric(TT_mat[day,])) }}
   
 } 
 end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
