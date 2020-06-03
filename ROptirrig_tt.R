@@ -29,7 +29,7 @@ load <- c(require(zoo), require (multiplex), require(tidyr),require(dplyr),requi
 cores <- parallel:::detectCores(); registerDoParallel(cores-1);
 
 ####### 1.4 Activate results saving [OPTIONAL] #######
-saveRes <- 0 #if 0 -> no saving if 1 -> saving activated
+saveRes <- 1 #if 0 -> no saving if 1 -> saving activated
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,12 +44,19 @@ saveRes <- 0 #if 0 -> no saving if 1 -> saving activated
 # case_study_name <- "Aspres_noCoupling_noIrri_p2"
 # case_study_name <- "Aspres_noCoupling_IrriFixed12d_p2"
 # case_study_name <- "Aspres_coupling_baseline_p3"
-case_study_name <- "Aspres_coupling_alternative_p3"
+# case_study_name <- "Aspres_coupling_alternative_p3"
 # case_study_name <- "Aspres_noCoupling_IrriFixed12d_p3"
 # case_study_name <- "Aspres_noCoupling_IrriOpt_p3"
 # case_study_name <- "Aspres_noCoupling_IrriOptGGE_p3"
 # case_study_name <- "Aspres_noCoupling_noIrri_p3"
 # case_study_name <- "Aspres_coupling_alternative6_p3"
+# case_study_name <- "Aspres_coupling_alternative_tt"
+# case_study_name <- "Aspres_coupling_baseline_tt"
+# case_study_name <- "Aspres_coupling_10dVariant2_tt"
+# case_study_name <- "Aspres_coupling_8dVariant1_tt"
+# case_study_name <- "Aspres_coupling_8dVariant2_tt"
+# case_study_name <- "Aspres_coupling_12dVariant1_tt"
+case_study_name <- "Aspres_coupling_12dVariant2_tt"
 
 ####### 2.2 Importation of meteo data input  [REQUIRED] #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
