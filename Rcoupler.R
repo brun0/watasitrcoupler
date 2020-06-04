@@ -2,14 +2,12 @@
 #################      R coupler      ################################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # This script makes the WatASit model from Cormas plateform to communicate
-# with the Optirrig model implemented in R Software to generate
+# with the J2K model implemented in SuperJams Plateform 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Code developed in 2019, October, by
-# B. Bonté -> make RCormas function to get/set Cormas attributes/probes
-# M. Delmas -> make adapted daily Optirrig function, adapt it for
-# meadows
-# B. Richard -> make work together, make optiParams funcion and
-# generate Optirrig climate file with specific R script
+# Code developed in 2020, Jan-June, by
+# J. Veyssier -> make SuperJams modules and communication Rfunctions
+# B. Bonté -> make this script and RCormas
+# B. Richard -> make this script and config simulations
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -27,15 +25,12 @@ script.dirname <- dirname(script.name)
 if (paste0(script.dirname, "runInConsole") == "runInConsole")
   script.dirname <- wd
 
-
 ####### 1.2 Load functions #######
 wd_Functions <- file.path(script.dirname, "Rfunctions/")
 for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
 
 ####### 1.3 Load libraries #######
-load <- c(require(ConfigParser), require(R.utils)
-, require(ConfigParser)
-,require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr),require(ggplot2),require(dplyr),require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
+load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
 
 ####### 1.4 Core parallelism #######
 cores <- parallel:::detectCores(); registerDoParallel(cores-2);
@@ -88,23 +83,30 @@ for (path in requiredFiles) {
 ####### 2. Simulation Settings and inputs #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-####### 2.0 specify wether Otirrig is used or not and simu starts #######
+####### 2.0 Specification of case study and total simulation period #######
+case_study_name <- "Aspres"
+date_start_sim <- as.Date("2016-10-15", "%Y-%m-%d"); date_end_sim <- as.Date("2017-07-31", "%Y-%m-%d")
+# year_sim <- 2017
+
+####### 2.1 Specification for WatASit coupling #######
+cormas_sim_day_nb <- 30 * 4
+cormas_doy_start <- 198 # day of the year of first step in cormas
+
+####### 2.2 Specification for Optirrig coupling #######
 with_optirrig <- F
-cormas_doy_start <- 121 # day of the year of first step in cormas
-J2k_doy_start <- 1 # day of the year of first step in J2K
 optirrig_doy_start <- NA # day of the year of first step in Optirrig
 
-####### 2.1 Specification of case study, year and duration #######
-case_study_name <- "Aspres"
-year_sim <- 2017
-cormas_sim_day_nb <- 30 * 2
+####### 2.3 Specification for J2K coupling #######
+J2k_doy_start <- 1 # day of the year of first step in J2K
 
-####### 2.2 Importation of meteo data input  #######
-input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
-meteo = input_meteo[which(input_meteo$year == year_sim),]
-str(meteo)
+####### 2.4 Importation of meteo data input  #######
+climate_file_name <- 'climate_buech_2016-2017.csv'
+input_meteo <- computeClimateInput(climate_file_name, date_start_sim, date_end_sim)
+# input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
+# meteo = input_meteo[which(input_meteo$year == year_sim),]
+str(input_meteo)
 
-####### 2.3 Generation of an Optirrig paramfile for each WatASit plots  #######
+####### 2.5 Generation of an Optirrig paramfile for each WatASit plots  #######
 list_idParcel <- NULL
 if (with_optirrig) {
   list_idParcel <- optiParams(
@@ -145,7 +147,7 @@ setwd(wd)
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
-r <- openModel("COWAT", parcelFile="WatASit[WithJ2K].pcl")
+r <- openModel("COWAT", parcelFile="WatASit[2.0_TT].pcl")
 # just for test purpose
 #r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
 
@@ -167,7 +169,7 @@ r <- initSimu()
 # En étant dans le dossier "superjams" (qui vient de l'archive superjams.zip) :
 # java -jar jams-starter.jar -m data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam -n
 # et hop ça lance juste le modèle, pas d'interface graphique, pas  d'éditeur de modèle. Pour l'arrêter : CTRL+C .
-# S'il s'arrête tout seul  au bout de 2 minutes d'inactivité : CTRL+C et on peut le relancer avec la même commande.
+# S'il s'arrête tout seul au bout de 2 minutes d'inactivité : CTRL+C et on peut le relancer avec la même commande.
 #  "Rfunctions/Rj2k.R".
 
 # kill jams if it's running
@@ -176,10 +178,11 @@ setwd(jamsRootPath)
 system2(
   'java',
   args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/exemple_aspersion_lai.jam', '-n'),
+  # args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/cowat.jam', '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
-cat('\n\nWaiting 10 seconds to make sure J2K coupling module starts listening...')
-Sys.sleep(10)
+cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
+Sys.sleep(3)
 setwd(wd)
 
 cat('\nRunning simulation!!!\n')
@@ -201,8 +204,6 @@ if (with_optirrig) {
   #}
 }
 
-
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 5. Run simulation #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -210,7 +211,7 @@ if (with_optirrig) {
 ####### 5.1 Create results dataFrame #######
 crop_results <- data.frame(idParcel = NULL, wsi = NULL, lai = NULL, hi = NULL, cropMaturitySignal = NULL)
 farmers_results <- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL, dosCounter = NULL)
-
+simQ_mat <- matrix()
 
 ####### 5.2 Run J2K from 1 DOY to DOY 120 (1er mai) to simulate the new state of the watershed before the irrigation campaign #######  #######
 cmdResult = j2kMakeStep(cormas_doy_start - 1)
@@ -261,12 +262,12 @@ simuProgress <- txtProgressBar(min = cormas_doy_start,
                                max = cormas_doy_start + cormas_sim_day_nb,
                                style = 3)
 
-####### 5.4 Run WatASit-Optirrig coupled simulation from DOY 121 (1er mai) during the irrigation campaign #######
+####### 5.4 Run WatASit-Optirrig-J2K coupled simulation from cormas_doy_start #######
 for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   setTxtProgressBar(simuProgress, day)
   ####### 5.4.1 Update Cormas Meteo and flow in riverReachs#######
     ## Updating meteo
-    P <- meteo$P
+    P <- input_meteo$P
     setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
     p_forecast = sum(c(P[day:(day +2)]), na.rm = TRUE)
     if (p_forecast > 0) {
@@ -281,16 +282,17 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
       p_cumFifteenDays = 0
     }
     setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
-    setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
+    # setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
+    setAttributesOfEntities("p_cumTwelveDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
 
     ## Updating river flow
     # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
-    cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
+    # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
 
     # TODO: supprimer la ligne suivante, qui est juste pour le test
     # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
     # (l'idReach de watasit n'existe pas dans le modèle j2k)
-    cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
+    # cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
 
     # Getting flows from J2k
     #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
@@ -301,16 +303,16 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
       tbl_df()
 
     # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days
-    reachsToUpdate <- cormasRiverReachs %>%
-      rename(cormasId = id,
-             ID = idReach) %>%
-      inner_join(j2kReachRunoff, by = "ID") %>%
-      mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
-
-    setAttributesOfEntities("q",
-                            "RiverReach",
-                            reachsToUpdate$cormasId,
-                            reachsToUpdate$q)
+    # reachsToUpdate <- cormasRiverReachs %>%
+    #   rename(cormasId = id,
+    #          ID = idReach) %>%
+    #   inner_join(j2kReachRunoff, by = "ID") %>%
+    #   mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
+    # 
+    # setAttributesOfEntities("q",
+    #                         "RiverReach",
+    #                         reachsToUpdate$cormasId,
+    #                         reachsToUpdate$q)
 
   ####### 5.4.2 Run coupled simulation of 24 hours #######
   r <- runSimu(duration = 24)
@@ -375,7 +377,7 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:
   # C'est bon ça roule maintenant
 
-  # set actLai
+  # set actLai dans J2K
   j2kSet('actLaiCom', c(10363, 10362, 8934), c(100, 100, 100))
   print(' ')
   print('actLAI of some HRUs :')
@@ -394,67 +396,12 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
   #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
   #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
-
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      # ATTENTION JE NE COMPRENDS PAS POURQUOI CETTE SECTION N'EST PAS
-      # EN  5.4.7 vu qu'elle fait partie du pas de temps journalier..
-  ####### 6.Get new crop state from Optirrig simulations #######
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (with_optirrig) {
-    ####### 6.1 Get new crop states #######
-    # newLAI<-vectList
-    # newCropState <- data.frame(list_idParcel, vect2Frame$wsi, vect2Frame$lai, vect2Frame$hi, vect2Frame$cropMaturitySignal) # Tableau final avec les  sorties Optirrig pour chaque idParcel
-
-    ####### 6.2 Set the new state of crops in cormas #######
-    #setAttributesOfEntities("wsi", "Ecrop", idParcel$id, newCropState$wsi)    # Vérifier qu'on prend bien les bonnes parcelles!!!!
-    #setAttributesOfEntities("lai", "Ecrop", idParcel$id, newCropState$lai)
-    #setAttributesOfEntities("hi", "Ecrop", idParcel$id, newCropState$hi)
-    #setAttributesOfEntities("cropMaturiySignal", "Ecrop", idParcel$id, newCropState$cropMaturitySignal)
-
-    ####### 6.3 Save results in R (even though they are also in cormas) #######
-    # newCropState$irrigation <- irriDailyDose$values
-    # newCropState$day <- day
-    # cropResults <- rbind(cropResults, newCropState )
-  }
-
+  dailySimQ = j2kGetOneValueAllReachs("Runoff")
+  # SimQAtGauge <- simQ[which(as.numeric(simQ[,1])==62200)] #Le reach est manquant avec ces paramètres
+  dailySimQAtGauge <- as.numeric(dailySimQ[which(as.numeric(dailySimQ[,1])==59200),2]) #Le reach est manquant avec ces paramètres
+  simQ_mat[day] <- dailySimQAtGauge
 }
 
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 7. Observe the evolution of coupled dynamics #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# abandonedCropEvent <- getNumericProbe("abandonedCropEvent","COWAT")
-#  ASAinquiries <- getNumericProbe("ASAinquiries","COWAT")
-#  exceedMaxWithdrawalEvent <- getNumericProbe("exceedMaxWithdrawalEvent","COWAT")
-#  qIntake <- getNumericProbe("qIntake","COWAT")
-#  unrespectRestrictionEvent <- getNumericProbe("unrespectRestrictionEvent","COWAT")
-#  f1IrrigatedPlotNb <- getNumericProbe("f1IrrigatedPlotNb","COWAT")
-#  f2IrrigatedPlotNb <- getNumericProbe("f2irrigatedPlotNb","COWAT")
-# f3IrrigatedPlotNb <- getNumericProbe("f3IrrigatedPlotNb","COWAT")
-# f4IrrigatedPlotNb <- getNumericProbe("f4IrrigatedPlotNb","COWAT")
-# f5IrrigatedPlotNb <- getNumericProbe("f5IrrigatedPlotNb","COWAT")
-# f6IrrigatedPlotNb <- getNumericProbe("f6IrrigatedPlotNb","COWAT")
-# f7IrrigatedPlotNb <- getNumericProbe("f7IrrigatedPlotNb","COWAT")
-# f8IrrigatedPlotNb <- getNumericProbe("f8IrrigatedPlotNb","COWAT")
-# f9IrrigatedPlotNb <- getNumericProbe("f9IrrigatedPlotNb","COWAT")
-# f10IrrigatedPlotNb <- getNumericProbe("f10IrrigatedPlotNb","COWAT")
-# f11IrrigatedPlotNb <- getNumericProbe("f11IrrigatedPlotNb","COWAT")
-# f12IrrigatedPlotNb <- getNumericProbe("f12IrrigatedPlotNb","COWAT")
-# f13IrrigatedPlotNb <- getNumericProbe("f13IrrigatedPlotNb","COWAT")
-# f14IrrigatedPlotNb <- getNumericProbe("f14IrrigatedPlotNb","COWAT")
-# f15IrrigatedPlotNb <- getNumericProbe("f15IrrigatedPlotNb","COWAT")
-# f16IrrigatedPlotNb <- getNumericProbe("f16IrrigatedPlotNb","COWAT")
-
-# cropResults %>%
-#   tbl_df() # To do in Cormas
-#
-# cropResults %>%
-#   ggplot() +
-#   geom_line(aes(x = day, y = lai, color=id)) # Just to see that parcells has different values of lais:
-#
-# cropResults %>%
-#   ggplot() +
-#   geom_line(aes(x = day, y = hi, color=id))
 
 cat('\n')
 j2kStop()
