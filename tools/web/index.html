@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Cowat CSV plot</title>
+
+<div id="main" style="display: none;">
+    <br/>
+    <div id="filediv" style="margin-left: auto; margin-right: auto; display: table;">
+        <label for="csv_file">Select a CSV file:</label>
+        <input type="file" id="csv_file" name="csv_file">
+    </div>
+    <br/>
+    <div id="plots">
+        <hr/>
+        <br/>
+        <h2>3D plot: display 3 columns of CSV data</h2>
+        <label>Fields (columns) to display in 3D plot:</label>
+        <br/>
+        x: <select id="f1"></select>
+        y: <select id="f2"></select>
+        z: <select id="f3"></select>
+        <div id="3d_plot" style="width: 70%; height:700px; border: 1px solid;"></div>
+        <hr/>
+        <h2>2D plots: display 2 columns of CSV data and select rows with a condition on one column</h2>
+        <label>Rows to display in 2D plot (which field and which values?): </label>
+        <select id="twod-condition-field"></select>
+        <input type="text" id="entity-id" value="*"/>
+        <br/>
+        <label>Examples: </label>
+        <br/>
+        <label>* (for all rows)</label>
+        <br/>
+        <label>2 (for rows with field == 2)</label>
+        <br/>
+        <label>3,4,5 (for explicit multiple values)</label>
+        <br/>
+        <label>2-10 (for value range)</label>
+        <br/>
+        <label>2-10,15-20,99 (for 2 ranges and one value)</label>
+        <br/>
+        <br/>
+        <label>Columns to use as plot axis: </label>
+        <br/>
+        x:<select id="twod-field1"></select>
+        y:<select id="twod-field2"></select>
+        <div id="2d_plot" style="width: 70%; height:700px; border: 1px solid;"></div>
+    </div>
+</div>
+<script src="js/script.js"></script>
