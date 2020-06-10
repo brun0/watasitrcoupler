@@ -212,27 +212,96 @@ setwd(wd)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cat('\nRunning simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
-simQ_mat <- matrix()
-
+reachID = as.numeric(j2kGet("reach")[,1])
+Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); Runoff_dt <- Runoff_dt[-1,]
+actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRD1_dt <- actRD1_dt[-1,]
+actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRD2_dt <- actRD2_dt[-1,]
+actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRG1_dt <- actRG1_dt[-1,]
+actRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRG2_dt <- actRG2_dt[-1,]
+inRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRD1_dt <- inRD1_dt[-1,]
+inRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRD2_dt <- inRD2_dt[-1,]
+inRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRG1_dt <- inRG1_dt[-1,]
+inRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRG2_dt <- inRG2_dt[-1,]
+outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRD1_dt <- outRD1_dt[-1,]
+outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRD2_dt <- outRD2_dt[-1,]
+outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRG1_dt <- outRG1_dt[-1,]
+hruID = as.numeric(j2kGet("hru")[,1])
+netRain_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); netRain_dt <- netRain_dt[-1,]
+netSnow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); netSnow_dt <- netSnow_dt[-1,]
+potET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); potET_dt <- potET_dt[-1,]
+actET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actET_dt <- actET_dt[-1,]
+actMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actMPS_dt <- actMPS_dt[-1,]
+actLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actLPS_dt <- actLPS_dt[-1,]
+actDPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actDPS_dt <- actDPS_dt[-1,]
+satMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satMPS_dt <- satMPS_dt[-1,]
+satLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satLPS_dt <- satLPS_dt[-1,]
+satSoil_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satSoil_dt <- satSoil_dt[-1,]
+infiltration_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); infiltration_dt <- infiltration_dt[-1,]
+interflow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); interflow_dt <- interflow_dt[-1,]
+percolation_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); percolation_dt <- percolation_dt[-1,]
+inRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); inRD1_dt <- inRD1_dt[-1,]
+inRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); inRD2_dt <- inRD2_dt[-1,]
+outRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRD1_dt <- outRD1_dt[-1,]
+outRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRD2_dt <- outRD2_dt[-1,]
+outRG1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRG1_dt <- outRG1_dt[-1,]
+outRG2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRG2_dt <- outRG2_dt[-1,]
+irrigationTotal_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); irrigationTotal_dt <- irrigationTotal_dt[-1,]
 ####### 4.2 Run models
 if (!any(c(with_cormas, with_optirrig))) {
 
   # Run j2k on the whole simulation period
-  reachQTable = j2kGet("reach")
-  for (i in 1:as.numeric(difftime(date_end_irri,date_start_hydro,units='days'))){ cat("\n","Running step:",i,"\n")
+  simuProgress <- txtProgressBar(min = 1,
+                                 max = as.numeric(difftime(date_end_irri,date_start_hydro,units='days')),
+                                 style = 3)
+  for (i in 1:as.numeric(difftime(date_end_irri,date_start_hydro,units='days'))){ cat("\n","Running step:",i,"\n"); setTxtProgressBar(simuProgress, i)
+  # Run one step
   j2kMakeStep()
-  dailySimQ = j2kGetOneValueAllReachs("Runoff")
-  dailySimQAtGauge <- as.numeric(dailySimQ[which(as.numeric(dailySimQ[,1])==59200),2]) # l'ID du reach au niveau de la station de mesure dans cowat_10_ok
-  simQ_mat[i] <- dailySimQAtGauge
   
-  # # B. Getting flows from J2k
-  # #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
-  # j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
-  #   as.data.frame() %>%
-  #   mutate(Runoff = as.numeric(as.character(Runoff))) %>%
-  #   mutate(ID = as.numeric(as.character(ID))) %>%
-  #   tbl_df()
+  # Get reach variables
+  Runoff = j2kGetOneValueAllReachs("Runoff")
+  actRD1 = j2kGetOneValueAllReachs("actRD1")
+  actRD2 = j2kGetOneValueAllReachs("actRD2")
+  actRG1 = j2kGetOneValueAllReachs("actRG1")
+  actRG2 = j2kGetOneValueAllReachs("actRG2")
+  inRD1 = j2kGetOneValueAllReachs("inRD1")
+  inRD2 = j2kGetOneValueAllReachs("inRD2")
+  inRG1 = j2kGetOneValueAllReachs("inRG1")
+  inRG2 = j2kGetOneValueAllReachs("inRG2")
+  outRD1 = j2kGetOneValueAllReachs("outRD1")
+  outRD2 = j2kGetOneValueAllReachs("outRD2")
+  outRG1 = j2kGetOneValueAllReachs("outRG1")
+  Runoff_i <- as.vector(as.numeric(Runoff[,2]))
+  Runoff_dt <- rbind(Runoff_dt,Runoff_i)
+  actRD1_i <- as.vector(as.numeric(actRD1[,2]))
+  acrRD1_dt <- rbind(actRD1_dt,actRD1_i)
+  actRD2_i <- as.vector(as.numeric(actRD2[,2]))
+  actRD2_dt <- rbind(actRD2_dt,actRD2_i)
+  actRG1_i <- as.vector(as.numeric(actRG1[,2]))
+  actRG1_dt <- rbind(actRG1_dt,actRG1_i)
+  actRG2_i <- as.vector(as.numeric(actRG2[,2]))
+  actRG2_dt <- rbind(actRG2_dt,actRG2_i)
+  inRD1_i <- as.vector(as.numeric(inRD1[,2]))
+  inRD1_dt <- rbind(inRD1_dt,inRD1_i)
+  inRD2_i <- as.vector(as.numeric(inRD2[,2]))
+  inRD2_dt <- rbind(inRD2_dt,inRD2_i)
+  inRG1_i <- as.vector(as.numeric(inRG1[,2]))
+  inRG1_dt <- rbind(inRG1_dt,inRG1_i)
+  inRG2_i <- as.vector(as.numeric(inRG2[,2]))
+  inRG2_dt <- rbind(inRG2_dt,inRG2_i)
+  outRD1_i <- as.vector(as.numeric(outRD1[,2]))
+  outRD1_dt <- rbind(outRD1_dt,outRD1_i)
+  outRD2_i <- as.vector(as.numeric(outRD2[,2]))
+  outRD2_dt <- rbind(outRD2_dt,outRD2_i)
+  outRG1_i <- as.vector(as.numeric(outRG1[,2]))
+  outRG1_dt <- rbind(outRG1_dt,outRD2_i)
+  
+  # Get HRU variables
+  outRD1 = j2kGetOneValueAllHrus("outRD1")
+  
   }
+  names(Runoff_dt)<-reachID; names(actRD1_dt)<-reachID; names(actRD2_dt)<-reachID; names(actRG1_dt)<-reachID; names(actRG2_dt)<-reachID;
+  names(inRD1_dt)<-reachID; names(inRD2_dt)<-reachID; names(inRG1_dt)<-reachID;names(inRG2_dt)<-reachID;names(outRD1_dt)<-reachID;names(outRD2_dt)<-reachID;
+  names(outRG1_dt)<-reachID
 }
 
 if (with_cormas == T && with_optirrig == F) {}
@@ -528,7 +597,19 @@ if (with_optirrig) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (saveRes) {
   dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-  write.csv(simQ_mat, paste0("save/simulations_cowat/",case_study_name,"/","simQ_mat.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 }
 
 cat('\n')
