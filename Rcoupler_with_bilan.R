@@ -418,7 +418,7 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   #simQ_mat[day] <- dailySimQAtGauge
 }
 
-
+plotBalance(storedWater,inOutWater)
 cat('\n')
 j2kStop()
 Sys.sleep(3)

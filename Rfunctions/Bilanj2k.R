@@ -107,9 +107,9 @@ j2kInOutWater <- function() {
   return(res)
 }
 
-plot_balance <- function(storages, inOut) {
-  storages <- storedWater %>% tbl_df()
-  inOut <- inOutWater %>% tbl_df()
+plotBalance <- function(storages, inOut, graphName = "water-balance.pdf") {
+  #storages <- storedWater %>% tbl_df()
+  #inOut <- inOutWater %>% tbl_df()
   waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
   waterSummary <- waterSummary %>% mutate(storage = mps + lps + dps + storedSnow + intercStorage + 
                       rg1 + rg2 +
@@ -122,10 +122,11 @@ plot_balance <- function(storages, inOut) {
     mutate(massConservation = storageNextDay - (storage + balance)) %>%
     mutate(relativeMassCons = massConservation / storage * 100)
   waterSummary %>% 
-    select(storage, inWater, outFlow, outET, balance, massConservation, relativeMassCons, day) %>%
+    select(storage, inWater, outFlow, outET, balance, massConservation, day) %>%
     #select(relativeMassCons, day) %>%
     select(-storage) %>%
     gather("variable", "value", -day) %>%
     ggplot() +
-    geom_line(aes(x= day, y = value, color=variable ))
+    geom_line(aes(x= day, y = value, color=variable )) +
+    ggsave(graphName)
 }
