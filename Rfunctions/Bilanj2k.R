@@ -20,10 +20,34 @@ j2kWaterStorage <- function() {
   ## NB: il y a un stock que je ne comprends pas qui s'appelle "addInAct"
   ## Description dans le code java: "additional inflow storage inside reach"
   ## Ce stock est relié à aucune variable dans le fichier jams que j'ai et fixé à une valeur 0
-  reachRD1 <- sum(as.numeric(j2kGetOneValueAllReachs("actRD1")[,2]))
-  reachRD2 <- sum(as.numeric(j2kGetOneValueAllReachs("actRD2")[,2]))
-  reachRG1 <- sum(as.numeric(j2kGetOneValueAllReachs("actRG1")[,2]))
-  reachRG2 <- sum(as.numeric(j2kGetOneValueAllReachs("actRG2")[,2]))
+  reachRD1 <- j2kGetOneValueAllReachs("actRD1") %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
+    mutate_all(as.numeric) %>%
+    filter(ID != 9999) %>%
+    select(actRD1) %>% 
+    pull() %>%
+    sum()
+  reachRD2 <- j2kGetOneValueAllReachs("actRD2") %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
+    mutate_all(as.numeric) %>%
+    filter(ID != 9999) %>%
+    select(actRD2) %>% 
+    pull() %>%
+    sum()
+  reachRG1 <- j2kGetOneValueAllReachs("actRG1") %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
+    mutate_all(as.numeric) %>%
+    filter(ID != 9999) %>%
+    select(actRG1) %>% 
+    pull() %>%
+    sum()
+  reachRG2 <- j2kGetOneValueAllReachs("actRG2") %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
+    mutate_all(as.numeric) %>%
+    filter(ID != 9999) %>%
+    select(actRG2) %>% 
+    pull() %>%
+    sum()
   #reachAdditional <- sum(as.numeric(j2kGetOneValueAllReachs("actAddIn")[,2]))
   # À ajouter les stocks présents dans les Dams!
   res <- data.frame(mps,lps,dps,storedSnow,intercStorage,rg1,rg2,reachRD1,reachRD2,reachRG1,reachRG2)
@@ -70,33 +94,25 @@ j2kInOutWater <- function() {
   ## NB3: la variable CatchmentRunoff semble représenter la somme des écoulements 
   ## (Variable du contextetimeLoop)
   outRD1 <- j2kGetOneValueAllReachs("outRD1") %>% 
-    as.data.frame() %>% 
-    tbl_df() %>% 
-    mutate_all(as.character) %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
     mutate_all(as.numeric) %>%
     filter(ID == catchmentOutlet) %>%
     select(outRD1) %>% 
     pull()
   outRD2 <- j2kGetOneValueAllReachs("outRD2") %>% 
-    as.data.frame() %>% 
-    tbl_df() %>% 
-    mutate_all(as.character) %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
     mutate_all(as.numeric) %>%
     filter(ID == catchmentOutlet) %>%
     select(outRD2) %>% 
     pull()
   outRG1 <- j2kGetOneValueAllReachs("outRG1") %>% 
-    as.data.frame() %>% 
-    tbl_df() %>% 
-    mutate_all(as.character) %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
     mutate_all(as.numeric) %>%
     filter(ID == catchmentOutlet) %>%
     select(outRG1) %>% 
     pull()
   outRunoff <- j2kGetOneValueAllReachs("Runoff") %>% 
-    as.data.frame() %>% 
-    tbl_df() %>% 
-    mutate_all(as.character) %>% 
+    as.data.frame(stringsAsFactors = F) %>% 
     mutate_all(as.numeric) %>%
     filter(ID == catchmentOutlet) %>%
     select(Runoff) %>% 
@@ -107,7 +123,7 @@ j2kInOutWater <- function() {
   return(res)
 }
 
-plotBalance <- function(storages, inOut, graphName = "water-balance.pdf") {
+plotBalance <- function(storages, inOut, graphName = "water-balance") {
   #storages <- storedWater %>% tbl_df()
   #inOut <- inOutWater %>% tbl_df()
   waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
@@ -118,22 +134,31 @@ plotBalance <- function(storages, inOut, graphName = "water-balance.pdf") {
     mutate(outFlow = outRunoff) %>%
     mutate(outET = eTR) %>%
     mutate(balance = inWater - outFlow - outET) %>%
+    arrange(day) %>%
     mutate(storageNextDay = lead(storage)) %>%
     mutate(massConservation = storageNextDay - (storage + balance)) %>%
     mutate(deltaStock = storageNextDay - storage)
   
-  waterSummary %>% 
-    select(storage, 
-           inWater, 
-           outFlow,
-           outET,
-           balance,
-           deltaStock,
-           massConservation, day) %>%
-    #select(massConservation, day) %>%
-    select(-storage) %>%
-    gather("variable", "value", -day) %>%
+  WS <- waterSummary %>%
+    mutate(cumRain = cumsum(rain)) %>%
+    mutate(cumSnow = cumsum(snow)) %>%
+    mutate(cumInflow = cumRain + cumSnow) %>%
+    mutate(soilStorage =  mps + lps + dps + storedSnow + intercStorage) %>%
+    mutate(groundWaterStorage =  rg1 + rg2) %>%
+    mutate(reachStorage =  reachRD1 + reachRD2 + reachRG1 + reachRG2) %>%
+    mutate(cumETR = cumsum(outET)) %>%
+    mutate(cumoutFlow = cumsum(outRunoff)) %>% 
+    mutate(P = rain + snow)
+  
+  WSBilan <- WS %>%
+    select(P, deltaStock,eTR,outRunoff, day) %>%
+    mutate(PmoinsETMoinsD = P - eTR - outRunoff) %>%
+    gather("Variable", "VolInL", -day)
+  
+  WSBilan %>% 
     ggplot() +
-    geom_line(aes(x= day, y = value, color=variable ), position = position_jitter(height = 1e+9)) +
-    ggsave(graphName)
+    geom_line(aes(color=Variable, x= day, y=VolInL), 
+              position = position_jitter(height=0.5e+9)) +
+    coord_cartesian(ylim=c(-2e+10, 4e+10)) +
+    ggsave(paste0(graphName, "-", 1, ".pdf"), height = 13, width= 19, units ="cm")
 }

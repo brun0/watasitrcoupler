@@ -401,8 +401,21 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   #dailySimQAtGauge <- as.numeric(dailySimQ[which(as.numeric(dailySimQ[,1])==59200),2]) #Le reach est manquant avec ces paramètres
   #simQ_mat[day] <- dailySimQAtGauge
 }
-
-plotBalance(storedWater,inOutWater)
+storages <- storedWater %>% tbl_df()
+inOut <- inOutWater %>% tbl_df()
+waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
+waterSummary <- waterSummary %>% mutate(storage = mps + lps + dps + storedSnow + intercStorage + 
+                                          rg1 + rg2 +
+                                          reachRD1 + reachRD2 + reachRG1 + reachRG2) %>%
+  mutate(inWater = rain + snow) %>%
+  mutate(outFlow = outRunoff) %>%
+  mutate(outET = eTR) %>%
+  mutate(balance = inWater - outFlow - outET) %>%
+  mutate(storageNextDay = lead(storage)) %>%
+  mutate(massConservation = storageNextDay - (storage + balance)) %>%
+  mutate(deltaStock = storageNextDay - storage)
+write.csv(waterSummary, "newWaterSummary.csv", row.names = F)
+plotBalance(storedWater,inOutWater, "waterBalance")
 cat('\n')
 j2kStop()
 Sys.sleep(3)
