@@ -143,7 +143,8 @@ plotBalance <- function(storages, inOut, graphName = "water-balance") {
     mutate(cumRain = cumsum(rain)) %>%
     mutate(cumSnow = cumsum(snow)) %>%
     mutate(cumInflow = cumRain + cumSnow) %>%
-    mutate(soilStorage =  mps + lps + dps + storedSnow + intercStorage) %>%
+    mutate(soilStorage =  mps + lps + dps + intercStorage) %>%
+    mutate(snowStorage = storedSnow) %>%
     mutate(groundWaterStorage =  rg1 + rg2) %>%
     mutate(reachStorage =  reachRD1 + reachRD2 + reachRG1 + reachRG2) %>%
     mutate(cumETR = cumsum(outET)) %>%
@@ -161,4 +162,22 @@ plotBalance <- function(storages, inOut, graphName = "water-balance") {
               position = position_jitter(height=0.5e+9)) +
     coord_cartesian(ylim=c(-2e+10, 4e+10)) +
     ggsave(paste0(graphName, "-", 1, ".pdf"), height = 13, width= 19, units ="cm")
+  
+  WS %>%
+    select(rain, 
+           snow, 
+           snowStorage, 
+           soilStorage, 
+           groundWaterStorage,
+           eTR,
+           outFlow,
+           reachStorage,
+           day) %>%
+    gather("Variable", "VolInL", -day) %>%
+    ggplot() +
+    geom_line(aes(color=Variable, x= day, y=VolInL)) +
+    #geom_point(aes(shape=Variable, x= day, y=VolInL)) +
+    coord_cartesian(ylim=c(0, 1.5e+11)) +
+    ggsave(paste0(graphName, "hydro-vars-.pdf"), height = 13, width= 19, units ="cm")
+  
 }
