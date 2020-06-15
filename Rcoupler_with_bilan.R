@@ -302,23 +302,7 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
     # setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
     setAttributesOfEntities("p_cumTwelveDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
 
-    ## Updating river flow
-    # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
-    # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
-
-    # TODO: supprimer la ligne suivante, qui est juste pour le test
-    # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
-    # (l'idReach de watasit n'existe pas dans le modèle j2k)
-    # cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
-
-    # Getting flows from J2k
-    #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
-    j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
-      as.data.frame() %>%
-      mutate(Runoff = as.numeric(as.character(Runoff))) %>%
-      mutate(ID = as.numeric(as.character(ID))) %>%
-      tbl_df()
-
+ 
     # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days
     # reachsToUpdate <- cormasRiverReachs %>%
     #   rename(cormasId = id,

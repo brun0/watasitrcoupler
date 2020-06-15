@@ -115,18 +115,25 @@ plotBalance <- function(storages, inOut, graphName = "water-balance.pdf") {
                       rg1 + rg2 +
                       reachRD1 + reachRD2 + reachRG1 + reachRG2) %>%
     mutate(inWater = rain + snow) %>%
-    mutate(outFlow = eTR + outRD1 + outRD2 + outRG1) %>%
+    mutate(outFlow = outRunoff) %>%
     mutate(outET = eTR) %>%
     mutate(balance = inWater - outFlow - outET) %>%
     mutate(storageNextDay = lead(storage)) %>%
     mutate(massConservation = storageNextDay - (storage + balance)) %>%
-    mutate(relativeMassCons = massConservation / storage * 100)
+    mutate(deltaStock = storageNextDay - storage)
+  
   waterSummary %>% 
-    select(storage, inWater, outFlow, outET, balance, massConservation, day) %>%
-    #select(relativeMassCons, day) %>%
+    select(storage, 
+           inWater, 
+           outFlow,
+           outET,
+           balance,
+           deltaStock,
+           massConservation, day) %>%
+    #select(massConservation, day) %>%
     select(-storage) %>%
     gather("variable", "value", -day) %>%
     ggplot() +
-    geom_line(aes(x= day, y = value, color=variable )) +
+    geom_line(aes(x= day, y = value, color=variable ), position = position_jitter(height = 1e+9)) +
     ggsave(graphName)
 }
