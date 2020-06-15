@@ -1,13 +1,12 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#################      R coupler      ################################
+#################      R coupler 2.0      ############################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# This script makes the WatASit model from Cormas plateform to communicate
-# with the J2K model implemented in SuperJams Plateform 
+# This script runs J2K-WatASit-Optirrig coupled simulations
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2020, Jan-June, by
-# J. Veyssier -> make SuperJams modules and communication Rfunctions
-# B. Bonté -> make this script and RCormas
-# B. Richard -> make this script and config simulations
+# J. Veyssier -> make superjams_6, socket methods and Rcoupler v1
+# B. Bonté -> make RCormas methods and Rcoupler v1
+# B. Richard -> make param and climate Rfunctions and Rcoupler v2
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -83,64 +82,63 @@ for (path in requiredFiles) {
 ####### 2. Simulation Settings and inputs #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-####### 2.0 Specification of case study and total simulation period #######
-case_study_name <- "Aspres"
-date_start_sim <- as.Date("2016-10-15", "%Y-%m-%d"); date_end_sim <- as.Date("2017-07-31", "%Y-%m-%d")
-# year_sim <- 2017
+####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
+case_study_name <- "Aspres_cowat_10_ok2_j2k_only"
 
-####### 2.1 Importation of meteo data input  #######
+date_start_hydro <- as.Date("2010-01-01", "%Y-%m-%d")
+date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
+date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
+date_end_irri <- as.Date("2017-07-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+
+####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
-input_meteo <- computeClimateInput(climate_file_name, date_start_sim, date_end_sim)
-# input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
-# meteo = input_meteo[which(input_meteo$year == year_sim),]
+input_meteo <- computeClimateInput(climate_file_name, date_start_crop, date_end_irri)
 str(input_meteo)
 
-####### 2.2 Specification for J2K coupling #######
-J2k_doy_start <- 1 # day of the year of first step in J2K
+####### 2.2 Specification for J2K/JAMS #######
+hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
+jams_file_name <- "cowat.jam"
 
-####### 2.3 Specification for WatASit coupling #######
-with_cormas <- T
+####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
+with_cormas <- F # choose True (T) or False (F)
 if (with_cormas) {
-cormas_doy_start <- 198 # day of the year of first step in cormas
-cormas_sim_day_nb <- 30 * 4
-scenario <- "Baseline" #Choose Baseline (without irrigation time slot) or Alternative (with irrigation time slot)
+modelName = "COWAT"
+parcelFile = "WatASit[2.0_TT].pcl"
+init = "INIT_2017_54x44"
+cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
+scenario <- "Baseline" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
 }
 
-####### 2.4 Specification for Optirrig coupling #######
-with_optirrig <- T
-if (with_optirrig) {
-optirrig_doy_start <- 1 # day of the year of first step in Optirrig
-itest <- 0    #Choose fixed irrigation dates (itest = 0) or optimized irrigation dates (itest=1)
-if (with_cormas) {itest = 0; gge = 0; dosap =0; th_w = 0} #compulsory for collective irrigation in WatASit 
-else { 
-  if (itest == 0) {th_w = 0; gge = 0; dosap = 0}
-  if (itest == 1) {th_w = 100; gge = 0; dosap = 43.2} } #Fill in irrigation dose dosap (in mm) if itest = 1 #Choose surface (gge = 0) or drip (gge = 1) irigation technology
-}
+####### 2.4 Specification for Optirrig coupling [COMPULSORY] #######
+with_optirrig <- F
+if (with_optirrig) { 
+itest <- 0    # Choose itest = 0 (fixed irrigation dates) or itest=1 (optimized irrigation dates)
+  if (with_cormas) {itest = 0; gge = 0; dosap =0; th_w = 0} #compulsory for collective irrigation in WatASit 
+  else { if (itest == 0) {th_w = 0; gge = 0; dosap = 0}
+         if (itest == 1) {th_w = 100; gge = 0; dosap = 43.2} } #Fill in irrigation dose dosap (in mm) and choose surface (gge = 0) or drip (gge = 1) irigation technology
 
-####### 2.5 Generation of an Optirrig paramfile for each WatASit plots  #######
-list_idParcel <- NULL
-if (with_optirrig) {
-  list_idParcel <- optiParams(dir = 'paramfiles/', 
-                              case_study_name = case_study_name, 
-                              shapefile_name = 'watasit_IrrigatedCerealsOKp3.csv', 
-                              paramDBfile_name = 'paramDBCereals.csv', 
-                              climatefile_name = climate_file_name, jdsim = 1, 
-                              jfsim = dim(input_meteo)[1], 
-                              itest = itest, 
-                              gge = gge, 
-                              dosap = dosap, 
-                              th_w = th_w); 
-  warnings()
-  I1   = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel))
-  I2 = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel)) ;
-}
+list_idParcel <- NULL; # Generation of an Optirrig paramfile for each plot
+list_idParcel <- optiParams(dir = 'paramfiles/', 
+                            case_study_name = case_study_name, 
+                            shapefile_name = 'watasit_IrrigatedCerealsOKp3.csv', 
+                            paramDBfile_name = 'paramDBCereals.csv', 
+                            climatefile_name = climate_file_name, jdsim = 1, 
+                            jfsim = dim(input_meteo)[1], 
+                            itest = itest, 
+                            gge = gge, 
+                            dosap = dosap, 
+                            th_w = th_w); warnings()
 
-####### 2.6 Activate results saving [OPTIONAL] #######
-saveRes <- F #if False -> don't save results if True -> save results
+I1 = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel)) # Initialization of surface irrigation vector
+I2 = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel)) # Initialization of deep irrigation vector
+ }
+
+####### 2.5 Activate results saving #######
+saveRes <- T #if False -> don't save results if True -> save results
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 3. WatASit initialization and J2K initialisation #######
+####### 3. WatASit, Optirrig and J2K initialisation #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
 # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
@@ -165,39 +163,43 @@ setwd(wd)
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
-r <- openModel("COWAT", parcelFile="WatASit[2.0_TT].pcl")
-# just for test purpose
-#r <- openModel("COWAT", parcelFile="WatASit[EMSpaper].pcl")
+r <- openModel(modelName, parcelFile = parcelFile)
 
-####### 3.2 Activation of probes about crops (Facultatif: to get data from cormas) #######
-# probe_names <- c("abandonedCropEvent", "ASAinquiries", "exceedMaxWithdrawalEvent", "qIntake", "unrespectRestrictionEvent", "sumQOfEwaterReleases", "f1IrrigatedPlotNb", "f2irrigatedPlotNb", "f3irrigatedPlotNb", "f5irrigatedPlotNb", "f6irrigatedPlotNb", "f7irrigatedPlotNb", "f10irrigatedPlotNb", "f11irrigatedPlotNb", "f12irrigatedPlotNb","f14irrigatedPlotNb", "f16irrigatedPlotNb")
-# for (i in 1:length(probe_names)) { r <- activateProbe(probe_names[i],"COWAT") }
-
-####### 3.3 Choose of WatASit initial state and time step function (scenarios) #######
+####### 3.2 Choose of WatASit initial state and time step function (scenarios) #######
 # Note that the model is not initialized, we just set the init method..
-r <- setInit("INIT_2017_54x44") # Initialization choice
-r <- setStep("R_goBaselineStep:") # Scenario choice
+r <- setInit(init) # Init
+r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
 
 ####### 3.4 Initialize Cormas model #######
-r <- initSimu()
+r <- initSimu() # initialize the model
+}
+
+####### 3.5 Initialize Optirrig model #######
+if (with_optirrig) {
+  param_frame <- data.frame(); irr <- data.frame()
+  for (i in 1:length(list_idParcel)){
+    #Load params of each plot #######
+    param = read.csv(paste0('paramfiles/paramfiles_',case_study_name,'/',list_idParcel[i],'/parF', list_idParcel[i],'.csv'), header = TRUE,sep=",",dec = ".",stringsAsFactor=FALSE)
+    #Create frame with all parameters #######
+    param_frame <- rbind(param_frame, param)
+  }
 }
 
 ####### 3.5 Initialize J2K model #######
 # On laisse le coupleur lancer JAMS/J2K
-# On aussi peut lancer J2K manuellement de la manière suivante.
+# On peut aussi lancer J2K manuellement de la manière suivante.
 # En étant dans le dossier "superjams" (qui vient de l'archive superjams.zip) :
 # java -jar jams-starter.jar -m data/J2K_cowat/j2k_cowat_buech_ju_couplage.jam -n
 # et hop ça lance juste le modèle, pas d'interface graphique, pas  d'éditeur de modèle. Pour l'arrêter : CTRL+C .
 # S'il s'arrête tout seul au bout de 2 minutes d'inactivité : CTRL+C et on peut le relancer avec la même commande.
 #  "Rfunctions/Rj2k.R".
-
-# kill jams if it's running
-killJ2K()
+# Pour lancer juice directement, en étant dans le dossier "superjams":
+# java -jar juice-starter.jar dans un terminal
+killJ2K() # kill jams if it's running
 setwd(jamsRootPath)
 system2(
   'java',
-  args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/exemple_aspersion_lai.jam', '-n'),
-  # args=c('-jar', 'jams-starter.jar', '-m', 'data/J2K_cowat/cowat.jam', '-n'),
+  args=c('-jar', 'jams-starter.jar', '-m', paste0('data/J2K_cowat/',jams_file_name), '-n'),
   wait=F, stdout=stdoutP, stderr=stderrP
 )
 cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
@@ -206,30 +208,106 @@ setwd(wd)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 4. Initialization of Optirrig model #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (with_optirrig) {
-  param_frame <- data.frame(); irr <- data.frame()
-  for (i in 1:length(list_idParcel)){
-    ####### 4.1 Load params of each plot #######
-    param = read.csv(paste0('paramfiles/paramfiles_',case_study_name,'/',list_idParcel[i],'/parF', list_idParcel[i],'.csv'), header = TRUE,sep=",",dec = ".",stringsAsFactor=FALSE)
-    
-    ####### 4.2 Create frame with all parameters #######
-    param_frame <- rbind(param_frame, param)
-  }
-}
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 5. Run simulation #######
+####### 4. Run simulations #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cat('\nRunning simulation!!!\n')
-####### 5.1 Create results dataFrame #######
-# crop_results <- data.frame(idParcel = NULL, wsi = NULL, lai = NULL, hi = NULL, cropMaturitySignal = NULL)
-# farmers_results <- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL, dosCounter = NULL)
-simQ_mat <- matrix()
+####### 4.1 Create results dataFrame #######
+reachID = as.numeric(j2kGet("reach")[,1])
+Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); Runoff_dt <- Runoff_dt[-1,]
+actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRD1_dt <- actRD1_dt[-1,]
+actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRD2_dt <- actRD2_dt[-1,]
+actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRG1_dt <- actRG1_dt[-1,]
+actRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRG2_dt <- actRG2_dt[-1,]
+inRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRD1_dt <- inRD1_dt[-1,]
+inRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRD2_dt <- inRD2_dt[-1,]
+inRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRG1_dt <- inRG1_dt[-1,]
+inRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRG2_dt <- inRG2_dt[-1,]
+outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRD1_dt <- outRD1_dt[-1,]
+outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRD2_dt <- outRD2_dt[-1,]
+outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRG1_dt <- outRG1_dt[-1,]
+hruID = as.numeric(j2kGet("hru")[,1])
+netRain_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); netRain_dt <- netRain_dt[-1,]
+netSnow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); netSnow_dt <- netSnow_dt[-1,]
+potET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); potET_dt <- potET_dt[-1,]
+actET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actET_dt <- actET_dt[-1,]
+actMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actMPS_dt <- actMPS_dt[-1,]
+actLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actLPS_dt <- actLPS_dt[-1,]
+actDPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actDPS_dt <- actDPS_dt[-1,]
+satMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satMPS_dt <- satMPS_dt[-1,]
+satLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satLPS_dt <- satLPS_dt[-1,]
+satSoil_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satSoil_dt <- satSoil_dt[-1,]
+infiltration_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); infiltration_dt <- infiltration_dt[-1,]
+interflow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); interflow_dt <- interflow_dt[-1,]
+percolation_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); percolation_dt <- percolation_dt[-1,]
+inRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); inRD1_dt <- inRD1_dt[-1,]
+inRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); inRD2_dt <- inRD2_dt[-1,]
+outRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRD1_dt <- outRD1_dt[-1,]
+outRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRD2_dt <- outRD2_dt[-1,]
+outRG1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRG1_dt <- outRG1_dt[-1,]
+outRG2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRG2_dt <- outRG2_dt[-1,]
+irrigationTotal_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); irrigationTotal_dt <- irrigationTotal_dt[-1,]
+####### 4.2 Run models
+if (!any(c(with_cormas, with_optirrig))) {
 
-####### 5.2 Run J2K on previous years until the first #######  #######
+  # Run j2k on the whole simulation period
+  simuProgress <- txtProgressBar(min = 1,
+                                 max = as.numeric(difftime(date_end_irri,date_start_hydro,units='days')),
+                                 style = 3)
+  for (i in 1:as.numeric(difftime(date_end_irri,date_start_hydro,units='days'))){ cat("\n","Running step:",i,"\n"); setTxtProgressBar(simuProgress, i)
+  # Run one step
+  j2kMakeStep()
+  
+  # Get reach variables
+  Runoff = j2kGetOneValueAllReachs("Runoff")
+  actRD1 = j2kGetOneValueAllReachs("actRD1")
+  actRD2 = j2kGetOneValueAllReachs("actRD2")
+  actRG1 = j2kGetOneValueAllReachs("actRG1")
+  actRG2 = j2kGetOneValueAllReachs("actRG2")
+  inRD1 = j2kGetOneValueAllReachs("inRD1")
+  inRD2 = j2kGetOneValueAllReachs("inRD2")
+  inRG1 = j2kGetOneValueAllReachs("inRG1")
+  inRG2 = j2kGetOneValueAllReachs("inRG2")
+  outRD1 = j2kGetOneValueAllReachs("outRD1")
+  outRD2 = j2kGetOneValueAllReachs("outRD2")
+  outRG1 = j2kGetOneValueAllReachs("outRG1")
+  Runoff_i <- as.vector(as.numeric(Runoff[,2]))
+  Runoff_dt <- rbind(Runoff_dt,Runoff_i)
+  actRD1_i <- as.vector(as.numeric(actRD1[,2]))
+  acrRD1_dt <- rbind(actRD1_dt,actRD1_i)
+  actRD2_i <- as.vector(as.numeric(actRD2[,2]))
+  actRD2_dt <- rbind(actRD2_dt,actRD2_i)
+  actRG1_i <- as.vector(as.numeric(actRG1[,2]))
+  actRG1_dt <- rbind(actRG1_dt,actRG1_i)
+  actRG2_i <- as.vector(as.numeric(actRG2[,2]))
+  actRG2_dt <- rbind(actRG2_dt,actRG2_i)
+  inRD1_i <- as.vector(as.numeric(inRD1[,2]))
+  inRD1_dt <- rbind(inRD1_dt,inRD1_i)
+  inRD2_i <- as.vector(as.numeric(inRD2[,2]))
+  inRD2_dt <- rbind(inRD2_dt,inRD2_i)
+  inRG1_i <- as.vector(as.numeric(inRG1[,2]))
+  inRG1_dt <- rbind(inRG1_dt,inRG1_i)
+  inRG2_i <- as.vector(as.numeric(inRG2[,2]))
+  inRG2_dt <- rbind(inRG2_dt,inRG2_i)
+  outRD1_i <- as.vector(as.numeric(outRD1[,2]))
+  outRD1_dt <- rbind(outRD1_dt,outRD1_i)
+  outRD2_i <- as.vector(as.numeric(outRD2[,2]))
+  outRD2_dt <- rbind(outRD2_dt,outRD2_i)
+  outRG1_i <- as.vector(as.numeric(outRG1[,2]))
+  outRG1_dt <- rbind(outRG1_dt,outRD2_i)
+  
+  # Get HRU variables
+  outRD1 = j2kGetOneValueAllHrus("outRD1")
+  
+  }
+  names(Runoff_dt)<-reachID; names(actRD1_dt)<-reachID; names(actRD2_dt)<-reachID; names(actRG1_dt)<-reachID; names(actRG2_dt)<-reachID;
+  names(inRD1_dt)<-reachID; names(inRD2_dt)<-reachID; names(inRG1_dt)<-reachID;names(inRG2_dt)<-reachID;names(outRD1_dt)<-reachID;names(outRD2_dt)<-reachID;
+  names(outRG1_dt)<-reachID
+}
+
+if (with_cormas == T && with_optirrig == F) {}
+if (with_cormas == F && with_optirrig == T) {}
+if (with_cormas && with_optirrig) {
+#J2K on previous years until the first #######
 # cmdResult = j2kMakeStep(optirrig_doy_start - 1)
 cmdResult = j2kMakeStep(365*57)
 reachQTable = j2kGet("reach")
@@ -399,7 +477,8 @@ if (with_optirrig) {
           }#end of if bracket l.265
       }#end of timeloop l.237
 
-
+}
+}#end of with_cormas && with_optirrig conditions
 
 ####### 5.4 Run WatASit-Optirrig-J2K coupled simulation from cormas_doy_start #######
 # for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
@@ -518,7 +597,19 @@ if (with_optirrig) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (saveRes) {
   dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-  write.csv(simQ_mat, paste0("save/simulations_cowat/",case_study_name,"/","simQ_mat.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(inRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(outRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 }
 
 cat('\n')
