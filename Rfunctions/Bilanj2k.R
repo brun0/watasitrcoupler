@@ -178,6 +178,6 @@ plotBalance <- function(storages, inOut, graphName = "water-balance") {
     geom_line(aes(color=Variable, x= day, y=VolInL)) +
     #geom_point(aes(shape=Variable, x= day, y=VolInL)) +
     coord_cartesian(ylim=c(0, 1.5e+11)) +
-    ggsave(paste0(graphName, "hydro-vars-.pdf"), height = 13, width= 19, units ="cm")
+    ggsave(paste0(graphName, "-hydro-vars.pdf"), height = 13, width= 19, units ="cm")
   
 }
