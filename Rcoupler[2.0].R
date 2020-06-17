@@ -10,7 +10,7 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-rm(list=ls());
+rm(list=ls()); start_time <- Sys.time();
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1. R Settings #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,12 +83,12 @@ for (path in requiredFiles) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
-case_study_name <- "Aspres_cowat_10_ok2_j2k_only"
+case_study_name <- "Aspres_cowat_10_ok2_j2k_only_irriModDesactivatedNotSoil_allvar_1989-2013"
 
-date_start_hydro <- as.Date("2010-01-01", "%Y-%m-%d")
+date_start_hydro <- as.Date("1989-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans juice!
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
-date_end_irri <- as.Date("2017-07-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+date_end_irri <- as.Date("2013-12-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
 
 ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
@@ -213,39 +213,42 @@ setwd(wd)
 cat('\nRunning simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
 reachID = as.numeric(j2kGet("reach")[,1])
-Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); Runoff_dt <- Runoff_dt[-1,]
-actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRD1_dt <- actRD1_dt[-1,]
-actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRD2_dt <- actRD2_dt[-1,]
-actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRG1_dt <- actRG1_dt[-1,]
-actRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); actRG2_dt <- actRG2_dt[-1,]
-inRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRD1_dt <- inRD1_dt[-1,]
-inRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRD2_dt <- inRD2_dt[-1,]
-inRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRG1_dt <- inRG1_dt[-1,]
-inRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); inRG2_dt <- inRG2_dt[-1,]
-outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRD1_dt <- outRD1_dt[-1,]
-outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRD2_dt <- outRD2_dt[-1,]
-outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); outRG1_dt <- outRG1_dt[-1,]
+reach_Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_Runoff_dt <- reach_Runoff_dt[-1,]
+reach_actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD1_dt <- reach_actRD1_dt[-1,]
+reach_actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD2_dt <- reach_actRD2_dt[-1,]
+reach_actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG1_dt <- reach_actRG1_dt[-1,]
+reach_actRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG2_dt <- reach_actRG2_dt[-1,]
+reach_inRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRD1_dt <- reach_inRD1_dt[-1,]
+reach_inRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRD2_dt <- reach_inRD2_dt[-1,]
+reach_inRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRG1_dt <- reach_inRG1_dt[-1,]
+reach_inRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRG2_dt <- reach_inRG2_dt[-1,]
+reach_outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD1_dt <- reach_outRD1_dt[-1,]
+reach_outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD2_dt <- reach_outRD2_dt[-1,]
+reach_outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRG1_dt <- reach_outRG1_dt[-1,]
 hruID = as.numeric(j2kGet("hru")[,1])
-netRain_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); netRain_dt <- netRain_dt[-1,]
-netSnow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); netSnow_dt <- netSnow_dt[-1,]
-potET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); potET_dt <- potET_dt[-1,]
-actET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actET_dt <- actET_dt[-1,]
-actMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actMPS_dt <- actMPS_dt[-1,]
-actLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actLPS_dt <- actLPS_dt[-1,]
-actDPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); actDPS_dt <- actDPS_dt[-1,]
-satMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satMPS_dt <- satMPS_dt[-1,]
-satLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satLPS_dt <- satLPS_dt[-1,]
-satSoil_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); satSoil_dt <- satSoil_dt[-1,]
-infiltration_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); infiltration_dt <- infiltration_dt[-1,]
-interflow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); interflow_dt <- interflow_dt[-1,]
-percolation_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); percolation_dt <- percolation_dt[-1,]
-inRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); inRD1_dt <- inRD1_dt[-1,]
-inRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); inRD2_dt <- inRD2_dt[-1,]
-outRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRD1_dt <- outRD1_dt[-1,]
-outRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRD2_dt <- outRD2_dt[-1,]
-outRG1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRG1_dt <- outRG1_dt[-1,]
-outRG2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); outRG2_dt <- outRG2_dt[-1,]
-irrigationTotal_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); irrigationTotal_dt <- irrigationTotal_dt[-1,]
+# hru_actLAI_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actLAI_dt <- hru_actLAI_dt[-1,]
+# hru_CropCoeff_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_CropCoeff_dt <- hru_CropCoeff_dt[-1,]
+# hru_netRain_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_netRain_dt <- hru_netRain_dt[-1,]
+# hru_netSnow_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_netSnow_dt <- hru_netSnow_dt[-1,]
+# hru_potET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_potET_dt <- hru_potET_dt[-1,]
+# hru_actET_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actET_dt <- hru_actET_dt[-1,]
+# hru_actMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actMPS_dt <- hru_actMPS_dt[-1,]
+# hru_actLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actLPS_dt <- hru_actLPS_dt[-1,]
+# hru_actDPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actDPS_dt <- hru_actDPS_dt[-1,]
+# hru_satMPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_satMPS_dt <- hru_satMPS_dt[-1,]
+# hru_satLPS_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_satLPS_dt <- hru_satLPS_dt[-1,]
+# hru_satSoil_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_satSoil_dt <- hru_satSoil_dt[-1,]
+# hru_percolation_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_percolation_dt <- hru_percolation_dt[-1,]
+# hru_inRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_inRD1_dt <- hru_inRD1_dt[-1,]
+# hru_inRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_inRD2_dt <- hru_inRD2_dt[-1,]
+# hru_outRD1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_outRD1_dt <- hru_outRD1_dt[-1,]
+# hru_outRD2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_outRD2_dt <- hru_outRD2_dt[-1,]
+# hru_actRG1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actRG1_dt <- hru_actRG1_dt[-1,]
+# hru_actRG2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actRG2_dt <- hru_actRG2_dt[-1,]
+# hru_outRG1_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_outRG1_dt <- hru_outRG1_dt[-1,]
+# hru_outRG2_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_outRG2_dt <- hru_outRG2_dt[-1,]
+# hru_irrigationTotal_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_irrigationTotal_dt <- hru_irrigationTotal_dt[-1,]
+
 ####### 4.2 Run models
 if (!any(c(with_cormas, with_optirrig))) {
 
@@ -258,50 +261,153 @@ if (!any(c(with_cormas, with_optirrig))) {
   j2kMakeStep()
   
   # Get reach variables
-  Runoff = j2kGetOneValueAllReachs("Runoff")
-  actRD1 = j2kGetOneValueAllReachs("actRD1")
-  actRD2 = j2kGetOneValueAllReachs("actRD2")
-  actRG1 = j2kGetOneValueAllReachs("actRG1")
-  actRG2 = j2kGetOneValueAllReachs("actRG2")
-  inRD1 = j2kGetOneValueAllReachs("inRD1")
-  inRD2 = j2kGetOneValueAllReachs("inRD2")
-  inRG1 = j2kGetOneValueAllReachs("inRG1")
-  inRG2 = j2kGetOneValueAllReachs("inRG2")
-  outRD1 = j2kGetOneValueAllReachs("outRD1")
-  outRD2 = j2kGetOneValueAllReachs("outRD2")
-  outRG1 = j2kGetOneValueAllReachs("outRG1")
-  Runoff_i <- as.vector(as.numeric(Runoff[,2]))
-  Runoff_dt <- rbind(Runoff_dt,Runoff_i)
-  actRD1_i <- as.vector(as.numeric(actRD1[,2]))
-  acrRD1_dt <- rbind(actRD1_dt,actRD1_i)
-  actRD2_i <- as.vector(as.numeric(actRD2[,2]))
-  actRD2_dt <- rbind(actRD2_dt,actRD2_i)
-  actRG1_i <- as.vector(as.numeric(actRG1[,2]))
-  actRG1_dt <- rbind(actRG1_dt,actRG1_i)
-  actRG2_i <- as.vector(as.numeric(actRG2[,2]))
-  actRG2_dt <- rbind(actRG2_dt,actRG2_i)
-  inRD1_i <- as.vector(as.numeric(inRD1[,2]))
-  inRD1_dt <- rbind(inRD1_dt,inRD1_i)
-  inRD2_i <- as.vector(as.numeric(inRD2[,2]))
-  inRD2_dt <- rbind(inRD2_dt,inRD2_i)
-  inRG1_i <- as.vector(as.numeric(inRG1[,2]))
-  inRG1_dt <- rbind(inRG1_dt,inRG1_i)
-  inRG2_i <- as.vector(as.numeric(inRG2[,2]))
-  inRG2_dt <- rbind(inRG2_dt,inRG2_i)
-  outRD1_i <- as.vector(as.numeric(outRD1[,2]))
-  outRD1_dt <- rbind(outRD1_dt,outRD1_i)
-  outRD2_i <- as.vector(as.numeric(outRD2[,2]))
-  outRD2_dt <- rbind(outRD2_dt,outRD2_i)
-  outRG1_i <- as.vector(as.numeric(outRG1[,2]))
-  outRG1_dt <- rbind(outRG1_dt,outRD2_i)
+  reach_Runoff = j2kGetOneValueAllReachs("Runoff")
+  reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
+  reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
   
+  reach_actRD1 = j2kGetOneValueAllReachs("actRD1")
+  reach_actRD1_i <- as.vector(as.numeric(reach_actRD1[,2]))
+  reach_acrRD1_dt <- rbind(reach_actRD1_dt,reach_actRD1_i)
+  
+  reach_actRD2 = j2kGetOneValueAllReachs("actRD2")
+  reach_actRD2_i <- as.vector(as.numeric(reach_actRD2[,2]))
+  reach_actRD2_dt <- rbind(reach_actRD2_dt,reach_actRD2_i)
+  
+  reach_actRG1 = j2kGetOneValueAllReachs("actRG1")
+  reach_actRG1_i <- as.vector(as.numeric(reach_actRG1[,2]))
+  reach_actRG1_dt <- rbind(reach_actRG1_dt,reach_actRG1_i)
+  
+  reach_actRG2 = j2kGetOneValueAllReachs("actRG2")
+  reach_actRG2_i <- as.vector(as.numeric(reach_actRG2[,2]))
+  reach_actRG2_dt <- rbind(reach_actRG2_dt,reach_actRG2_i)
+  
+  reach_inRD1 = j2kGetOneValueAllReachs("inRD1")
+  reach_inRD1_i <- as.vector(as.numeric(reach_inRD1[,2]))
+  reach_inRD1_dt <- rbind(reach_inRD1_dt,reach_inRD1_i)
+
+  reach_inRD2 = j2kGetOneValueAllReachs("inRD2")
+  reach_inRD2_i <- as.vector(as.numeric(reach_inRD2[,2]))
+  reach_inRD2_dt <- rbind(reach_inRD2_dt,reach_inRD2_i)
+
+  reach_inRG1 = j2kGetOneValueAllReachs("inRG1")
+  reach_inRG1_i <- as.vector(as.numeric(reach_inRG1[,2]))
+  reach_inRG1_dt <- rbind(reach_inRG1_dt,reach_inRG1_i)
+
+  reach_inRG2 = j2kGetOneValueAllReachs("inRG2")
+  reach_inRG2_i <- as.vector(as.numeric(reach_inRG2[,2]))
+  reach_inRG2_dt <- rbind(reach_inRG2_dt,reach_inRG2_i)
+
+  reach_outRD1 = j2kGetOneValueAllReachs("outRD1")
+  reach_outRD1_i <- as.vector(as.numeric(reach_outRD1[,2]))
+  reach_outRD1_dt <- rbind(reach_outRD1_dt,reach_outRD1_i)
+
+  reach_outRD2 = j2kGetOneValueAllReachs("outRD2")
+  reach_outRD2_i <- as.vector(as.numeric(reach_outRD2[,2]))
+  reach_outRD2_dt <- rbind(reach_outRD2_dt,reach_outRD2_i)
+
+  reach_outRG1 = j2kGetOneValueAllReachs("outRG1")
+  reach_outRG1_i <- as.vector(as.numeric(reach_outRG1[,2]))
+  reach_outRG1_dt <- rbind(reach_outRG1_dt,reach_outRD2_i)
+
   # Get HRU variables
-  outRD1 = j2kGetOneValueAllHrus("outRD1")
+  # hru_actLAI = j2kGetOneValueAllHrus("actLAI")
+  # hru_actLAI_i <- as.vector(as.numeric(hru_actLAI[,2]))
+  # hru_actLAI_dt <- rbind(hru_actLAI_dt,hru_actLAI_i)
+  # 
+  # hru_CropCoeff = j2kGetOneValueAllHrus("actKC")
+  # hru_CropCoeff_i <- as.vector(as.numeric(hru_CropCoeff[,2]))
+  # hru_CropCoeff_dt <- rbind(hru_CropCoeff_dt,hru_CropCoeff_i)
   
+  # hru_netRain = j2kGetOneValueAllHrus("netrain")
+  # hru_netRain_i <- as.vector(as.numeric(hru_netRain[,2]))
+  # hru_netRain_dt <- rbind(hru_netRain_dt,hru_netRain_i)
+  # 
+  # hru_netSnow = j2kGetOneValueAllHrus("netsnow")
+  # hru_netSnow_i <- as.vector(as.numeric(hru_netSnow[,2]))
+  # hru_netSnow_dt <- rbind(hru_netSnow_dt,hru_netSnow_i)
+  # 
+  # hru_potET = j2kGetOneValueAllHrus("etpot")
+  # hru_potET_i <- as.vector(as.numeric(hru_potET[,2]))
+  # hru_potET_dt <- rbind(hru_potET_dt,hru_potET_i)
+  # 
+  # hru_actET = j2kGetOneValueAllHrus("etact")
+  # hru_actET_i <- as.vector(as.numeric(hru_actET[,2]))
+  # hru_actET_dt <- rbind(hru_actET_dt,hru_actET_i)
+  # 
+  # hru_actMPS = j2kGetOneValueAllHrus("actMPS")
+  # hru_actMPS_i <- as.vector(as.numeric(hru_actMPS[,2]))
+  # hru_actMPS_dt <- rbind(hru_actMPS_dt,hru_actMPS_i)
+  # 
+  # hru_actLPS = j2kGetOneValueAllHrus("actLPS")
+  # hru_actLPS_i <- as.vector(as.numeric(hru_actLPS[,2]))
+  # hru_actLPS_dt <- rbind(hru_actLPS_dt,hru_actLPS_i)
+  # 
+  # hru_actDPS = j2kGetOneValueAllHrus("actDPS")
+  # hru_actDPS_i <- as.vector(as.numeric(hru_actDPS[,2]))
+  # hru_actDPS_dt <- rbind(hru_actDPS_dt,hru_actDPS_i)
+  # 
+  # hru_satMPS = j2kGetOneValueAllHrus("satMPS")
+  # hru_satMPS_i <- as.vector(as.numeric(hru_satMPS[,2]))
+  # hru_satMPS_dt <- rbind(hru_satMPS_dt,hru_satMPS_i)
+  # 
+  # hru_satLPS = j2kGetOneValueAllHrus("satLPS")
+  # hru_satLPS_i <- as.vector(as.numeric(hru_satLPS[,2]))
+  # hru_satLPS_dt <- rbind(hru_satLPS_dt,hru_satLPS_i)
+  # 
+  # hru_satSoil = j2kGetOneValueAllHrus("satSoil")
+  # hru_satSoil_i <- as.vector(as.numeric(hru_satSoil[,2]))
+  # hru_satSoil_dt <- rbind(hru_satSoil_dt,hru_satSoil_i)
+  # 
+  # hru_percolation = j2kGetOneValueAllHrus("Percolation")
+  # hru_percolation_i <- as.vector(as.numeric(hru_percolation[,2]))
+  # hru_percolation_dt <- rbind(hru_percolation_dt,hru_percolation_i)
+  # 
+  # hru_inRD1 = j2kGetOneValueAllHrus("RD1")
+  # hru_inRD1_i <- as.vector(as.numeric(hru_inRD1[,2]))
+  # hru_inRD1_dt <- rbind(hru_inRD1_dt,hru_inRD1_i)
+  # 
+  # hru_inRD2 = j2kGetOneValueAllHrus("RD2")
+  # hru_inRD2_i <- as.vector(as.numeric(hru_inRD2[,2]))
+  # hru_inRD2_dt <- rbind(hru_inRD2_dt,hru_inRD2_i)
+  # 
+  # hru_outRD1 = j2kGetOneValueAllHrus("RD1OUT")
+  # hru_outRD1_i <- as.vector(as.numeric(hru_outRD1[,2]))
+  # hru_outRD1_dt <- rbind(hru_outRD1_dt,hru_outRD1_i)
+  # 
+  # hru_outRD2 = j2kGetOneValueAllHrus("RD2OUT")
+  # hru_outRD2_i <- as.vector(as.numeric(hru_outRD2[,2]))
+  # hru_outRD2_dt <- rbind(hru_outRD2_dt,hru_outRD2_i)
+  # 
+  # hru_actRG1 = j2kGetOneValueAllHrus("actRG1")
+  # hru_actRG1_i <- as.vector(as.numeric(hru_actRG1[,2]))
+  # hru_actRG1_dt <- rbind(hru_actRG1_dt,hru_actRG1_i)
+  # 
+  # hru_actRG2 = j2kGetOneValueAllHrus("actRG2")
+  # hru_actRG2_i <- as.vector(as.numeric(hru_actRG2[,2]))
+  # hru_actRG2_dt <- rbind(hru_actRG2_dt,hru_actRG2_i)
+  # 
+  # hru_outRG1 = j2kGetOneValueAllHrus("RG1OUT")
+  # hru_outRG1_i <- as.vector(as.numeric(hru_outRG1[,2]))
+  # hru_outRG1_dt <- rbind(hru_outRG1_dt,hru_outRG1_i)
+  # 
+  # hru_outRG2 = j2kGetOneValueAllHrus("RG2OUT")
+  # hru_outRG2_i <- as.vector(as.numeric(hru_outRG2[,2]))
+  # hru_outRG2_dt <- rbind(hru_outRG2_dt,hru_outRG2_i)
+  # 
+  # hru_irrigationTotal = j2kGetOneValueAllHrus("irrigationTotal")
+  # hru_irrigationTotal_i <- as.vector(as.numeric(hru_irrigationTotal[,2]))
+  # hru_irrigationTotal_dt <- rbind(hru_irrigationTotal_dt,hru_irrigationTotal_i)
   }
-  names(Runoff_dt)<-reachID; names(actRD1_dt)<-reachID; names(actRD2_dt)<-reachID; names(actRG1_dt)<-reachID; names(actRG2_dt)<-reachID;
-  names(inRD1_dt)<-reachID; names(inRD2_dt)<-reachID; names(inRG1_dt)<-reachID;names(inRG2_dt)<-reachID;names(outRD1_dt)<-reachID;names(outRD2_dt)<-reachID;
-  names(outRG1_dt)<-reachID
+  names(reach_Runoff_dt)<-reachID; names(reach_actRD1_dt)<-reachID; names(reach_actRD2_dt)<-reachID; names(reach_actRG1_dt)<-reachID; names(reach_actRG2_dt)<-reachID;
+  names(reach_inRD1_dt)<-reachID; names(reach_inRD2_dt)<-reachID; names(reach_inRG1_dt)<-reachID;names(reach_inRG2_dt)<-reachID;names(reach_outRD1_dt)<-reachID;names(reach_outRD2_dt)<-reachID;
+  names(reach_outRG1_dt)<-reachID
+  # names(hru_actLAI_dt)<-hruID; names(hru_CropCoeff_dt)<-hruID; 
+  # names(hru_netRain_dt)<-hruID; names(hru_netSnow_dt)<-hruID; names(hru_potET_dt)<-hruID;
+  # names(hru_actET_dt)<-hruID; names(hru_actMPS_dt)<-hruID; names(hru_actLPS_dt)<-hruID; names(hru_actDPS_dt)<-hruID;
+  # names(hru_satMPS_dt)<-hruID; names(hru_satLPS_dt)<-hruID; names(hru_satSoil_dt)<-hruID;
+  # names(hru_percolation_dt)<-hruID; names(hru_inRD1_dt)<-hruID;
+  # names(hru_inRD2_dt)<-hruID; names(hru_outRD1_dt)<-hruID; names(hru_outRD2_dt)<-hruID; names(hru_actRG1_dt)<-hruID; names(hru_outRG1_dt)<-hruID; names(hru_outRG2_dt)<-hruID;
+  # names(hru_irrigationTotal_dt)<-hruID;
 }
 
 if (with_cormas == T && with_optirrig == F) {}
@@ -597,22 +703,45 @@ if (with_optirrig) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (saveRes) {
   dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-  write.csv(Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(inRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(inRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","inRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(outRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","outRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_inRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_inRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  write.csv(reach_outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actLAI_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actLAI_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_CropCoeff_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_CropCoeff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_netRain_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_netRain_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_netSnow_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_netSnow_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_potET_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_potET_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actET_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actET_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actMPS_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actMPS_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actLPS_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actLPS_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actDPS_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actDPS_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_satMPS_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_satMPS_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_satLPS_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_satLPS_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_satSoil_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_satSoil_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_percolation_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_percolation_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_outRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_outRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(hru_irrigationTotal_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_irrigationTotal_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 }
 
 cat('\n')
 j2kStop()
 Sys.sleep(3)
 killJ2K()
+end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
+                                                                "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
