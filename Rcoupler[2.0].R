@@ -85,7 +85,7 @@ for (path in requiredFiles) {
 ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
 case_study_name <- "Aspres_cowat_10_ok2_j2k_only_irriModDesactivatedNotSoil_allvar_1989-2013"
 
-date_start_hydro <- as.Date("1989-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans juice!
+date_start_hydro <- as.Date("1989-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
 date_end_irri <- as.Date("2013-12-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
@@ -98,9 +98,10 @@ str(input_meteo)
 ####### 2.2 Specification for J2K/JAMS #######
 hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
 jams_file_name <- "cowat.jam"
+makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
-with_cormas <- F # choose True (T) or False (F)
+with_cormas <- T # choose True (T) or False (F)
 if (with_cormas) {
 modelName = "COWAT"
 parcelFile = "WatASit[2.0_TT].pcl"
@@ -134,7 +135,7 @@ I2 = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel)) # Initi
  }
 
 ####### 2.5 Activate results saving #######
-saveRes <- T #if False -> don't save results if True -> save results
+saveRes <- F #if False -> don't save results if True -> save results
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -172,7 +173,7 @@ r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
 
 ####### 3.4 Initialize Cormas model #######
 r <- initSimu() # initialize the model
-}
+} # end of with_cormas loop
 
 ####### 3.5 Initialize Optirrig model #######
 if (with_optirrig) {
@@ -183,7 +184,7 @@ if (with_optirrig) {
     #Create frame with all parameters #######
     param_frame <- rbind(param_frame, param)
   }
-}
+} # end of with_optirrig loop
 
 ####### 3.5 Initialize J2K model #######
 # On laisse le coupleur lancer JAMS/J2K
@@ -214,18 +215,18 @@ cat('\nRunning simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
 reachID = as.numeric(j2kGet("reach")[,1])
 reach_Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_Runoff_dt <- reach_Runoff_dt[-1,]
-reach_actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD1_dt <- reach_actRD1_dt[-1,]
-reach_actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD2_dt <- reach_actRD2_dt[-1,]
-reach_actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG1_dt <- reach_actRG1_dt[-1,]
-reach_actRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG2_dt <- reach_actRG2_dt[-1,]
-reach_inRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRD1_dt <- reach_inRD1_dt[-1,]
-reach_inRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRD2_dt <- reach_inRD2_dt[-1,]
-reach_inRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRG1_dt <- reach_inRG1_dt[-1,]
-reach_inRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRG2_dt <- reach_inRG2_dt[-1,]
-reach_outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD1_dt <- reach_outRD1_dt[-1,]
-reach_outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD2_dt <- reach_outRD2_dt[-1,]
-reach_outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRG1_dt <- reach_outRG1_dt[-1,]
-hruID = as.numeric(j2kGet("hru")[,1])
+# reach_actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD1_dt <- reach_actRD1_dt[-1,]
+# reach_actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD2_dt <- reach_actRD2_dt[-1,]
+# reach_actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG1_dt <- reach_actRG1_dt[-1,]
+# reach_actRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG2_dt <- reach_actRG2_dt[-1,]
+# reach_inRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRD1_dt <- reach_inRD1_dt[-1,]
+# reach_inRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRD2_dt <- reach_inRD2_dt[-1,]
+# reach_inRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRG1_dt <- reach_inRG1_dt[-1,]
+# reach_inRG2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_inRG2_dt <- reach_inRG2_dt[-1,]
+# reach_outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD1_dt <- reach_outRD1_dt[-1,]
+# reach_outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD2_dt <- reach_outRD2_dt[-1,]
+# reach_outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRG1_dt <- reach_outRG1_dt[-1,]
+# hruID = as.numeric(j2kGet("hru")[,1])
 # hru_actLAI_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actLAI_dt <- hru_actLAI_dt[-1,]
 # hru_CropCoeff_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_CropCoeff_dt <- hru_CropCoeff_dt[-1,]
 # hru_netRain_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_netRain_dt <- hru_netRain_dt[-1,]
@@ -258,56 +259,75 @@ if (!any(c(with_cormas, with_optirrig))) {
                                  style = 3)
   for (i in 1:as.numeric(difftime(date_end_irri,date_start_hydro,units='days'))){ cat("\n","Running step:",i,"\n"); setTxtProgressBar(simuProgress, i)
   # Run one step
+  if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())}
   j2kMakeStep()
+  if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
   
   # Get reach variables
+  ##TO DO: function to get multiple reach or hru variables
+  # reach_var = c("Runoff", "actRD1", "actRD2", "actRG1", "actRG2", "inRD1", "inRD2", "inRG1", "inRG2", "outRD1", "outRD2", "outRG1")
+  # getReachVariables = function (reach_var = reach_var) {
+  #   for (v in reach_var) {
+  #     var = j2kGetOneValueAllReachs(paste0(reach_var[i]))
+  #     var_i = as.vector(as.numeric(var[,2]))
+  #     var_dt = rbind(var_dt, var_i)
+  #   }
+  # }
+  # OR
+  # j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
+  #   as.data.frame() %>%
+  #   mutate(Runoff = as.numeric(as.character(Runoff))) %>%
+  #   mutate(ID = as.numeric(as.character(ID))) %>%
+  #   tbl_df()
+  
+  ## Manual method
   reach_Runoff = j2kGetOneValueAllReachs("Runoff")
   reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
   reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
-  
-  reach_actRD1 = j2kGetOneValueAllReachs("actRD1")
-  reach_actRD1_i <- as.vector(as.numeric(reach_actRD1[,2]))
-  reach_acrRD1_dt <- rbind(reach_actRD1_dt,reach_actRD1_i)
-  
-  reach_actRD2 = j2kGetOneValueAllReachs("actRD2")
-  reach_actRD2_i <- as.vector(as.numeric(reach_actRD2[,2]))
-  reach_actRD2_dt <- rbind(reach_actRD2_dt,reach_actRD2_i)
-  
-  reach_actRG1 = j2kGetOneValueAllReachs("actRG1")
-  reach_actRG1_i <- as.vector(as.numeric(reach_actRG1[,2]))
-  reach_actRG1_dt <- rbind(reach_actRG1_dt,reach_actRG1_i)
-  
-  reach_actRG2 = j2kGetOneValueAllReachs("actRG2")
-  reach_actRG2_i <- as.vector(as.numeric(reach_actRG2[,2]))
-  reach_actRG2_dt <- rbind(reach_actRG2_dt,reach_actRG2_i)
-  
-  reach_inRD1 = j2kGetOneValueAllReachs("inRD1")
-  reach_inRD1_i <- as.vector(as.numeric(reach_inRD1[,2]))
-  reach_inRD1_dt <- rbind(reach_inRD1_dt,reach_inRD1_i)
 
-  reach_inRD2 = j2kGetOneValueAllReachs("inRD2")
-  reach_inRD2_i <- as.vector(as.numeric(reach_inRD2[,2]))
-  reach_inRD2_dt <- rbind(reach_inRD2_dt,reach_inRD2_i)
-
-  reach_inRG1 = j2kGetOneValueAllReachs("inRG1")
-  reach_inRG1_i <- as.vector(as.numeric(reach_inRG1[,2]))
-  reach_inRG1_dt <- rbind(reach_inRG1_dt,reach_inRG1_i)
-
-  reach_inRG2 = j2kGetOneValueAllReachs("inRG2")
-  reach_inRG2_i <- as.vector(as.numeric(reach_inRG2[,2]))
-  reach_inRG2_dt <- rbind(reach_inRG2_dt,reach_inRG2_i)
-
-  reach_outRD1 = j2kGetOneValueAllReachs("outRD1")
-  reach_outRD1_i <- as.vector(as.numeric(reach_outRD1[,2]))
-  reach_outRD1_dt <- rbind(reach_outRD1_dt,reach_outRD1_i)
-
-  reach_outRD2 = j2kGetOneValueAllReachs("outRD2")
-  reach_outRD2_i <- as.vector(as.numeric(reach_outRD2[,2]))
-  reach_outRD2_dt <- rbind(reach_outRD2_dt,reach_outRD2_i)
-
-  reach_outRG1 = j2kGetOneValueAllReachs("outRG1")
-  reach_outRG1_i <- as.vector(as.numeric(reach_outRG1[,2]))
-  reach_outRG1_dt <- rbind(reach_outRG1_dt,reach_outRD2_i)
+  # reach_actRD1 = j2kGetOneValueAllReachs("actRD1")
+  # reach_actRD1_i <- as.vector(as.numeric(reach_actRD1[,2]))
+  # reach_acrRD1_dt <- rbind(reach_actRD1_dt,reach_actRD1_i)
+  # 
+  # reach_actRD2 = j2kGetOneValueAllReachs("actRD2")
+  # reach_actRD2_i <- as.vector(as.numeric(reach_actRD2[,2]))
+  # reach_actRD2_dt <- rbind(reach_actRD2_dt,reach_actRD2_i)
+  # 
+  # reach_actRG1 = j2kGetOneValueAllReachs("actRG1")
+  # reach_actRG1_i <- as.vector(as.numeric(reach_actRG1[,2]))
+  # reach_actRG1_dt <- rbind(reach_actRG1_dt,reach_actRG1_i)
+  # 
+  # reach_actRG2 = j2kGetOneValueAllReachs("actRG2")
+  # reach_actRG2_i <- as.vector(as.numeric(reach_actRG2[,2]))
+  # reach_actRG2_dt <- rbind(reach_actRG2_dt,reach_actRG2_i)
+  # 
+  # reach_inRD1 = j2kGetOneValueAllReachs("inRD1")
+  # reach_inRD1_i <- as.vector(as.numeric(reach_inRD1[,2]))
+  # reach_inRD1_dt <- rbind(reach_inRD1_dt,reach_inRD1_i)
+  # 
+  # reach_inRD2 = j2kGetOneValueAllReachs("inRD2")
+  # reach_inRD2_i <- as.vector(as.numeric(reach_inRD2[,2]))
+  # reach_inRD2_dt <- rbind(reach_inRD2_dt,reach_inRD2_i)
+  # 
+  # reach_inRG1 = j2kGetOneValueAllReachs("inRG1")
+  # reach_inRG1_i <- as.vector(as.numeric(reach_inRG1[,2]))
+  # reach_inRG1_dt <- rbind(reach_inRG1_dt,reach_inRG1_i)
+  # 
+  # reach_inRG2 = j2kGetOneValueAllReachs("inRG2")
+  # reach_inRG2_i <- as.vector(as.numeric(reach_inRG2[,2]))
+  # reach_inRG2_dt <- rbind(reach_inRG2_dt,reach_inRG2_i)
+  # 
+  # reach_outRD1 = j2kGetOneValueAllReachs("outRD1")
+  # reach_outRD1_i <- as.vector(as.numeric(reach_outRD1[,2]))
+  # reach_outRD1_dt <- rbind(reach_outRD1_dt,reach_outRD1_i)
+  # 
+  # reach_outRD2 = j2kGetOneValueAllReachs("outRD2")
+  # reach_outRD2_i <- as.vector(as.numeric(reach_outRD2[,2]))
+  # reach_outRD2_dt <- rbind(reach_outRD2_dt,reach_outRD2_i)
+  # 
+  # reach_outRG1 = j2kGetOneValueAllReachs("outRG1")
+  # reach_outRG1_i <- as.vector(as.numeric(reach_outRG1[,2]))
+  # reach_outRG1_dt <- rbind(reach_outRG1_dt,reach_outRD2_i)
 
   # Get HRU variables
   # hru_actLAI = j2kGetOneValueAllHrus("actLAI")
@@ -397,10 +417,10 @@ if (!any(c(with_cormas, with_optirrig))) {
   # hru_irrigationTotal = j2kGetOneValueAllHrus("irrigationTotal")
   # hru_irrigationTotal_i <- as.vector(as.numeric(hru_irrigationTotal[,2]))
   # hru_irrigationTotal_dt <- rbind(hru_irrigationTotal_dt,hru_irrigationTotal_i)
-  }
-  names(reach_Runoff_dt)<-reachID; names(reach_actRD1_dt)<-reachID; names(reach_actRD2_dt)<-reachID; names(reach_actRG1_dt)<-reachID; names(reach_actRG2_dt)<-reachID;
-  names(reach_inRD1_dt)<-reachID; names(reach_inRD2_dt)<-reachID; names(reach_inRG1_dt)<-reachID;names(reach_inRG2_dt)<-reachID;names(reach_outRD1_dt)<-reachID;names(reach_outRD2_dt)<-reachID;
-  names(reach_outRG1_dt)<-reachID
+  } # end of time loop
+  names(reach_Runoff_dt)<-reachID #; names(reach_actRD1_dt)<-reachID; names(reach_actRD2_dt)<-reachID; names(reach_actRG1_dt)<-reachID; names(reach_actRG2_dt)<-reachID;
+  # names(reach_inRD1_dt)<-reachID; names(reach_inRD2_dt)<-reachID; names(reach_inRG1_dt)<-reachID;names(reach_inRG2_dt)<-reachID;names(reach_outRD1_dt)<-reachID;names(reach_outRD2_dt)<-reachID;
+  # names(reach_outRG1_dt)<-reachID
   # names(hru_actLAI_dt)<-hruID; names(hru_CropCoeff_dt)<-hruID; 
   # names(hru_netRain_dt)<-hruID; names(hru_netSnow_dt)<-hruID; names(hru_potET_dt)<-hruID;
   # names(hru_actET_dt)<-hruID; names(hru_actMPS_dt)<-hruID; names(hru_actLPS_dt)<-hruID; names(hru_actDPS_dt)<-hruID;
@@ -410,8 +430,69 @@ if (!any(c(with_cormas, with_optirrig))) {
   # names(hru_irrigationTotal_dt)<-hruID;
 }
 
-if (with_cormas == T && with_optirrig == F) {}
+
+
+
+###!!!Ci-dessous: WorkInProgress: case j2k and WatASit only
+if (with_cormas == T && with_optirrig == F) { 
+  simuProgress <- txtProgressBar(min = 1,
+                                 max = as.numeric(difftime(date_end_irri,date_start_hydro,units='days')),
+                                 style = 3)
+  
+    for (i in 1:as.numeric(difftime(date_end_irri,date_start_hydro,units='days'))){ 
+    cat("\n","Running step:",i,"\n"); setTxtProgressBar(simuProgress, i)
+        
+        ####### A. Getting flow from j2k #######
+        # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
+        reach_Runoff = j2kGetOneValueAllReachs("Runoff")
+        reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
+        reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
+        
+        ####### B. Updating flows in Cormas #######
+        # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
+        reachsToUpdate <- cormasRiverReachs %>%
+         rename(cormasId = id,
+                 ID = idReach) %>%
+          inner_join(j2kReachRunoff, by = "ID") %>%
+          mutate(q = ( Runoff / 1000 ) / (24 * 3600) ) # conversion en m3.s
+        setAttributesOfEntities("q", "RiverReach",
+                                reachsToUpdate$cormasId,
+                                reachsToUpdate$q)
+        
+        ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
+        if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
+            irriDailyDose <-RunWatASit(daily_step = i, input_meteo = input_meteo)
+        }
+        
+        ####### C. Set the irrigation in J2K #######
+        j2kSet("surface", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+        # récupérés ci-dessus depuis cormas
+        
+        ####### D. Run new j2k daily step #######
+        if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())} # To calculate the water balance
+        j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
+        if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
+        # on peut aussi faire N steps comme ça
+        #j2kMakeStep(20)
+        # cette fonction est sensée récupérer les valeurs de tous les attributs pour tous les reachs
+        # mais pour l'instant ça récupère juste actRD1
+        #reachQTable = j2kGet("reach")
+        # et celle là récupère juste netrain
+        #hruQTable = j2kGet("hru")
+        # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
+        #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
+        #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
+        
+    } # End of time loop
+  
+names(reach_Runoff_dt)<-reachID
+} # End of (with_cormas == T and with_optirrig == F) loop
+  
+  
+###!!!Ci-dessous: TODO: case j2k and WatASit only  
 if (with_cormas == F && with_optirrig == T) {}
+
+###!!!Ci-dessous: TODO: case j2k and WatASit only 
 if (with_cormas && with_optirrig) {
 #J2K on previous years until the first #######
 # cmdResult = j2kMakeStep(optirrig_doy_start - 1)
@@ -698,23 +779,47 @@ if (with_optirrig) {
   # simQ_mat[day] <- dailySimQAtGauge
 # }
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 6. Save simulation results #######
+####### 6. Make water balance [Optionnal] #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if (makeWaterBalance){
+  storages <- storedWater %>% tbl_df()
+  inOut <- inOutWater %>% tbl_df()
+  waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
+  waterSummary <- waterSummary %>% mutate(storage = mps + lps + dps + storedSnow + intercStorage + 
+                                            rg1 + rg2 +
+                                            reachRD1 + reachRD2 + reachRG1 + reachRG2) %>%
+    mutate(inWater = rain + snow) %>%
+    mutate(outFlow = outRunoff) %>%
+    mutate(outET = eTR) %>%
+    mutate(balance = inWater - outFlow - outET) %>%
+    mutate(storageNextDay = lead(storage)) %>%
+    mutate(massConservation = storageNextDay - (storage + balance)) %>%
+    mutate(deltaStock = storageNextDay - storage)
+  write.csv(waterSummary, "newWaterSummary.csv", row.names = F)
+  plotBalance(storedWater,inOutWater, "waterBalance")
+}
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+####### 7. Save simulation results #######
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#TODO: a function to export savings.
 if (saveRes) {
   dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
   write.csv(reach_Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_inRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_inRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-  write.csv(reach_outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_actRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_inRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_inRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_inRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_inRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_inRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_outRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_outRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # write.csv(reach_outRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_outRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(hru_actLAI_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_actLAI_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(hru_CropCoeff_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_CropCoeff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(hru_netRain_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_netRain_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
@@ -738,7 +843,6 @@ if (saveRes) {
   # write.csv(hru_outRG2_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_outRG2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(hru_irrigationTotal_dt, paste0("save/simulations_cowat/",case_study_name,"/","hru_irrigationTotal_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 }
-
 cat('\n')
 j2kStop()
 Sys.sleep(3)
