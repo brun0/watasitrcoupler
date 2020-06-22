@@ -56,7 +56,8 @@ j2kWaterStorage <- function() {
 
 # Find catchment outlet assuming there are no dams nor lakes and assuming there is 
 # only one outlet
-catchmentOutletID <- function(reachParFile = "reach.par", modelFolder = "J2K_cowat") {
+catchmentOutletID <- function(modelFolder = "J2K_cowat") {
+  reachParFile <- reachTopologyFileName
   reachsFile <- file.path(jamsRootPath, "data", modelFolder, "parameter",reachParFile)
   if(!file.exists(reachsFile)) {
     stop(paste("RUN STOPPED: file ",

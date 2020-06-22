@@ -88,7 +88,8 @@ case_study_name <- "Aspres_cowat_10_ok2_j2k_only_irriModDesactivatedNotSoil_allv
 date_start_hydro <- as.Date("1989-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
-date_end_irri <- as.Date("2013-12-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+date_end_simu <- as.Date("1991-12-31", "%Y-%m-%d")
+date_end_irri <- date_end_simu; doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
 
 ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
@@ -98,10 +99,11 @@ str(input_meteo)
 ####### 2.2 Specification for J2K/JAMS #######
 hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
 jams_file_name <- "cowat.jam"
+reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
 makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
-with_cormas <- T # choose True (T) or False (F)
+with_cormas <- F# choose True (T) or False (F)
 if (with_cormas) {
 modelName = "COWAT"
 parcelFile = "WatASit[2.0_TT].pcl"
@@ -213,8 +215,8 @@ setwd(wd)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cat('\nRunning simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
-reachID = as.numeric(j2kGet("reach")[,1])
-reach_Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_Runoff_dt <- reach_Runoff_dt[-1,]
+#reachID = as.numeric(j2kGet("reach")[,1])
+#reach_Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_Runoff_dt <- reach_Runoff_dt[-1,]
 # reach_actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD1_dt <- reach_actRD1_dt[-1,]
 # reach_actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD2_dt <- reach_actRD2_dt[-1,]
 # reach_actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG1_dt <- reach_actRG1_dt[-1,]
@@ -281,9 +283,9 @@ if (!any(c(with_cormas, with_optirrig))) {
   #   tbl_df()
   
   ## Manual method
-  reach_Runoff = j2kGetOneValueAllReachs("Runoff")
-  reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
-  reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
+  #reach_Runoff = j2kGetOneValueAllReachs("Runoff")
+  #reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
+  #reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
 
   # reach_actRD1 = j2kGetOneValueAllReachs("actRD1")
   # reach_actRD1_i <- as.vector(as.numeric(reach_actRD1[,2]))
@@ -418,7 +420,7 @@ if (!any(c(with_cormas, with_optirrig))) {
   # hru_irrigationTotal_i <- as.vector(as.numeric(hru_irrigationTotal[,2]))
   # hru_irrigationTotal_dt <- rbind(hru_irrigationTotal_dt,hru_irrigationTotal_i)
   } # end of time loop
-  names(reach_Runoff_dt)<-reachID #; names(reach_actRD1_dt)<-reachID; names(reach_actRD2_dt)<-reachID; names(reach_actRG1_dt)<-reachID; names(reach_actRG2_dt)<-reachID;
+  #names(reach_Runoff_dt)<-reachID #; names(reach_actRD1_dt)<-reachID; names(reach_actRD2_dt)<-reachID; names(reach_actRG1_dt)<-reachID; names(reach_actRG2_dt)<-reachID;
   # names(reach_inRD1_dt)<-reachID; names(reach_inRD2_dt)<-reachID; names(reach_inRG1_dt)<-reachID;names(reach_inRG2_dt)<-reachID;names(reach_outRD1_dt)<-reachID;names(reach_outRD2_dt)<-reachID;
   # names(reach_outRG1_dt)<-reachID
   # names(hru_actLAI_dt)<-hruID; names(hru_CropCoeff_dt)<-hruID; 
@@ -444,9 +446,9 @@ if (with_cormas == T && with_optirrig == F) {
         
         ####### A. Getting flow from j2k #######
         # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
-        reach_Runoff = j2kGetOneValueAllReachs("Runoff")
-        reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
-        reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
+        #reach_Runoff = j2kGetOneValueAllReachs("Runoff")
+        #reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
+        #reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
         
         ####### B. Updating flows in Cormas #######
         # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
@@ -485,7 +487,7 @@ if (with_cormas == T && with_optirrig == F) {
         
     } # End of time loop
   
-names(reach_Runoff_dt)<-reachID
+#names(reach_Runoff_dt)<-reachID
 } # End of (with_cormas == T and with_optirrig == F) loop
   
   
@@ -798,7 +800,7 @@ if (makeWaterBalance){
     mutate(massConservation = storageNextDay - (storage + balance)) %>%
     mutate(deltaStock = storageNextDay - storage)
   write.csv(waterSummary, "newWaterSummary.csv", row.names = F)
-  plotBalance(storedWater,inOutWater, "waterBalance")
+  plotBalance(storedWater,inOutWater, "waterBalanceTest")
 }
 
 
@@ -808,7 +810,7 @@ if (makeWaterBalance){
 #TODO: a function to export savings.
 if (saveRes) {
   dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-  write.csv(reach_Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  #write.csv(reach_Runoff_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_Runoff_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(reach_actRD1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(reach_actRD2_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRD2_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
   # write.csv(reach_actRG1_dt, paste0("save/simulations_cowat/",case_study_name,"/","reach_actRG1_dt.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
