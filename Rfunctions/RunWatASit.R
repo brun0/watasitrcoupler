@@ -27,10 +27,11 @@ RunWatASit = function(daily_step, input_meteo) {
   ####### C Get the farm plots irrigations by parcel ID #######
   fp_idExpl <- getAttributesOfEntities("idExpl","FarmPlot")
   fp_irri <- getAttributesOfEntities("irriDailyDose","FarmPlot")
-  fp_irri_df <- data.frame(fp_irri, fp_idExpl); fp_irri_df$day = daily_step;
-  
+  fp_irri_df <- data.frame(fp_irri, fp_idExpl)
+  fp_irri_df$day = daily_step
+
+  return(fp_irri_df[,1:2])  
   }
-  
-  return(fp_irri_df[,1:2])
+
 
   
