@@ -88,7 +88,7 @@ case_study_name <- "Aspres_cowat_10_ok2_j2k_only_irriModDesactivatedNotSoil_allv
 date_start_hydro <- as.Date("1989-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
-date_end_irri <- as.Date("2013-12-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+date_end_irri <- as.Date("1991-12-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
 
 ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
@@ -101,7 +101,7 @@ jams_file_name <- "cowat.jam"
 makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
-with_cormas <- T # choose True (T) or False (F)
+with_cormas <- F # choose True (T) or False (F)
 if (with_cormas) {
 modelName = "COWAT"
 parcelFile = "WatASit[2.0_TT].pcl"
