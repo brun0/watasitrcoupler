@@ -16,6 +16,16 @@ genDictElement <- function(name, value) {
     }
 }
 
+genTabElement <- function(value) {
+  strValue = as.character(value)
+  if (startsWith(strValue, '[') || startsWith(strValue, '{')) {
+    return(paste0('"', value))
+  }
+  else {
+    return(paste0('"', value, '"'))
+  }
+}
+
 genJsonDict <- function(names, values) {
     result = "{\n"
     args <- mapply(genDictElement, names, values)
@@ -24,14 +34,29 @@ genJsonDict <- function(names, values) {
     return(result)
 }
 
+genJsonTbl <- function(values) {
+  result = "[\n"
+  args <- mapply(genTabElement, values)
+  result <- paste0(result, paste0(c(args), collapse=",\n"))
+  result <- paste0(result, "\n]")
+  return(result)
+}
+
 j2kDictListToDataframe <- function(str) {
     js = fromJSON(str)
     js = lapply(js, function(x) {
         x[sapply(x, is.null)] <- NA
         unlist(x)
     })
-    df = do.call("rbind", js)
+    df = do.call("rbind", js) %>%
+      as.data.frame(stringsAsFactors = F) %>% 
+      mutate_all(as.numeric)
     return(df);
+}
+
+j2kDictToDataframe <- function(str) {
+  js = fromJSON(str)
+  return(t(js) %>% as.data.frame())
 }
 
 askJ2K <- function(argNames = c(), argValues = c(), ip, port) {
@@ -88,10 +113,11 @@ j2kGet <- function(what, ip="localhost", port="9999") {
     return(df)
 }
 
-# get one attribute for all hrus
+# get attributes for all hrus
 # what can be "netrain", "etpot"...
-j2kGetOneValueAllHrus <- function(what, ip="localhost", port="9999") {
-    res = askJ2K(c("command", "key"), c("getHru", what), ip, port)
+
+j2kGetValuesAllHrus <- function(attributes, ip="localhost", port="9999") {
+    res = askJ2K(c("command", "keys"), c("getHru", genJsonTbl(attributes)), ip, port)
     if (startsWith(res[[2]], '[')) {
         df = j2kDictListToDataframe(res[[2]])
         return(df)
@@ -100,27 +126,74 @@ j2kGetOneValueAllHrus <- function(what, ip="localhost", port="9999") {
         cat(res[[2]], '\n')
         return(NULL)
     }
+}
+
+# For backwards compatibility..
+j2kGetOneValueAllHrus <- function(attribute, ip="localhost", port="9999") {
+  return(j2kValuesAllHrus(attributes = attribute, ip="localhost", port="9999"))
+}
+
+# Get values of attributes sumed on all HRUS
+j2kSumedValuesAllHrus <- function(attributes, ip="localhost", port="9999") {
+  res = askJ2K(c("command", "keys"), c("getHruSum", genJsonTbl(attributes)), ip, port)
+  if (startsWith(res[[2]], '{')) {
+    df = j2kDictToDataframe(res[[2]])
+    return(df)
+  } else {
+    cat(res[[2]], '\n')
+    return(NULL)
+  }
 }
 
 # get one attribute for all reachs
 # what can be "actRD1", "Runoff"...
-j2kGetOneValueAllReachs <- function(what, ip="localhost", port="9999") {
-    res = askJ2K(c("command", "key"), c("getReach", what), ip, port)
-    if (startsWith(res[[2]], '[')) {
-        df = j2kDictListToDataframe(res[[2]])
-        return(df)
-    }
-    else {
-        cat(res[[2]], '\n')
-        return(NULL)
-    }
+j2kGetValuesAllReachs <- function(attributes, ip="localhost", port="9999") {
+  res = askJ2K(c("command", "keys"), c("getReach", genJsonTbl(attributes)), ip, port)
+  if (startsWith(res[[2]], '[')) {
+    df = j2kDictListToDataframe(res[[2]])
+    return(df)
+  } else {
+    cat(res[[2]], '\n')
+    return(NULL)
+  }
 }
 
-# get HRU bilan
-j2kBilan <- function(ip="localhost", port="9999") {
-    res = askJ2K(c("command"), c("bilan"), ip, port)
-    return(as.numeric(res[[2]]))
+# For backwards compatibility..
+j2kGetOneValueAllReachs <- function(attribute, ip="localhost", port="9999") {
+  return(j2kGetValuesAllReachs(attributes = attribute, ip="localhost", port="9999"))
 }
+
+# Get values of attributes sumed on all HRUS
+j2kSumedValuesAllReachs <- function(attributes, ip="localhost", port="9999") {
+  res = askJ2K(c("command", "keys"), c("getReachSum", genJsonTbl(attributes)), ip, port)
+  if (startsWith(res[[2]], '{')) {
+    df = j2kDictToDataframe(res[[2]])
+    return(df)
+  } else {
+    cat(res[[2]], '\n')
+    return(NULL)
+  }
+}
+
+# get aggregated values for water balance
+j2kWaterBalanceStorages <- function(ip="localhost", port="9999") {
+  res = askJ2K(c("command"), c("getHruStorage"), ip, port)
+  hruStorage <- as.numeric(res[[2]])
+  res = askJ2K(c("command"), c("getReachStorage"), ip, port)
+  reachStorage <- as.numeric(res[[2]])
+  return(data.frame(hruStorage, reachStorage))
+}
+
+j2kWaterBalanceFlows <- function(ip="localhost", port="9999") {
+  runoff <- NA
+  res = askJ2K(c("command"), c("getCatchmentRunoff"), ip, port)
+  runoff <- as.numeric(res[[2]])
+  #runoff <- res[[2]]
+  hrusInOut <- NA
+  hrusInOut <- j2kSumedValuesAllHrus(c("rain","snow","etact"))
+  return(data.frame(runoff, hrusInOut))
+}
+
 
 ############## UTILS ###############
 

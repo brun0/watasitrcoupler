@@ -12,6 +12,7 @@
 
 
 rm(list=ls());
+reachTopologyFileName <- "reach.par"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1. R Settings #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -227,7 +228,8 @@ if (makeWaterBalance) {
                                  style = 3)
   for (t in 1:(cormas_doy_start - 1)){
     setTxtProgressBar(preSimuProgress, t)
-    storedWater <- rbind(storedWater, j2kWaterStorage())
+    #storedWater <- rbind(storedWater, j2kWaterStorage())
+    storedWater <- rbind(storedWater, j2kWaterBalanceStorage())
     j2kMakeStep()
     inOutWater <- rbind(inOutWater, j2kInOutWater())
   } 
@@ -373,7 +375,7 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
     }
   }
   ####### 5.4.5 Set the irrigation in J2K #######
-  j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+  #j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
                                               # récupérés ci-dessus depuis cormas
 
   # set actLai dans J2K for test (commented by Bruno B.)
@@ -385,7 +387,8 @@ for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
   ####### 5.4.6 Simulate the new state of watershed with J2K #######
   # cette fonction fait un step si on lui donne pas de paramètre
   if (makeWaterBalance) {
-    storedWater <- rbind(storedWater, j2kWaterStorage())
+    #storedWater <- rbind(storedWater, j2kWaterStorage())
+    storedWater <- rbind(storedWater, j2kWaterBalanceStorage())
     j2kMakeStep()
     inOutWater <- rbind(inOutWater, j2kInOutWater())    
   } else{

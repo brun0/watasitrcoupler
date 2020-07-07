@@ -88,63 +88,50 @@ case_study_name <- "Aspres"
 date_start_sim <- as.Date("2016-10-15", "%Y-%m-%d"); date_end_sim <- as.Date("2017-07-31", "%Y-%m-%d")
 # year_sim <- 2017
 
-####### 2.1 Importation of meteo data input  #######
+####### 2.1 Specification for WatASit coupling #######
+cormas_sim_day_nb <- 30 * 4
+cormas_doy_start <- 198 # day of the year of first step in cormas
+
+####### 2.2 Specification for Optirrig coupling #######
+with_optirrig <- F
+optirrig_doy_start <- NA # day of the year of first step in Optirrig
+
+####### 2.3 Specification for J2K coupling #######
+J2k_doy_start <- 1 # day of the year of first step in J2K
+makeWaterBalance <- T
+if (makeWaterBalance) {
+  storedWater <- NULL
+  inOutWater <-NULL
+}
+
+####### 2.4 Importation of meteo data input  #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
 input_meteo <- computeClimateInput(climate_file_name, date_start_sim, date_end_sim)
 # input_meteo = read.csv(file.path(script.dirname, 'climatefile/climate_buech_2017.csv'), header=TRUE, sep=",", dec=".", stringsAsFactors=FALSE)
 # meteo = input_meteo[which(input_meteo$year == year_sim),]
 str(input_meteo)
 
-####### 2.2 Specification for J2K coupling #######
-J2k_doy_start <- 1 # day of the year of first step in J2K
-
-####### 2.3 Specification for WatASit coupling #######
-with_cormas <- T
-if (with_cormas) {
-cormas_doy_start <- 198 # day of the year of first step in cormas
-cormas_sim_day_nb <- 30 * 4
-scenario <- "Baseline" #Choose Baseline (without irrigation time slot) or Alternative (with irrigation time slot)
-}
-
-####### 2.4 Specification for Optirrig coupling #######
-with_optirrig <- T
-if (with_optirrig) {
-optirrig_doy_start <- 1 # day of the year of first step in Optirrig
-itest <- 0    #Choose fixed irrigation dates (itest = 0) or optimized irrigation dates (itest=1)
-if (with_cormas) {itest = 0; gge = 0; dosap =0; th_w = 0} #compulsory for collective irrigation in WatASit 
-else { 
-  if (itest == 0) {th_w = 0; gge = 0; dosap = 0}
-  if (itest == 1) {th_w = 100; gge = 0; dosap = 43.2} } #Fill in irrigation dose dosap (in mm) if itest = 1 #Choose surface (gge = 0) or drip (gge = 1) irigation technology
-}
-
 ####### 2.5 Generation of an Optirrig paramfile for each WatASit plots  #######
 list_idParcel <- NULL
 if (with_optirrig) {
-  list_idParcel <- optiParams(dir = 'paramfiles/', 
-                              case_study_name = case_study_name, 
-                              shapefile_name = 'watasit_IrrigatedCerealsOKp3.csv', 
-                              paramDBfile_name = 'paramDBCereals.csv', 
-                              climatefile_name = climate_file_name, jdsim = 1, 
-                              jfsim = dim(input_meteo)[1], 
-                              itest = itest, 
-                              gge = gge, 
-                              dosap = dosap, 
-                              th_w = th_w); 
-  warnings()
-  I1   = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel))
-  I2 = matrix(0, nrow = dim(input_meteo)[1], ncol = length(list_idParcel)) ;
+  list_idParcel <- optiParams(
+    paste0(script.dirname, 'paramfiles/'),
+    case_study_name,
+    'watasit.csv',
+    'paramDB.csv',
+    'climate_buech_2017.csv',
+    year_sim,
+    1,
+    365,
+    'irrig_file_watasit.dat'
+  )
 }
-
-####### 2.6 Activate results saving [OPTIONAL] #######
-saveRes <- F #if False -> don't save results if True -> save results
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3. WatASit initialization and J2K initialisation #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
 # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
-if (with_cormas){
 cormasInVW7dir = cormasRootPath
 setwd(cormasInVW7dir)
 if (!isCormasListening()) {
@@ -180,7 +167,6 @@ r <- setStep("R_goBaselineStep:") # Scenario choice
 
 ####### 3.4 Initialize Cormas model #######
 r <- initSimu()
-}
 
 ####### 3.5 Initialize J2K model #######
 # On laisse le coupleur lancer JAMS/J2K
@@ -204,322 +190,234 @@ cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...'
 Sys.sleep(3)
 setwd(wd)
 
-
+cat('\nRunning simulation!!!\n')
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 4. Initialization of Optirrig model #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (with_optirrig) {
-  param_frame <- data.frame(); irr <- data.frame()
-  for (i in 1:length(list_idParcel)){
-    ####### 4.1 Load params of each plot #######
-    param = read.csv(paste0('paramfiles/paramfiles_',case_study_name,'/',list_idParcel[i],'/parF', list_idParcel[i],'.csv'), header = TRUE,sep=",",dec = ".",stringsAsFactor=FALSE)
-    
-    ####### 4.2 Create frame with all parameters #######
-    param_frame <- rbind(param_frame, param)
-  }
+  #param_frame <- data.frame(); irr <- data.frame()
+  #for (i in 1:length(list_idParcel)){
+  #  ####### 4.1 Load params of each plot #######
+  #  param = read.csv(paste0(wd,'paramfiles/paramfiles_',case_study_name,'/',list_idParcel[i],'/parF', list_idParcel[i],'.csv'), header = TRUE,sep=",",dec = ".",stringsAsFactor=FALSE)
+  #
+  #  ####### 4.2 Create frame with all parameters #######
+  #  param_frame <- rbind(param_frame, param)
+  #
+  #  ####### 4.3 Create frame with all irrigation vectors  #######
+  # I1   = as.vector(meteo$day) ; I1[] = 0; I2 = I1 # I1 is surface irrigation and I2  I2 is deep buried irrigation (I2 is null)
+  # irr = rbind(irr,I1)
+  #}
 }
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 5. Run simulation #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cat('\nRunning simulation!!!\n')
+
 ####### 5.1 Create results dataFrame #######
-# crop_results <- data.frame(idParcel = NULL, wsi = NULL, lai = NULL, hi = NULL, cropMaturitySignal = NULL)
-# farmers_results <- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL, dosCounter = NULL)
+crop_results <- data.frame(idParcel = NULL, wsi = NULL, lai = NULL, hi = NULL, cropMaturitySignal = NULL)
+farmers_results <- data.frame(id = NULL, day = NULL, nbFloodPlotAffToday = NULL, dosCounter = NULL)
 simQ_mat <- matrix()
 
-####### 5.2 Run J2K on previous years until the first #######  #######
-# cmdResult = j2kMakeStep(optirrig_doy_start - 1)
-cmdResult = j2kMakeStep(365*57)
-reachQTable = j2kGet("reach")
-
-####### 5.3 Run Optirrig-WatASit-J2K simulations #######
-if (with_optirrig) {
-  cat('\nStarting coupled simulation simulation!!!\n')
-  simuProgress <- txtProgressBar(min = cormas_doy_start,
-                                 max = cormas_doy_start + cormas_sim_day_nb,
+####### 5.2 Run J2K from 1 DOY to DOY 120 (1er mai) to simulate the new state of the watershed before the irrigation campaign #######  #######
+cat('\nStarting pre-simulation with j2K!!!\n')
+if (makeWaterBalance) {
+  cat('\nComputing each time step water balance may take time!!!\n')
+  preSimuProgress <- txtProgressBar(min = 0,
+                                 max = cormas_doy_start,
                                  style = 3)
-  for (day in optirrig_doy_start:((cormas_doy_start + cormas_sim_day_nb))){ setTxtProgressBar(simuProgress, day)
+  for (t in 1:(cormas_doy_start - 1)){
+    setTxtProgressBar(preSimuProgress, t)
+    storedWater <- rbind(storedWater, j2kWaterStorage())
+    j2kMakeStep()
+    inOutWater <- rbind(inOutWater, j2kInOutWater())
+  } 
+} else {
+  cmdResult = j2kMakeStep(cormas_doy_start - 1)
+}
+####### 5.3 Run Optirrig simulation without WataSit from 1 DOY to DOY 120 (1er mai) to simulate the new state of crops out of irrigation campaign #######
+if (with_optirrig) {
+## for (day in optirrig_doy_start:(cormas_doy_start - 1)){
+#
+#  ####### 5.3.1 Initialize optirrig on day 1 #######
+#  if (day == 1) {
+#    cstes_list <- list()
+#    inval_list <- list()
+#    vect_list <- list()
+#    for (i in 1:length(list_idParcel)){
+#      init <- init_optirr(param_frame[i,], meteo)
+#      cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
+#      inval = init$inval; inval_list <-  rbind(inval_list, inval) # Calculation values for which the history is not required (list of values)
+#      vect  = init$vect ; vect_list <-  rbind(vect_list, vect) # Vector of stored state variables as time series in vectors (list of vectors)
+#    }
+#  }
+#
+#  ####### 5.3.2 Simulate Optirrig on other days #######
+#  if (day != 1) {
+#    inval2_list <- list()
+#    vect2_list <- list()
+#    for (i in 1:length(list_idParcel)){
+#      cat("Simulation of day",day, "and parcel number",i,"(idParcel =",list_idParcel[i],")","\n")
+#      I1 = I2 # I2 is deep irrigation (buried drip), I2 is null
+#      param<-param_frame[i,]; cstes<-cstes_list[i,];  inval<-inval_list[i,]; vect<-vect_list[i,]
+#      optirday = daily_optirr(param,
+#                              meteo,
+#                              cstes,
+#                              inval,
+#                              vect,
+#                              I1, # Surface irrigation
+#                              I2, # Deep irrigation (buried drip)
+#                              day) # Time step
+#      inval2 = optirday$inval ; inval2_list <- rbind(inval2_list, inval2) ; inval_list[i,] <- inval2 # New constants
+#      vect2  = optirday$vect ; vect2_list <- rbind(vect2_list, vect2) ; vect_list[i,] <- vect2 # New vectors
+#    }
+#  }
+#}
+}
 
-        #  ####### 5.3.1 Initialize optirrig on day 1 #######
-        if (day == optirrig_doy_start) {
-        cstes_list <- list(); inval_list <- list(); vect_list <- list(); 
-        I1_mat <- matrix(NA, ncol = length(list_idParcel), nrow = dim(input_meteo)[1]); I2_mat = ET0_mat = EP_mat = R1_mat = R2_mat = R3_1_mat = d3_mat = R3_mat = teta3_mat = tetaRU3_mat = RU1_mat = RU2_mat =  RU3_mat = Sw_lai_mat = TPM2_mat = ETM_mat =  ETR_mat = TRP_mat = TS_mat =TS_p_mat = TT_mat = TT_p_mat = LAI_p_mat = LAI_mat = LAImax_mat = LAI_av_mat = LAIp_av_mat = TDM_mat = TDM_p_mat = imoins_mat =  fac_mat = crac_mat = crat_mat = dHz2_mat = ks_mat = Hz2_mat = taum_mat = kt_mat = I1_mat
-          
-              for (i in 1:length(list_idParcel)){
-                init <- init_optirr(param_frame[i,], input_meteo)
-                cstes = init$cstes; cstes_list <- rbind(cstes_list, cstes) # Constants
-                inval = init$inval; inval_list <-  rbind(inval_list, inval) # Calculation values for which the history is not required (list of values)
-                vect  = init$vect ; vect_list <-  rbind(vect_list, vect) # Vector of stored state variables as time series in vectors (list of vectors)
-                
-                ET0_mat[day,i] <- vect$ET0[day];  EP_mat[day,i] <- vect$EP[day]; R1_mat[day,i] <- vect$R1[day]; R2_mat[day,i] <- vect$R2[day];
-                R3_1_mat[day,i] <- vect$R3_1[day]; d3_mat[day,i] <- vect$d3[day]; R3_mat[day,i] <- vect$R3[day]; teta3_mat[day,i] <- vect$teta3[day];
-                tetaRU3_mat[day,i] <- vect$tetaRU3[day]; RU1_mat[day,i] <- vect$RU1[day]; RU2_mat[day,i] <- vect$RU2[day]; RU3_mat[day,i] <- vect$RU3[day];
-                Sw_lai_mat[day,i] <- vect$Sw_lai[day]; TPM2_mat[day,i] <- vect$TPM2[day]; ETM_mat[day,i] <- vect$ETM[day]; ETR_mat[day,i] <- vect$ETR[day];
-                TRP_mat[day,i] <- vect$TRP[day]; TS_mat[day,i] <- vect$TS[day]; TS_p_mat[day,i] <- vect$TS_p[day]; TT_mat[day,i] <- vect$TT[day];
-                TT_p_mat[day,i] <- vect$TT_p[day];LAI_p_mat[day,i] <- vect$LAI_p[day]; LAI_mat[day,i] <- vect$LAI[day]; LAImax_mat[day,i] <- vect$LAImax[day];
-                LAI_av_mat[day,i] <- vect$LAI_av[day]; LAIp_av_mat[day,i] <- vect$LAIp_av[day]; TDM_mat[day,i] <- vect$TDM[day]; TDM_p_mat[day,i] <- vect$TDM_p[day];
-                imoins_mat[day,i] <- vect$imoins[day]; fac_mat[day,i] <- vect$fac[day]; crac_mat[day,i] <- vect$crac[day]; crat_mat[day,i] <- vect$crat[day];
-                dHz2_mat[day,i] <- vect$dHz2[day]; ks_mat[day,i] <- vect$ks[day]; Hz2_mat[day,i] <- vect$Hz2[day]; taum_mat[day,i] <- vect$taum[day];
-                kt_mat[day,i] <- vect$kt[day];
-              } #end of initialization parcel loop
-        } #end of initialization if bracket
-  }#end of with_optirrig l.236
-
-#  ####### 5.3.2 Simulate #######
-        if (day >= optirrig_doy_start){
-          inval2_list <- list()
-          vect2_list <- list()
-          
-              if (with_cormas) { if (day >= cormas_doy_start && day <= (cormas_doy_start + cormas_sim_day_nb)) { 
-                ####### A. Update Cormas Meteo #######
-                P<-input_meteo$P; setAttributesOfEntities("p", "Meteo", 1, as.numeric(P[day])) # Precipitation conditions of the day 
-                p_forecast = sum(as.numeric(P[day:(day+2)]), na.rm = TRUE); if (p_forecast > 0) {p_forecast = 1}; setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
-                if (day == 1) {p_cumTenDays = 0}
-                if (day == 2) {p_cumTenDays = P[day-1]}
-                for (i in 3:10){if (day == i){ p_cumTenDays = sum(as.numeric(P[(day-(i-1)):(day-1)]), na.rm = TRUE) }}
-                if (day >= 11) {p_cumTenDays = sum(as.numeric(P[(day-10):(day-1)]), na.rm = TRUE)}
-                setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
-                p_cumTwelveDays = sum(c(p_cumTenDays,as.numeric(P[(day-12):(day-11)])), na.rm = TRUE)
-                setAttributesOfEntities("p_cumTwelveDays", "Meteo", 1, p_cumTwelveDays) # Calculate cumulative precipitation for the last 12 days
-                p_cumFifteenDays = sum(c(p_cumTwelveDays,as.numeric(P[(day-15):(day-13)])), na.rm = TRUE)
-                setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
-                
-                ####### B. Updating river flow #######
-                # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
-                # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
-                
-                # TODO: supprimer la ligne suivante, qui est juste pour le test
-                # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
-                # (l'idReach de watasit n'existe pas dans le modèle j2k)
-                # cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
-                
-                # Getting flows from J2k
-                #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
-                j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
-                  as.data.frame() %>%
-                  mutate(Runoff = as.numeric(as.character(Runoff))) %>%
-                  mutate(ID = as.numeric(as.character(ID))) %>%
-                  tbl_df()
-                
-                # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days
-                if (with_cormas){
-                  # reachsToUpdate <- cormasRiverReachs %>%
-                  #   rename(cormasId = id,
-                  #          ID = idReach) %>%
-                  #   inner_join(j2kReachRunoff, by = "ID") %>%
-                  #   mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
-                  # 
-                  # setAttributesOfEntities("q",
-                  #                         "RiverReach",
-                  #                         reachsToUpdate$cormasId,
-                  #                         reachsToUpdate$q)
-                
-                ####### C. Run coupled simulation of 24 hours #######
-                r <- runSimu(duration = 24)
-                response <- gettext(r[[2]])
-                if (response != "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns=\"urn:vwservices\"><SOAP-ENV:Body><ns:RunSimuResponse><ns:result>true</ns:result></ns:RunSimuResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>") {stop("RUN STOPPED",call.=FALSE)} # To check if runSimu is done
-                
-                ####### D. Get the farm plots irrigations by parcel ID #######
-                fp_idExpl <- getAttributesOfEntities("idExpl","FarmPlot")
-                fp_irri <- getAttributesOfEntities("irriDailyDose","FarmPlot")
-                fp_irri_df <- data.frame(fp_irri, fp_idExpl); fp_irri_df$day = day;
-                irriDailyDose <- fp_irri_df[,1:2]
-                              } } # make coupling with Cormas
-                
-            if (with_optirrig) {
-              for (i in 1:length(list_idParcel)){
-                cat("Simulation of day",day, "and parcel number",i,"(idParcel =",list_idParcel[i],")","\n")
-                
-                if (with_cormas) { if (day >= cormas_doy_start && day <= (cormas_doy_start + cormas_sim_day_nb)) { 
-                  #if (length(irriDailyDose[which(irriDailyDose$id == list_idParcel[i]),2]) != 0){
-                  I1[day,i] <- irriDailyDose[which(irriDailyDose$id == list_idParcel[i]),2]; cat("!!! coupled I1[day] =", I1[day,i], '\n') } }#} # Update irrigation from Cormas
-                
-                cat("Inputs:","\n","I1[day] = ", I1[day,i],"\n","I2[day] = ", I2[day,i],"\n"); #if(I1[day] != 0) {stop("I1[day] != 0")}
-                param<-param_frame[i,]; cstes<-cstes_list[i,];  inval<-inval_list[i,]; vect<-vect_list[i,]
-                optirday = daily_optirr(param,
-                                        input_meteo,
-                                        cstes,
-                                        inval,
-                                        vect,
-                                        I1[,i], 
-                                        I2[,i], # Deep irrigation (buried drip)
-                                        day) # Time step
-                inval2 = optirday$inval ; inval2_list[[i]] <- inval2 ; inval_list[i,] <- inval2 # New constants
-                vect2  = optirday$vect ; vect2_list[[i]] <- vect2 ; vect_list[i,] <- vect2 # New vectors
-                
-                ET0_mat[day,i] <- vect2$ET0[day];  EP_mat[day,i] <- vect2$EP[day]; R1_mat[day,i] <- vect2$R1[day]; R2_mat[day,i] <- vect2$R2[day];
-                R3_1_mat[day,i] <- vect2$R3_1[day]; d3_mat[day,i] <- vect2$d3[day]; R3_mat[day,i] <- vect2$R3[day]; teta3_mat[day,i] <- vect2$teta3[day];
-                tetaRU3_mat[day,i] <- vect2$tetaRU3[day]; RU1_mat[day,i] <- vect2$RU1[day]; RU2_mat[day,i] <- vect2$RU2[day]; RU3_mat[day,i] <- vect2$RU3[day];
-                Sw_lai_mat[day,i] <- vect2$Sw_lai[day]; TPM2_mat[day,i] <- vect2$TPM2[day]; ETM_mat[day,i] <- vect2$ETM[day]; ETR_mat[day,i] <- vect2$ETR[day];
-                TRP_mat[day,i] <- vect2$TRP[day]; TS_mat[day,i] <- vect2$TS[day]; TS_p_mat[day,i] <- vect2$TS_p[day]; TT_mat[day,i] <- vect2$TT[day];
-                TT_p_mat[day,i] <- vect2$TT_p[day];LAI_p_mat[day,i] <- vect2$LAI_p[day]; LAI_mat[day,i] <- vect2$LAI[day]; LAImax_mat[day,i] <- vect2$LAImax[day];
-                LAI_av_mat[day,i] <- vect2$LAI_av[day]; LAIp_av_mat[day,i] <- vect2$LAIp_av[day]; TDM_mat[day,i] <- vect2$TDM[day]; TDM_p_mat[day,i] <- vect2$TDM_p[day];
-                imoins_mat[day,i] <- vect2$imoins[day]; fac_mat[day,i] <- vect2$fac[day]; crac_mat[day,i] <- vect2$crac[day]; crat_mat[day,i] <- vect2$crat[day];
-                dHz2_mat[day,i] <- vect2$dHz2[day]; ks_mat[day,i] <- vect2$ks[day]; Hz2_mat[day,i] <- vect2$Hz2[day]; taum_mat[day,i] <- vect2$taum[day];
-                kt_mat[day,i] <- vect2$kt[day]; irr = optirday$irr ; I1_mat[day,i] <- irr$I1; I2_mat[day,i] <- irr$I2
-              }
-          
-              ####### E. Set the new crop LAI in WatASit #######
-              if (with_cormas) { if (day >= cormas_doy_start && day <= (cormas_doy_start + cormas_sim_day_nb)) {
-                setAttributesOfEntities("tt", "Ecrop", as.numeric(list_idParcel), as.numeric(TT_mat[day,])) }}
-            }#end of with_optirrig l.329
-            
-              ####### F. Set the irrigation in J2K #######
-              j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
-              # récupérés ci-dessus depuis cormas
-              #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:
-              # C'est bon ça roule maintenant
-                
-              # set actLai dans J2K
-              j2kSet('actLaiCom', c(10363, 10362, 8934), c(100, 100, 100))
-              print(' ')
-              print('actLAI of some HRUs :')
-              print(head(j2kGetOneValueAllHrus('actLAI'), 10))
-                
-              ####### 5.4.6 Simulate the new state of watershed with J2K #######
-              # cette fonction fait un step si on lui donne pas de paramètre
-              j2kMakeStep()
-              # on peut aussi faire N steps comme ça
-              #j2kMakeStep(20)
-              # cette fonction est sensée récupérer les valeurs de tous les attributs pour tous les reachs
-              # mais pour l'instant ça récupère juste actRD1
-              #reachQTable = j2kGet("reach")
-              # et celle là récupère juste netrain
-              #hruQTable = j2kGet("hru")
-              # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
-              #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
-              #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
-              dailySimQ = j2kGetOneValueAllReachs("Runoff")
-              # SimQAtGauge <- simQ[which(as.numeric(simQ[,1])==62200)] #Le reach est manquant avec ces paramètres
-              dailySimQAtGauge <- as.numeric(dailySimQ[which(as.numeric(dailySimQ[,1])==59200),2]) #Le reach est manquant avec ces paramètres
-              simQ_mat[day] <- dailySimQAtGauge
-              
-          }#end of if bracket l.265
-      }#end of timeloop l.237
-
-
+cat('\nStarting coupled simulation simulation!!!\n')
+simuProgress <- txtProgressBar(min = cormas_doy_start,
+                               max = cormas_doy_start + cormas_sim_day_nb,
+                               style = 3)
 
 ####### 5.4 Run WatASit-Optirrig-J2K coupled simulation from cormas_doy_start #######
-# for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
-  
+for (day in cormas_doy_start:(cormas_doy_start + cormas_sim_day_nb)) {
+  setTxtProgressBar(simuProgress, day)
   ####### 5.4.1 Update Cormas Meteo and flow in riverReachs#######
-  # if (with_cormas){
-  #   ## Updating meteo
-  #   P <- input_meteo$P
-  #   setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
-  #   p_forecast = sum(c(P[day:(day +2)]), na.rm = TRUE)
-  #   if (p_forecast > 0) {
-  #     p_forecast = 1
-  #   }
-  #   setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
-  #   if (day >= 2) {
-  #     p_cumTenDays = sum(c(P[max(1,(day-10)):(day-1)]), na.rm = TRUE)
-  #     p_cumFifteenDays = sum(c(p_cumTenDays, P[max(1,(day-15)):max(2,(day-11))]), na.rm = TRUE)
-  #   } else {
-  #     p_cumTenDays = 0
-  #     p_cumFifteenDays = 0
-  #   }
-  #   setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
-  #   # setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
-  #   setAttributesOfEntities("p_cumTwelveDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
-  # }
+    ## Updating meteo
+    P <- input_meteo$P
+    setAttributesOfEntities("p", "Meteo", 1, P[day]) # Precipitation conditions of the day
+    p_forecast = sum(c(P[day:(day +2)]), na.rm = TRUE)
+    if (p_forecast > 0) {
+      p_forecast = 1
+    }
+    setAttributesOfEntities("p_forecast", "Meteo", 1, p_forecast) # Precipitation forecast for the next 3 days
+    if (day >= 2) {
+      p_cumTenDays = sum(c(P[max(1,(day-10)):(day-1)]), na.rm = TRUE)
+      p_cumFifteenDays = sum(c(p_cumTenDays, P[max(1,(day-15)):max(2,(day-11))]), na.rm = TRUE)
+    } else {
+      p_cumTenDays = 0
+      p_cumFifteenDays = 0
+    }
+    setAttributesOfEntities("p_cumTenDays", "Meteo", 1, p_cumTenDays) # Calculate cumulative precipitation for the last 10 days
+    # setAttributesOfEntities("p_cumFifteenDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
+    setAttributesOfEntities("p_cumTwelveDays", "Meteo", 1, p_cumFifteenDays) # Calculate cumulative precipitation for the last 15 days
 
-    
-    
+    ## Updating river flow
+    # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
+    # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
 
-#   ####### 5.4.2 Run coupled simulation of 24 hours #######
-#   r <- runSimu(duration = 24)
-#  
-#   obs1 <- NULL
-#   obs2 <- NULL
-#   #obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
-#   #obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
-#   if (!((is.null(obs1) | is.null(obs2)))) {
-#   obs <- left_join(obs1, obs2, by = "id")
-#   obs$day = day
-#   # farmers_results <- farmers_results %>%
-#     bind_rows(obs)
-#   }
-# }
-#   ####### 5.4.3 Get the state of crops from Cormas #######
-#   #idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
-#   #list_idParcel <- idParcel$idParcel
-#   #harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
-#   #irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
+    # TODO: supprimer la ligne suivante, qui est juste pour le test
+    # je l'ai mise car on n'a pas l'identifiant de reach dans la version actuelle de watasit
+    # (l'idReach de watasit n'existe pas dans le modèle j2k)
+    # cormasRiverReachs <- cormasRiverReachs %>% mutate(idReach = 59200)
+
+    # Getting flows from J2k
+    #TODO: Vérifier que c'est bien la variable runoff qui donne le débit dans les reachs
+    j2kReachRunoff <- j2kGetOneValueAllReachs("Runoff") %>%
+      as.data.frame() %>%
+      mutate(Runoff = as.numeric(as.character(Runoff))) %>%
+      mutate(ID = as.numeric(as.character(ID))) %>%
+      tbl_df()
+
+    # Updating river flows in WatAsit, assuming that j2k runoff are in liter/days
+    # reachsToUpdate <- cormasRiverReachs %>%
+    #   rename(cormasId = id,
+    #          ID = idReach) %>%
+    #   inner_join(j2kReachRunoff, by = "ID") %>%
+    #   mutate(q = ( Runoff / 1000 ) / (24 * 3600) )
+    # 
+    # setAttributesOfEntities("q",
+    #                         "RiverReach",
+    #                         reachsToUpdate$cormasId,
+    #                         reachsToUpdate$q)
+
+  ####### 5.4.2 Run coupled simulation of 24 hours #######
+  r <- runSimu(duration = 24)
+  response <- gettext(r[[2]])
+  # To check if runSimu is done
+  if (response != "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns=\"urn:vwservices\"><SOAP-ENV:Body><ns:RunSimuResponse><ns:result>true</ns:result></ns:RunSimuResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>") {
+    stop("RUN STOPPED", call.=FALSE)
+  }
+  obs1 <- NULL
+  obs2 <- NULL
+  #obs1 <- getAttributesOfEntities("floodAffCounter", "Efarmer")
+  #obs2 <- getAttributesOfEntities("floodActCounter", "Efarmer")
+  if (!((is.null(obs1) | is.null(obs2)))) {
+  obs <- left_join(obs1, obs2, by = "id")
+  obs$day = day
+  farmers_results <- farmers_results %>%
+    bind_rows(obs)
+  }
+
+  ####### 5.4.3 Get the state of crops from Cormas #######
+  #idParcel      <- getAttributesOfEntities("idParcel", "Ecrop")
+  #list_idParcel <- idParcel$idParcel
+  #harvestSignal <- getAttributesOfEntities("harvestSignal", "Ecrop")
+  #irriDailyDose <- getAttributesOfEntities("irriDailyDose", "Ecrop")
 
   ####### 5.4.4 Simulate the new state of crops with Optirrig #######
-  # if (with_optirrig) {
-  #   if (day != 1) {
-  #     inval2_list <- list()
-  #     vect2_list <- list()
-  #     for (i in 1:length(list_idParcel)) {
-  #       cat("Simulation of day", day, "and parcel number", i, "(idParcel =", list_idParcel[i], ")", "\n")
-  #       irr[i,day]  <- irriDailyDose$irriDailyDose[i]
-  #       irr <- as.matrix(irr)
-  #       I1 = irr[i,] # Update irrigation from Cormas
-  #       param <- param_frame[i,]
-  #       cstes <- cstes_list[i,]
-  #       inval <- inval_list[i,]
-  #       vect <- vect_list[i,]
-  #       optirday = daily_optirr(
-  #         param,
-  #         meteo,
-  #         cstes,
-  #         inval,
-  #         vect,
-  #         I1, # Surface irrigation
-  #         I2, # Deep irrigation (buried drip)
-  #         day # Time step
-  #       )
-  #       inval2 = optirday$inval
-  #       inval2_list <- rbind(inval2_list, inval2)
-  #       inval_list[i,] <- inval2 # News constants
-  #       vect2  = optirday$vect
-  #       vect2_list <- rbind(vect2_list, vect2)
-  #       vect_list[i,] <- vect2 # New vectors
-  #     }
-  #   }
-  # }
-  # ####### 5.4.5 Set the irrigation in J2K #######
-  # j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
-  #                                             # récupérés ci-dessus depuis cormas
-  # #TODO La ligne précédente renvoie une erreur chez moi, c'est pour ça que je l'ai commenté..:
-  # # C'est bon ça roule maintenant
-  # 
-  # # set actLai dans J2K
-  # j2kSet('actLaiCom', c(10363, 10362, 8934), c(100, 100, 100))
-  # print(' ')
-  # print('actLAI of some HRUs :')
-  # print(head(j2kGetOneValueAllHrus('actLAI'), 10))
-  # 
-  # ####### 5.4.6 Simulate the new state of watershed with J2K #######
-  # # cette fonction fait un step si on lui donne pas de paramètre
-  # j2kMakeStep()
-  # # on peut aussi faire N steps comme ça
-  # #j2kMakeStep(20)
-  # # cette fonction est sensée récupérer les valeurs de tous les attributs pour tous les reachs
-  # # mais pour l'instant ça récupère juste actRD1
-  # #reachQTable = j2kGet("reach")
-  # # et celle là récupère juste netrain
-  # #hruQTable = j2kGet("hru")
-  # # ce sont ces fonctions qui récupèrent n'importe quel attribut des hrus ou des reachs
-  # #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
-  # #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
-  # dailySimQ = j2kGetOneValueAllReachs("Runoff")
-  # # SimQAtGauge <- simQ[which(as.numeric(simQ[,1])==62200)] #Le reach est manquant avec ces paramètres
-  # dailySimQAtGauge <- as.numeric(dailySimQ[which(as.numeric(dailySimQ[,1])==59200),2]) #Le reach est manquant avec ces paramètres
-  # simQ_mat[day] <- dailySimQAtGauge
-# }
+  if (with_optirrig) {
+    if (day != 1) {
+      inval2_list <- list()
+      vect2_list <- list()
+      for (i in 1:length(list_idParcel)) {
+        cat("Simulation of day", day, "and parcel number", i, "(idParcel =", list_idParcel[i], ")", "\n")
+        irr[i,day]  <- irriDailyDose$irriDailyDose[i]
+        irr <- as.matrix(irr)
+        I1 = irr[i,] # Update irrigation from Cormas
+        param <- param_frame[i,]
+        cstes <- cstes_list[i,]
+        inval <- inval_list[i,]
+        vect <- vect_list[i,]
+        optirday = daily_optirr(
+          param,
+          meteo,
+          cstes,
+          inval,
+          vect,
+          I1, # Surface irrigation
+          I2, # Deep irrigation (buried drip)
+          day # Time step
+        )
+        inval2 = optirday$inval
+        inval2_list <- rbind(inval2_list, inval2)
+        inval_list[i,] <- inval2 # News constants
+        vect2  = optirday$vect
+        vect2_list <- rbind(vect2_list, vect2)
+        vect_list[i,] <- vect2 # New vectors
+      }
+    }
+  }
+  ####### 5.4.5 Set the irrigation in J2K #######
+  j2kSet("drip", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+                                              # récupérés ci-dessus depuis cormas
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 6. Save simulation results #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (saveRes) {
-  dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-  write.csv(simQ_mat, paste0("save/simulations_cowat/",case_study_name,"/","simQ_mat.csv"), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
+  # set actLai dans J2K for test (commented by Bruno B.)
+  #j2kSet('actLaiCom', c(10363, 10362, 8934), c(100, 100, 100))
+  #print(' ')
+  #print('actLAI of some HRUs :')
+  #print(head(testRes, 10))
+
+  ####### 5.4.6 Simulate the new state of watershed with J2K #######
+  # cette fonction fait un step si on lui donne pas de paramètre
+  if (makeWaterBalance) {
+    storedWater <- rbind(storedWater, j2kWaterStorage())
+    j2kMakeStep()
+    inOutWater <- rbind(inOutWater, j2kInOutWater())    
+  } else{
+    j2kMakeStep()
+    # on peut aussi faire N steps comme ça
+    #j2kMakeStep(20)
+  }
+  
+  #reachRD1DataFrame = j2kGetOneValueAllReachs('actRD1')
+  #hruNetrainDataFrame = j2kGetOneValueAllHrus('netrain')
+  #dailySimQ = j2kGetOneValueAllReachs("Runoff")
+  # SimQAtGauge <- simQ[which(as.numeric(simQ[,1])==62200)] #Le reach est manquant avec ces paramètres
+  #dailySimQAtGauge <- as.numeric(dailySimQ[which(as.numeric(dailySimQ[,1])==59200),2]) #Le reach est manquant avec ces paramètres
+  #simQ_mat[day] <- dailySimQAtGauge
 }
+
 
 cat('\n')
 j2kStop()

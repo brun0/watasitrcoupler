@@ -72,7 +72,8 @@ catchmentOutletID <- function(modelFolder = "J2K_cowat") {
     tbl_df() 
    colnames(reachsTable) <- c("ID",	"to.reach",	"length",	"slope",	"sinuosity",	"rough",	"width")
    return(reachsTable %>% 
-            filter(to.reach == 9999) %>%
+            #filter(to.reach == 9999) %>%
+            filter(to.reach == 0) %>%
             select(ID) %>%
             pull() %>% 
             first())
