@@ -89,7 +89,7 @@
     <attribute class="jams.data.Attribute$TimeInterval" name="timeInterval" value="1960-01-01 00:00 2018-07-31 00:00 6 1"/>
     <contextcomponent class="jams.components.core.Context" enabled="true" name="ParameterInput" version="1.0_0">
         <component class="org.unijena.j2k.io.StandardEntityReader" enabled="true" name="StandardEntityReader" version="1.3">
-            <var name="reachFileName" value="parameter/reach.par"/>
+            <var name="reachFileName" value="parameter/reach_buech_ju_couplage.par"/>
             <var name="hruFileName" value="parameter/hru_cowat_ju.par"/>
             <var attribute="REACHES" context="J2K_RHONE" name="reaches"/>
             <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
