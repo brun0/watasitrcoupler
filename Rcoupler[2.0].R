@@ -4,9 +4,9 @@
 # This script runs J2K-WatASit-Optirrig coupled simulations
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2020, Jan-June, by
-# J. Veyssier -> make superjams_6, socket methods and Rcoupler v1
-# B. Bonté -> make RCormas methods and Rcoupler v1
-# B. Richard -> make param and climate Rfunctions and Rcoupler v2
+# J. Veyssier -> make superjams, socket methods and Rcoupler
+# B. Bonté -> make RCormas methods and Rcoupler
+# B. Richard -> make param and climate Rfunctions and Rcoupler
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -83,13 +83,12 @@ for (path in requiredFiles) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
-case_study_name <- "Aspres_cowat_10_ok2_j2k_only_irriModDesactivatedNotSoil_allvar_1989-2013"
-
+case_study_name <- "Aspres_with_cormas_1989-2013"
 date_start_hydro <- as.Date("1989-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
-date_end_simu <- as.Date("1991-12-31", "%Y-%m-%d")
-date_end_irri <- date_end_simu; doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+date_end_irri <- as.Date("2017-09-31", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+date_end_simu <- date_end_irri
 
 ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
 climate_file_name <- 'climate_buech_2016-2017.csv'
@@ -100,10 +99,10 @@ str(input_meteo)
 hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
 jams_file_name <- "cowat.jam"
 reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
-makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
+makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
-with_cormas <- F# choose True (T) or False (F)
+with_cormas <- T # choose True (T) or False (F)
 if (with_cormas) {
 modelName = "COWAT"
 parcelFile = "WatASit[2.0_TT].pcl"
@@ -215,8 +214,8 @@ setwd(wd)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cat('\nRunning simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
-#reachID = as.numeric(j2kGet("reach")[,1])
-#reach_Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_Runoff_dt <- reach_Runoff_dt[-1,]
+reachID = as.numeric(j2kGet("reach")[,1])
+reach_Runoff_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_Runoff_dt <- reach_Runoff_dt[-1,]
 # reach_actRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD1_dt <- reach_actRD1_dt[-1,]
 # reach_actRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRD2_dt <- reach_actRD2_dt[-1,]
 # reach_actRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_actRG1_dt <- reach_actRG1_dt[-1,]
@@ -228,7 +227,7 @@ cat('\nRunning simulation!!!\n')
 # reach_outRD1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD1_dt <- reach_outRD1_dt[-1,]
 # reach_outRD2_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRD2_dt <- reach_outRD2_dt[-1,]
 # reach_outRG1_dt <- as.data.frame(matrix(NA, ncol = length(reachID))); reach_outRG1_dt <- reach_outRG1_dt[-1,]
-# hruID = as.numeric(j2kGet("hru")[,1])
+hruID = as.numeric(j2kGet("hru")[,1])
 # hru_actLAI_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_actLAI_dt <- hru_actLAI_dt[-1,]
 # hru_CropCoeff_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_CropCoeff_dt <- hru_CropCoeff_dt[-1,]
 # hru_netRain_dt <- as.data.frame(matrix(NA, ncol = length(hruID))); hru_netRain_dt <- hru_netRain_dt[-1,]
@@ -446,20 +445,22 @@ if (with_cormas == T && with_optirrig == F) {
         
         ####### A. Getting flow from j2k #######
         # Getting corespondance table between cormas ids and j2k idReach (ID dans les modules Rj2k)
-        #reach_Runoff = j2kGetOneValueAllReachs("Runoff")
-        #reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
-        #reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
+        reach_Runoff = j2kGetOneValueAllReachs("Runoff")
+        reach_Runoff_i <- as.vector(as.numeric(reach_Runoff[,2]))
+        reach_Runoff_dt <- rbind(reach_Runoff_dt,reach_Runoff_i)
+        names(reach_Runoff_dt)<-reachID
         
         ####### B. Updating flows in Cormas #######
         # cormasRiverReachs <- getAttributesOfEntities(attributeName = "idReach", "RiverReach")
-        reachsToUpdate <- cormasRiverReachs %>%
-         rename(cormasId = id,
-                 ID = idReach) %>%
-          inner_join(j2kReachRunoff, by = "ID") %>%
-          mutate(q = ( Runoff / 1000 ) / (24 * 3600) ) # conversion en m3.s
+        reachsToUpdate <- (reach_Runoff_dt$`62200` / 1000) / (24 * 3600)
+        # reachsToUpdate <- cormasRiverReachs %>%
+        #  rename(cormasId = id,
+        #          ID = idReach) %>%
+        #   inner_join(j2kReachRunoff, by = "ID") %>%
+        #   mutate(q = ( Runoff / 1000 ) / (24 * 3600) ) # conversion en m3.s
         setAttributesOfEntities("q", "RiverReach",
-                                reachsToUpdate$cormasId,
-                                reachsToUpdate$q)
+                                1,
+                                as.numeric(reachsToUpdate))
         
         ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
         if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
@@ -467,7 +468,8 @@ if (with_cormas == T && with_optirrig == F) {
         }
         
         ####### C. Set the irrigation in J2K #######
-        j2kSet("surface", c(1,2,3), c(100, 100, 100)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+        surfaceIrri <- getAttributesOfEntities("surfaceIrri", "HRU")
+        j2kSet("surface", hruID[1:length(surfaceIrri$id)] , as.numeric(surfaceIrri$surfaceIrri)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
         # récupérés ci-dessus depuis cormas
         
         ####### D. Run new j2k daily step #######
