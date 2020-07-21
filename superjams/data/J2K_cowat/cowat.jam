@@ -195,6 +195,7 @@
             <var attribute="REACHES" context="J2K-D" name="reachs"/>
             <var attribute="HRUS" context="J2K-D" name="hrus"/>
             <var attribute="time" context="J2K-D" name="time"/>
+            <var attribute="Runoff" context="TimeLoop" name="catchmentSimRunoff"/>
         </component>
         <component class="jams.components.gui.JAMSExecInfo" enabled="true" name="JAMSExecInfo" version="1.1_0"/>
         <component class="org.unijena.j2k.DoubleSetter" enabled="true" name="DoubleSetter" version="1.0_0">

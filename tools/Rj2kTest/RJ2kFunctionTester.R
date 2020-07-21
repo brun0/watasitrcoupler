@@ -66,29 +66,24 @@ setwd(wd)
 
 cat('\nRunning simulation!!!\n')
 ####### Run J2K model And test your function there#######
-duration <- 30
+duration <- 2
 
 testRes <- NULL
-testRes2 <- NULL
-testRes3 <- NULL
+
 simuProgress <- txtProgressBar(min = 1,
                                max = duration,
                                style = 3)
+j2kMakeStep(30)
 for (t in 1:duration) {
   setTxtProgressBar(simuProgress, t)
   j2kMakeStep(1)
-  flows <- NA
-  storage <- NA
-  storage <- j2kWaterBalanceStorages()
-  flows <- j2kWaterBalanceFlows()
-  #flows$runoffBis <- j2kGetOneValueAllReachs("Runoff") %>% filter(ID == 52001) %>% pull()
-  testRes <- rbind(testRes, data.frame(storage, 
-                                       flows,
+  arg1 <- c("actMPS", "actLPS")
+  arg2 <- c()#c(5246, 5255)
+  funcRes <- j2kGetValuesAllHrus(arg1, arg2)
+  testRes <- rbind(testRes, data.frame(funcRes, 
                                        t
                                        ))
-#  testRes2 <- rbind(testRes2, cbind(j2kGetValuesAllReachs(c("actRD1", "actRD2")),t))
-#  testRes3 <- rbind(testRes3, cbind(j2kGetValuesAllHrus(c("actMPS", "actLPS")),t))
-}
+} 
 
 #colnames(testRes) <- c("time","timeloopRunoff", "lastReachRunoff")
 
@@ -96,7 +91,7 @@ j2kStop()
 Sys.sleep(3)
 killJ2K()
 #write.csv(testRes, "tools/Rj2kTest/newHruTestRes.csv",row.names =F)
-write.csv(testRes, "tools/Rj2kTest/newHruTestRes.csv",row.names =F)
+write.csv(testRes, "tools/Rj2kTest/functionTest.csv",row.names =F)
 #write.csv(testRes2, "tools/Rj2kTest/newHruTestRes2.csv", row.names =F)
 #write.csv(testRes3, "tools/Rj2kTest/newHruTestRes3.csv", row.names =F)
 timeSpent <- proc.time() - ptm

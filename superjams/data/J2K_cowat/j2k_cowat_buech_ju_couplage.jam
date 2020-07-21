@@ -193,9 +193,9 @@
         <var attribute="timeInterval" context="J2K_RHONE" name="timeInterval"/>
         <component class="cowattools.CouplingCommunication" enabled="true" name="CouplingCommunication" version="0.1">
             <var attribute="REACHES" context="J2K_RHONE" name="reachs"/>
+            <var attribute="Runoff" context="TimeLoop" name="catchmentSimRunoff"/>
             <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
             <var attribute="time" context="J2K_RHONE" name="time"/>
-            <var attribute="Runoff" context="TimeLoop" name="catchmentSimRunoff"/>
         </component>
         <component class="jams.components.gui.JAMSExecInfo" enabled="true" name="JAMSExecInfo" version="1.1_0"/>
         <component class="org.unijena.j2k.DoubleSetter" enabled="true" name="DoubleSetter" version="1.0_0">
@@ -298,7 +298,7 @@
                     <var name="elevationCorrection" value="false"/>
                 </component>
             </contextcomponent>
-            <component class="cowattools.CouplingHruVariableChanger" enabled="true" name="CouplingHruVariableChanger_1" version="0.1">
+            <component class="cowattools.CouplingHruVariableChanger" enabled="false" name="CouplingHruVariableChanger_1" version="0.1">
                 <var name="setOrAdd" value="0"/>
                 <var name="moduleName" value="actLaiCom"/>
                 <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
@@ -309,7 +309,7 @@
                 <var attribute="actKC" context="HRULoop" name="CropCoeff"/>
                 <var attribute="etpot" context="HRULoop" name="PotET"/>
             </component>
-<component class="cowattools.CouplingHruVariableChanger" enabled="true" name="CouplingHruVariableChanger" version="0.1">
+            <component class="cowattools.CouplingHruVariableChanger" enabled="false" name="CouplingHruVariableChanger" version="0.1">
                 <var name="setOrAdd" value="0"/>
                 <var name="moduleName" value="aspersionCom"/>
                 <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
@@ -348,7 +348,7 @@
                 <var attribute="throughfall" context="HRULoop" name="throughfall"/>
                 <var attribute="etpot" context="HRULoop" name="potET"/>
             </component>
-            <component class="cowattools.IrrigationApplicationExternalDrip" enabled="true" name="IrrigationApplicationExternalDrip" version="0.1">
+            <component class="cowattools.IrrigationApplicationExternalDrip" enabled="false" name="IrrigationApplicationExternalDrip" version="0.1">
                 <var attribute="area" context="HRULoop" name="area"/>
                 <var attribute="actMPS" context="HRULoop" name="actMPS"/>
                 <var attribute="maxMPS" context="HRULoop" name="maxMPS"/>
@@ -356,7 +356,7 @@
                 <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
                 <var attribute="irrigationTotal" context="HRULoop" name="irrigationTotal"/>
             </component>
-            <component class="cowattools.IrrigationApplicationExternalSurface" enabled="true" name="IrrigationApplicationExternalSurface" version="0.1">
+            <component class="cowattools.IrrigationApplicationExternalSurface" enabled="false" name="IrrigationApplicationExternalSurface" version="0.1">
                 <var attribute="area" context="HRULoop" name="area"/>
                 <var attribute="netrain" context="HRULoop" name="netRain"/>
                 <var attribute="remainingAfterDrip" context="HRULoop" name="remainingAfterDrip"/>
@@ -549,7 +549,7 @@
             <var attribute="REACHES" context="J2K_RHONE" name="entities"/>
             <component class="management.Regionalisation_Dam" enabled="false" name="DamRegionalizer" version="1.0_0"/>
             <component class="management.DamDevice" enabled="false" name="DamDevice" version="3.0_0"/>
-            <component class="cowattools.BuechReachInOut" enabled="true" name="BuechReachInOut" version="0.1">
+            <component class="cowattools.BuechReachInOut" enabled="false" name="BuechReachInOut" version="0.1">
                 <var attribute="inRD1" context="ReachLoop" name="inRD1"/>
                 <var attribute="inRD2" context="ReachLoop" name="inRD2"/>
                 <var attribute="outRD1" context="ReachLoop" name="outRD1"/>
