@@ -177,10 +177,18 @@ j2kSumedValuesAllReachs <- function(attributes, ip="localhost", port="9999") {
 
 # get aggregated values for water balance
 j2kWaterBalanceStorages <- function(ip="localhost", port="9999") {
-  hruStorage <- sum(j2kGetValuesAllHrus(c("actMPS", "actLPS", "actDPS","TotSWE", "actRG1", "actRG2", "storedInterceptedWater")))
-  hruStorageBis <- sum(j2kSumedValuesAllHrus(c("actMPS", "actLPS", "actDPS","TotSWE", "actRG1", "actRG2", "storedInterceptedWater")))
-  reachStorage <- sum(j2kGetValuesAllReachs(c("actRD1", "actRD2", "actRG1",  "actRG2")))
-  reachStorageBis <- sum(j2kSumedValuesAllReachs(c("actRD1", "actRD2", "actRG1",  "actRG2")))
+  hruStorageBis <- sum(j2kGetValuesAllHrus(c("actMPS", "actLPS", "actDPS","TotSWE", "actRG1", "actRG2", "storedInterceptedWater")) %>%
+                          select(-ID))
+  hruStorage <- sum(j2kSumedValuesAllHrus(c("actMPS", "actLPS", "actDPS","TotSWE", "actRG1", "actRG2", "storedInterceptedWater"))) #%>% 
+    #t() %>% 
+    #as.data.frame() %>%
+    #rename_all(funs(paste0(.,"bis")))
+  reachStorageBis <- sum(j2kGetValuesAllReachs(c("actRD1", "actRD2", "actRG1",  "actRG2"))%>%
+                        select(-ID))
+  reachStorage <- sum(j2kSumedValuesAllReachs(c("actRD1", "actRD2", "actRG1",  "actRG2"))) #%>% 
+    #t() %>% 
+    #as.data.frame() %>%
+    #rename_all(funs(paste0(.,"bis")))
   return(data.frame(hruStorage, reachStorage
                     ,hruStorageBis, reachStorageBis
                     ))
@@ -188,9 +196,9 @@ j2kWaterBalanceStorages <- function(ip="localhost", port="9999") {
 
 j2kWaterBalanceFlows <- function(ip="localhost", port="9999") {
   res = askJ2K(c("command"), c("getCatchmentRunoff"), ip, port)
-  runoffBis <- as.numeric(res[[2]])
-  runoff <- j2kGetOneValueAllReachs("Runoff") %>% filter(ID == 52001) %>% pull()
-  #runoff <- j2kGetOneValueAllReachs("Runoff") %>% filter(ID == 25401) %>% pull()
+  runoff <- as.numeric(res[[2]])
+  #runoffBis <- j2kGetOneValueAllReachs("Runoff", c(52001)) %>% select("Runoff") %>% pull()
+  runoffBis <- j2kGetOneValueAllReachs("Runoff") %>% filter(ID == 25401) %>% pull()
   if (is.na(runoff)) {
     runoff <- res[[2]]
   }

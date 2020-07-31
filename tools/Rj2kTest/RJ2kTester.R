@@ -12,12 +12,12 @@
 rm(list=ls()); start_time <- Sys.time();
 ptm <- proc.time()
 wd <- getwd()
-jams_file_name <- "cowat.jam"
-#jams_file_name <- "j2k_cowat_buech_ju_couplage.jam"
+#jams_file_name <- "cowat.jam"
+jams_file_name <- "j2k_cowat_buech_ju_couplage.jam"
 
 #Source fonction file
 source("Rfunctions/Rj2k.R")
-source("Rfunctions/Bilanj2k.R")
+#source("Rfunctions/Bilanj2k.R")
 
 # load libraries
 load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
@@ -66,8 +66,10 @@ setwd(wd)
 
 cat('\nRunning simulation!!!\n')
 ####### Run J2K model And test your function there#######
-duration <- 30
+# Pre-chauffe
+j2kMakeStep(40)
 
+duration <- 10
 testRes <- NULL
 testRes2 <- NULL
 testRes3 <- NULL
@@ -96,7 +98,7 @@ j2kStop()
 Sys.sleep(3)
 killJ2K()
 #write.csv(testRes, "tools/Rj2kTest/newHruTestRes.csv",row.names =F)
-write.csv(testRes, "tools/Rj2kTest/newHruTestRes.csv",row.names =F)
+write.csv(testRes, "tools/Rj2kTest/hruTestRes.csv",row.names =F)
 #write.csv(testRes2, "tools/Rj2kTest/newHruTestRes2.csv", row.names =F)
 #write.csv(testRes3, "tools/Rj2kTest/newHruTestRes3.csv", row.names =F)
 timeSpent <- proc.time() - ptm
