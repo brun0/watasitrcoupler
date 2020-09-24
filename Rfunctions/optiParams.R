@@ -4,7 +4,7 @@
 # Code developed in 2019, Oct, by B. Richard
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-optiParams = function(dir, case_study_name, shapefile_name, paramDBfile_name, climatefile_name, jdsim, jfsim, itest, gge, dosap, th_w) {
+optiParams = function(dir, case_study_name, plotfile_name, paramDBfile_name, climatefile_name, jdsim, jfsim, itest, gge, dosap, th_w) {
   
   
 #case_study_param_folder
@@ -12,7 +12,7 @@ if (dir.exists(paste0(dir, "paramfiles_",case_study_name))) {unlink(paste0(dir, 
 dir.create(paste0(dir,"paramfiles_",case_study_name))
 
 #Load_farm_plots_features
-plots <- read.table(paste0(dir,shapefile_name), header = T, sep = ";", dec = ",", na.strings = "-9999")
+plots <- read.table(paste0(dir,plotfile_name), header = T, sep = ";", dec = ",", na.strings = "-9999")
 
 #Load_Optirrig_params_database
 paramDB <- read.table(paste0(dir,paramDBfile_name), header = T, sep = ";", dec = ",", na.strings = "-9999")

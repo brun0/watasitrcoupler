@@ -7,12 +7,13 @@
 ############################################################
 require(zoo)
 
-wd <- "/home/bastien/Documents/2017-2020_These_GEAU/Work_Optirrig/Optirrig/WatASit/WatASit_Rcoupler/"
+wd <- "/home/bastien/Documents/2017-2020_These_GEAU/Work_COPAT/Optirrig/WatASit/WatASit_Rcoupler/"
 
 # Extract meteo from J2K variables
 folder="/home/bastien/Documents/JAMS-3.9_02-bin/JAMS/data/J2K_BuechRef/output/"
-filename <-"41_buechRef_2016-2017.sdat" #SAFRAN meteo time series from J2K variables extracted at the case study (ID 41 in J2K: "Les Vierges" water intake)
-dateStart <- as.Date("2016-01-01"); dateEnd <- as.Date("2017-12-31")
+# filename <-"41_buechRef_2016-2017.sdat" #SAFRAN meteo time series from J2K variables extracted at the case study (ID 41 in J2K: "Les Vierges" water intake)
+filename <-"2_buechRef_1960-2017.sdat" #SAFRAN meteo time series from J2K variables extracted at the case study (ID 41 in J2K: "Les Vierges" water intake)
+dateStart <- as.Date("2005-01-01"); dateEnd <- as.Date("2017-12-31")
 
 # Lecture du .dat issue de JADE
 temp <- read.table(paste(folder,filename,sep=""), as.is = TRUE, skip = 3, header =F, sep = "", comment.char = "#", na.strings = "-9999.0")
