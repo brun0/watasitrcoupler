@@ -84,7 +84,7 @@ for (path in requiredFiles) {
 
 ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
 case_study_name <- "Aspres_with_cormas_1989-2013"
-date_start_hydro <- as.Date("2015-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
+date_start_hydro <- as.Date("2016-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
 date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
@@ -97,8 +97,9 @@ str(input_meteo)
 
 ####### 2.2 Specification for J2K/JAMS #######
 hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
-jams_file_name <- "cowat.jam"
-reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
+#jams_file_name <- "cowat.jam"
+jams_file_name <- "j2k_cowat_buech_ju_couplage.jam"
+#reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
 makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
@@ -151,9 +152,9 @@ r <- setInit(init) # Init
 r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
 
 ####### 3.4 Initialize Cormas model #######
+r <- activateProbe("flowInRiverReachA", "COWAT")
+r <- activateProbe("flowInRiverReachB", "COWAT")
 r <- initSimu() # initialize the model
-# Opens 
-r <- activateProbe("flowInRiverReach3400", "COWAT")
 
 ####### 3.5 Get Hrus and reaches IDs that are in WatAsit Model #######
 cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
@@ -163,7 +164,6 @@ cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
 
 cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>%
   tbl_df()
-
 
 ####### 3.5 Initialize J2K model #######
 # On laisse le coupleur lancer JAMS/J2K
@@ -178,32 +178,31 @@ cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...'
 Sys.sleep(3)
 setwd(wd)
 
+####### 3.6 Warms-up J2K model #######
+# Run j2k on the warming-up simulation period 
+nbDays <- as.numeric(difftime(date_start_irri,date_start_hydro,units='days'))
+simuProgress <- txtProgressBar(min = 1,
+                               max = nbDays,
+                               style = 3)
+# J2k Warming-up
+print("J2k warming-up")
+  for (i in 1:nbDays){ 
+    #cat("\n","Running step:",i,"\n"); 
+    setTxtProgressBar(simuProgress, i)
+    # Run step-by-step for balance purpose
+    if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())}
+    j2kMakeStep()
+    if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
+  }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 4. Run simulations #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cat('\nRunning simulation!!!\n')
+cat('\nRunning coupled simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
 #TODO
 
 ####### 4.2 Run models
-
-  # Run j2k on the warming-up simulation period 
-  nbDays <- as.numeric(difftime(date_start_irri,date_start_hydro,units='days'))
-  simuProgress <- txtProgressBar(min = 1,
-                                 max = nbDays,
-                                 style = 3)
-  # J2k Warming-up
-  print("J2k warming-up")
-  for (i in 1:nbDays){ 
-    #cat("\n","Running step:",i,"\n"); 
-    setTxtProgressBar(simuProgress, i)
-  # Run step-by-step for balance purpose
-  if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())}
-  j2kMakeStep()
-  if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
-  }
-
   # Run Coupled model on the rest of the simulation period 
   nbDays <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
   simuProgress <- txtProgressBar(min = 1,
@@ -214,17 +213,24 @@ cat('\nRunning simulation!!!\n')
       setTxtProgressBar(simuProgress, i)
         
         ####### A. Getting flow from j2k #######
-        reach_Runoff = j2kGetOneValueAllReachs("Runoff", 
-                                               cormasReachIds %>%
-                                                 select(idReach) %>%
-                                                 pull())
-        
+      #TODO problème: beaucoup de reachs sont dans cormas mais pas dans 
+      # les reachs de j2k_cowat_buech_ju_couplage.jam!
+      # du coup pour tester, au lieu de prendre le bon code ci-dessous,
+      # on prend un autre 
+        #reach_Runoff = j2kGetOneValueAllReachs("Runoff", 
+        #                                       cormasReachIds %>%
+        #                                         select(idReach) %>%
+        #                                         pull())
+      reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
+        tbl_df()
+      
         ####### B. Updating flows in Cormas #######
         updatedFlows <- cormasReachIds %>%
           mutate(ID = idReach) %>%
-          left_join(reach_Runoff) %>%
-          mutate(q = (Runoff / 1000) * 24 * 3600)
-
+          full_join(reach_Runoff, by = "ID") %>%
+          mutate(q = (Runoff / 1000) / (24 * 3600)) %>%
+          mutate(q = replace_na(q,0))
+        
         setAttributesOfEntities("q", "RiverReach",
                                 updatedFlows$id,
                                 updatedFlows$q)
@@ -232,8 +238,9 @@ cat('\nRunning simulation!!!\n')
         ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
         #TODO
         #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
-        #    irriDailyDose <-RunWatASit(daily_step = i, input_meteo = input_meteo)
+        # RunWatASit(daily_step = i, input_meteo = input_meteo)
         #}
+        r <- runSimu(duration = 1)
         
         ####### C. Set the irrigation in J2K #######
         #TODO
