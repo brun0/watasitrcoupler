@@ -108,7 +108,7 @@ modelName = "COWAT"
 parcelFile = "WatASit.pcl"
 init = "INIT_2017_318x238_upperBuech"
 cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
-scenario <- "Baseline" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
+scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
 }
 
 # ####### 2.4 Specification for Optirrig coupling [COMPULSORY] #######
@@ -152,6 +152,8 @@ r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
 
 ####### 3.4 Initialize Cormas model #######
 r <- initSimu() # initialize the model
+# Opens 
+r <- activateProbe("flowInRiverReach3400", "COWAT")
 
 ####### 3.5 Get Hrus and reaches IDs that are in WatAsit Model #######
 cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
