@@ -32,7 +32,7 @@ if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",
 cores <- parallel:::detectCores(); registerDoParallel(cores-1);
 
 ####### 1.4 Activate results saving [OPTIONAL] #######
-saveRes <- T # Choose T or F. If F -> no saving, if T -> saving activated
+saveRes <- F # Choose T or F. If F -> no saving, if T -> saving activated
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,7 +49,9 @@ climate_file_name <- 'climate_buech_2016-2017.csv' # Specified a file that keeps
 input_meteo <- computeClimateInput(climate_file_name, date_start_sim, date_end_sim)
 
 ####### 2.3 Irrigation campaign options #######
-coupling <- T # Choose F or T. If F -> no coupling, if T -> coupling activated with gravity-fed WatASit model
+coupling <- F # Choose F or T. If F -> no coupling, if T -> coupling activated with gravity-fed WatASit model
+DOY_start_coupling <- 198 # To be specified (start of the irrigation campaign)
+DOY_stop_coupling <- dim(input_meteo)[1] # To be specified (end of the irrigation campaign)
 
 if (coupling) {
   model_name = "COWAT" # Cormas model name o be specified
@@ -57,8 +59,6 @@ if (coupling) {
   parcel_file = "WatASit[1.1.2_CoMSES].pcl" # Cormas parcel file To be specified
   init_method = "INIT_2017_54x44" # Cormas init method to be specified
   coupling_scenario <- "Baseline" # Choose "Baseline" (without coordination of the network managed in WatASit) or "Alternative" (with daily slots coordination managed in WatASit)
-  DOY_start_coupling <- 198 # To be specified (start of the irrigation campaign)
-  DOY_stop_coupling <- dim(input_meteo)[1] # To be specified (end of the irrigation campaign)
   itest = 0 # Managed in WatASit
   gge = 0 # Not used if coupling = T
   dosap = 0 # Managed in WatASit
