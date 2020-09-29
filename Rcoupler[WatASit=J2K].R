@@ -84,7 +84,7 @@ for (path in requiredFiles) {
 
 ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
 case_study_name <- "Aspres_with_cormas_1989-2013"
-date_start_hydro <- as.Date("2016-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
+date_start_hydro <- as.Date("2015-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
 date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
@@ -97,9 +97,9 @@ str(input_meteo)
 
 ####### 2.2 Specification for J2K/JAMS #######
 hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
-#jams_file_name <- "cowat.jam"
-jams_file_name <- "j2k_cowat_buech_ju_couplage.jam"
-#reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
+jams_file_name <- "cowat.jam"
+reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
+
 makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
@@ -160,10 +160,33 @@ r <- initSimu() # initialize the model
 cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
   tbl_df()
 
-#TODO: Convert "cormasParcelIds" en cormas "hruParcellIds" 
+cormasSpatialPlaceIds <- getAttributesOfEntities("idReach","SpatialPlace") %>%
+  tbl_df()
+
+correctReachIds <- read.table("superjams/data/J2K_cowat/parameter/step2_streams_new_div_OK2.asc",
+                              sep = " ",
+                              dec = ".",
+                              skip = 6) %>%
+  mutate(line = row_number()) %>%
+  gather("col", "j2kID", -line) %>% 
+  mutate(col = as.numeric(str_remove(col,"V"))) %>%
+  arrange(line, col) %>%
+  mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI!!
+  filter(j2kID != 0) %>%
+  tbl_df() %>% 
+  full_join(cormasSpatialPlaceIds %>% 
+              mutate(cormasId = as.numeric(as.character(id)))) %>%
+  arrange(cormasId) %>%
+  mutate(j2kID = replace_na(j2kID,0))
+
+r <- setAttributesOfEntities("idReach",
+                             "SpatialPlace", 
+                             correctReachIds$cormasId, 
+                             correctReachIds$j2kID)
 
 cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>%
   tbl_df()
+
 
 ####### 3.5 Initialize J2K model #######
 # On laisse le coupleur lancer JAMS/J2K
@@ -231,10 +254,14 @@ cat('\nRunning coupled simulation!!!\n')
           mutate(q = (Runoff / 1000) / (24 * 3600)) %>%
           mutate(q = replace_na(q,0))
         
-        setAttributesOfEntities("q", "RiverReach",
+        r <- setAttributesOfEntities("q", "RiverReach",
                                 updatedFlows$id,
                                 updatedFlows$q)
         
+        rainOnParcells <- j2kGetOneValueAllHrus("rain", cormasParcelIds$idParcel)
+        r <- setAttributesOfEntities("rain", "FarmPlot",
+                                     rainOnParcells$id,
+                                     rainOnParcells$netRain)
         ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
         #TODO
         #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
