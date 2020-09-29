@@ -356,7 +356,7 @@
                 <var attribute="HRUS" context="J2K-D" name="hrus"/>
                 <var attribute="irrigationTotal" context="HRULoop" name="irrigationTotal"/>
             </component>
-            <component class="cowattools.IrrigationApplicationExternalSurface" enabled="true" name="IrrigationApplicationExternalSurface" version="0.1">
+            <component class="cowattools.IrrigationApplicationExternalSurface" enabled="false" name="IrrigationApplicationExternalSurface" version="0.1">
                 <var attribute="area" context="HRULoop" name="area"/>
                 <var attribute="netrain" context="HRULoop" name="netRain"/>
                 <var attribute="remainingAfterDrip" context="HRULoop" name="remainingAfterDrip"/>

@@ -106,7 +106,7 @@ makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <
 with_cormas <- T # choose True (T) or False (F)
 if (with_cormas) {
 modelName = "COWAT"
-parcelFile = "WatASit.pcl"
+parcelFile = "WatASit[1.1.2_COMSES]deasactivateAsas.pcl"
 init = "INIT_2017_318x238_upperBuech"
 cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
 scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
@@ -171,7 +171,7 @@ correctReachIds <- read.table("superjams/data/J2K_cowat/parameter/step2_streams_
   gather("col", "j2kID", -line) %>% 
   mutate(col = as.numeric(str_remove(col,"V"))) %>%
   arrange(line, col) %>%
-  mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI!!
+  mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI il y a un décalage de 1..!
   filter(j2kID != 0) %>%
   tbl_df() %>% 
   full_join(cormasSpatialPlaceIds %>% 
@@ -258,10 +258,12 @@ cat('\nRunning coupled simulation!!!\n')
                                 updatedFlows$id,
                                 updatedFlows$q)
         
-        rainOnParcells <- j2kGetOneValueAllHrus("rain", cormasParcelIds$idParcel)
+        rainOnParcells <- j2kGetValuesAllHrus("rain", cormasParcelIds$idParcel) %>%
+          tbl_df()
+        
         r <- setAttributesOfEntities("rain", "FarmPlot",
-                                     rainOnParcells$id,
-                                     rainOnParcells$netRain)
+                                     rainOnParcells$ID,
+                                     rainOnParcells$rain)
         ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
         #TODO
         #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
