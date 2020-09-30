@@ -13,7 +13,7 @@ rm(list=ls()); start_time <- Sys.time();
 ptm <- proc.time()
 wd <- getwd()
 #jams_file_name <- "cowat.jam"
-jams_file_name <- "j2k_cowat_buech_ju_couplage.jam"
+jams_file_name <- "cowat_for_new_com_module.jam"
 
 #Source fonction file
 source("Rfunctions/Rj2k.R")
@@ -67,7 +67,7 @@ setwd(wd)
 cat('\nRunning simulation!!!\n')
 ####### Run J2K model And test your function there#######
 # Pre-chauffe
-j2kMakeStep(40)
+j2kMakeStep(1)
 
 duration <- 10
 testRes <- NULL
@@ -83,6 +83,7 @@ for (t in 1:duration) {
   storage <- NA
   storage <- j2kWaterBalanceStorages()
   flows <- j2kWaterBalanceFlows()
+  #flows <- storage
   #flows$runoffBis <- j2kGetOneValueAllReachs("Runoff") %>% filter(ID == 52001) %>% pull()
   testRes <- rbind(testRes, data.frame(storage, 
                                        flows,
