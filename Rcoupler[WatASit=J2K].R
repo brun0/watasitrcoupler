@@ -86,9 +86,6 @@ if (with_cormas) {
       system2(
         'wine',
         args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-        # adding headless successfully launches cormas and the model loading appears to be working
-        # but at some point Rcoupler crashes
-        #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
         wait=F, stdout=stdoutP, stderr=stderrP
       )
       cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
