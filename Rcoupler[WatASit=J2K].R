@@ -15,7 +15,13 @@ rm(list=ls()); start_time <- Sys.time();
 ####### 1. R Settings #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 1.1 Set directory for coupling #######
-script.dirname <- getwd()
+wd <- getwd()
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+script.dirname <- dirname(script.name)
+if (paste0(script.dirname, "runInConsole") == "runInConsole")
+  script.dirname <- wd
 
 ####### 1.2 Load functions #######
 wd_Functions <- file.path(script.dirname, "Rfunctions/")
@@ -73,6 +79,23 @@ saveRes <- F #if False -> don't save results if True -> save results
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
 if (with_cormas) {
+    cormasInVW7dir = cormasRootPath
+    setwd(cormasInVW7dir)
+    if (!isCormasListening()) {
+      # Open Cormas listenning for instruction
+      system2(
+        'wine',
+        args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+        # adding headless successfully launches cormas and the model loading appears to be working
+        # but at some point Rcoupler crashes
+        #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+        wait=F, stdout=stdoutP, stderr=stderrP
+      )
+      cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
+      Sys.sleep(3)
+    }
+    setwd(wd)
+    
 r <- openModel(modelName, parcelFile = parcelFile)
 r <- setInit(init) # Init method choice
 r <- setStep(paste0("R_go",scenario,"Step:")) # Control method choice
