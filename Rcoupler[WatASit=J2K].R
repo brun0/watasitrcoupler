@@ -106,10 +106,11 @@ makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <
 with_cormas <- T # choose True (T) or False (F)
 if (with_cormas) {
 modelName = "COWAT"
-parcelFile = "WatASit[1.1.2_COMSES]deasactivateAsas.pcl"
+parcelFile = "WatASit[1.1.3_COMSES]deasactivateAsas.pcl"
 init = "INIT_2017_318x238_upperBuech"
 cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
-scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
+#scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
+scenario <- "BaselineCOWAT"
 }
 
 # ####### 2.4 Specification for Optirrig coupling [COMPULSORY] #######
@@ -269,12 +270,12 @@ cat('\nRunning coupled simulation!!!\n')
         #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
         # RunWatASit(daily_step = i, input_meteo = input_meteo)
         #}
-        r <- runSimu(duration = 1)
+        r <- runSimu(duration = 24)
         
         ####### C. Set the irrigation in J2K #######
         #TODO
-        #surfaceIrri <- getAttributesOfEntities("surfaceIrri", "HRU")
-        #j2kSet("surface", hruID[1:length(surfaceIrri$id)] , as.numeric(surfaceIrri$surfaceIrri)) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+        surfaceIrri <- getAttributesOfEntities("irriDailyDose", "FarmPlot")
+        j2kSet("surface", surfaceIrri$id , surfaceIrri$irriDailyDose) # Mais en utilisant en fait les irriDailyDose ou truc du genre
         # récupérés ci-dessus depuis cormas
         
         ####### D. Run new j2k daily step #######
