@@ -3,10 +3,10 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # This script runs J2K-WatASit coupled simulations
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Code developed in 2020, Jan-June, by
-# J. Veyssier -> make superjams, socket methods
+# Code developed in 2019-2020, by
+# J. Veyssier -> make superjams and socket methods
 # B. Bonté -> make RCormas methods and Rcoupler script
-# B. Richard -> make param and climate Rfunctions and Rcoupler script
+# B. Richard -> make Rfunctions and Rcoupler script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -43,8 +43,8 @@ jamsRootPath<-config[1]; stderrP<-config[2]; stdoutP<-config[3]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
-case_study_name <- "Aspres_with_cormas_1989-2013"
-date_start_hydro <- as.Date("2015-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
+case_study_name <- "Aspres_with_cormas_1989-2013_TEST"
+date_start_hydro <- as.Date("2015-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date q modifier dans juice!)
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_hydro,units='days'))
 date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_hydro,units='days'))
 date_end_simu <- date_end_irri
@@ -80,22 +80,22 @@ saveRes <- F #if False -> don't save results if True -> save results
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 3.1 Connexion and opening of WatASit model #######
 # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
-# cormasInVW7dir = cormasRootPath
-# setwd(cormasInVW7dir)
-# if (!isCormasListening()) {
-#   # Open Cormas listenning for instruction
-#   system2(
-#     'wine',
-#       args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-#     # adding headless successfully launches cormas and the model loading appears to be working
-#     # but at some point Rcoupler crashes
-#     #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-#     wait=F, stdout=stdoutP, stderr=stderrP
-#   )
-#   cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
-#   Sys.sleep(3)
-# }
-# setwd(wd)
+ cormasInVW7dir = cormasRootPath
+ setwd(cormasInVW7dir)
+ if (!isCormasListening()) {
+   # Open Cormas listenning for instruction
+   system2(
+     'wine',
+       args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+     # adding headless successfully launches cormas and the model loading appears to be working
+     # but at some point Rcoupler crashes
+     #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+     wait=F, stdout=stdoutP, stderr=stderrP
+   )
+   cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
+   Sys.sleep(3)
+ }
+ setwd(wd)
 # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
 # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
 # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
@@ -162,10 +162,10 @@ simuProgress <- txtProgressBar(min = 1,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cat('\n Running simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
-#TODO
+reachOutputList <- createReachOutputList(cormasReachIDs) # List of river reach outputs
+hruOutputList <- createHRUOutputList(cormasParcelIds) # List of hru outputs
 
-####### 4.2 Run models
-  # Run Coupled model on the rest of the simulation period 
+####### 4.2 Run coupled model on the rest of the simulation period 
   simuProgress <- txtProgressBar(min = 1,
                                  max =doy_end_irri-doy_start_irri,
                                  style = 3)
@@ -208,16 +208,23 @@ cat('\n Running simulation!!!\n')
         
       } # End of with_cormas
       
-        ####### D. Run new j2k daily step and#######
+        ####### D. Run new j2k daily step #######
         if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())} # To calculate the water balance
         j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
         if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
         
-        ####### E. Recover j2k outputs#######
-        #TODO
-        
+        ####### E. Recover j2k outputs #######
+        reachOutputList <- recoverReachOutputs(reachOutputList)
+        hruOutputList <- recoverHruOutputs(hruOutputList)
         
     } # End of time loop
+  cat('\n')
+  j2kStop()
+  Sys.sleep(3)
+  killJ2K()
+  end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
+                                                                  "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
+
   
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,13 +253,7 @@ if (makeWaterBalance){
 ####### 7. Save simulation results #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (saveRes) {
-  dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-  #TODO: a function to export savings.
+  outputs.dir <- "save/simulations_cowat/"
+  writeOutputs(outputs.dir, case_study_name, reachOutputList, hruOutputList)
 }
 
-cat('\n')
-j2kStop()
-Sys.sleep(3)
-killJ2K()
-end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
-                                                                "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
