@@ -356,7 +356,7 @@
                 <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
                 <var attribute="irrigationTotal" context="HRULoop" name="irrigationTotal"/>
             </component>
-            <component class="cowattools.IrrigationApplicationExternalSurface" enabled="false" name="IrrigationApplicationExternalSurface" version="0.1">
+            <component class="cowattools.IrrigationApplicationExternalSurface" enabled="true" name="IrrigationApplicationExternalSurface" version="0.1">
                 <var attribute="area" context="HRULoop" name="area"/>
                 <var attribute="netrain" context="HRULoop" name="netRain"/>
                 <var attribute="remainingAfterDrip" context="HRULoop" name="remainingAfterDrip"/>
@@ -549,7 +549,7 @@
             <var attribute="REACHES" context="J2K_RHONE" name="entities"/>
             <component class="management.Regionalisation_Dam" enabled="false" name="DamRegionalizer" version="1.0_0"/>
             <component class="management.DamDevice" enabled="false" name="DamDevice" version="3.0_0"/>
-            <component class="cowattools.BuechReachInOut" enabled="false" name="BuechReachInOut" version="0.1">
+            <component class="cowattools.BuechReachInOut" enabled="true" name="BuechReachInOut" version="0.1">
                 <var attribute="inRD1" context="ReachLoop" name="inRD1"/>
                 <var attribute="inRD2" context="ReachLoop" name="inRD2"/>
                 <var attribute="outRD1" context="ReachLoop" name="outRD1"/>

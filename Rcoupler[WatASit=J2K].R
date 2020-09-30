@@ -55,8 +55,8 @@ str(input_meteo)
 
 ####### 2.2 Specification for J2K/JAMS #######
 hydro_warmup_doy_nb <- as.numeric(difftime(date_start_irri, date_start_hydro,units='days')-1)
-jams_file_name <- "cowat.jam"
-reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
+jams_file_name <- "cowat_for_new_com_module.jam"
+#reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
 makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
 
 ####### 2.3 Specification for WatASit/Cormas [COMPULSORY] #######
