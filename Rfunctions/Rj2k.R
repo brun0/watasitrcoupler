@@ -93,6 +93,7 @@ j2kStop <- function(ip="localhost", port="9999") {
 # and also reachin, reachout (keys are reach ids)
 # !! all values need to be in litres !!
 j2kSet <- function(what, keys, values, ip="localhost", port="9999") {
+    if (length(keys) == 0) return("no value to set")
     dict = genJsonDict(keys, values)
     res = askJ2K(c("command", "key", "value"), c("set", what, dict), ip, port)
     res = paste("[J2K]", res[[2]])

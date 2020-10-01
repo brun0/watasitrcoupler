@@ -88,7 +88,7 @@ date_start_hydro <- as.Date("2016-01-01", "%Y-%m-%d") # Attention la date de dé
 date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
 date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
 #date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
-date_end_irri <- as.Date("2017-07-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+date_end_irri <- as.Date("2017-06-15", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
 date_end_simu <- date_end_irri
 
 ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
@@ -154,9 +154,12 @@ r <- setInit(init) # Init
 r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
 
 ####### 3.4 Initialize Cormas model #######
+
+#Choose probes to activate
 r <- activateProbe("flowInRiverReachGB", "COWAT")
 r <- activateProbe("flowInRiverReachPB", "COWAT")
-r <- initSimu() # initialize the model
+# initialize the model
+r <- initSimu() 
 
 ####### 3.5 Get Hrus and reaches IDs that are in WatAsit Model #######
 cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
@@ -226,6 +229,9 @@ print("J2k warming-up")
 cat('\nRunning coupled simulation!!!\n')
 ####### 4.1 Create results dataFrame #######
 #TODO
+irrigatedFarmPlots <- NULL
+j2KNetRain <- NULL
+reachsOfCormas <- NULL
 
 ####### 4.2 Run models
   # Run Coupled model on the rest of the simulation period 
@@ -259,12 +265,18 @@ cat('\nRunning coupled simulation!!!\n')
                                 updatedFlows$id,
                                 updatedFlows$q)
         
-          rainOnParcells <- j2kGetValuesAllHrus("rain", cormasParcelIds$idParcel) %>%
-          tbl_df()
+        reachsOfCormas <- reachsOfCormas %>%
+          rbind(updatedFlows %>% 
+                  mutate(date = i))
         
-        r <- setAttributesOfEntities("rain", "FarmPlot",
-                                     rainOnParcells$ID,
-                                     rainOnParcells$rain)
+        #For tests Or to integrate J2k meteo in Cormas model?
+        
+        #rainOnParcells <- j2kGetValuesAllHrus("rain", cormasParcelIds$idParcel) %>%
+        #tbl_df()
+        
+        #r <- setAttributesOfEntities("rain", "FarmPlot",
+        #                             rainOnParcells$ID,
+        #                             rainOnParcells$rain)
         ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
         #TODO
         #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
@@ -276,20 +288,55 @@ cat('\nRunning coupled simulation!!!\n')
         #TODO
         surfaceIrri <- getAttributesOfEntities("irriDailyDose", "FarmPlot") %>%
           filter(irriDailyDose > 0) %>%
+          mutate(date = i) %>%
           tbl_df()
         
-        surfaceIrri
+        irrigatedFarmPlots <- surfaceIrri %>% 
+          rbind(surfaceIrri)
         
-        #j2kSet("surface", surfaceIrri$id , surfaceIrri$irriDailyDose) # Mais en utilisant en fait les irriDailyDose ou truc du genre
+        netRain <- j2kGetValuesAllHrus("netrain",
+                                             cormasParcelIds$idParcel) %>%
+          mutate(date = i)
+        
+        j2kSet("surface", 
+               surfaceIrri$id, 
+               surfaceIrri$irriDailyDose) # Mais en utilisant en fait les irriDailyDose ou truc du genre
         # récupérés ci-dessus depuis cormas
+
+        j2KNetRain <- j2KNetRain %>% 
+          rbind(netRain) %>%
+          tbl_df()
         
-        ####### D. Run new j2k daily step #######
+        ####### D. Set water withdrawed and added from the reachs #######
+        
+        #Take water from the reach of the intake and release it 
+        # to the reach of the release. 
+        #Be carreful, the actual water withdrawed during the day needs to be computed
+        #by cormas
+        qFromIntakes <- getAttributesOfEntities("q", "EwaterIntake") 
+        qFromReleases <- getAttributesOfEntities("q", "EwaterRelease") 
+        qFromIntakes <- qFromIntakes %>% 
+          left_join(getAttributesOfEntities("idReach", "EwaterIntake"), by="id" )
+        qFromReleases <- qFromReleases %>% 
+          left_join(getAttributesOfEntities("idReach", "EwaterRelease"), by="id" )
+        #Ensuite il faudrait faire un truc comme ce qui est indiqué en dessous mais 
+        #ça ne fonctionne pas
+        
+        #j2kSet("reachin", 
+        #       qFromIntakes$idReach, 
+        #       qFromIntakes$q * 1000 * 24 * 60)
+        
+        #j2kSet("reachout", 
+        #       qFromReleases$idReach, 
+        #       qFromReleases$q * 1000 * 24 * 60)
+        
+        ####### E. Run new j2k daily step #######
         if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())} # To calculate the water balance
         j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
         if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
     } # End of time loop
-  
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ####### 6. Make water balance [Optionnal] #######
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (makeWaterBalance){
