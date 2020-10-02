@@ -9,157 +9,159 @@
 # B. Richard -> make param and climate Rfunctions and Rcoupler
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-rm(list=ls()); start_time <- Sys.time();
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 1. R Settings #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 1.1 Set directory for coupling #######
-# Not necessary if you open watasit_rcoupler.Rproject
-wd <- getwd()
-initial.options <- commandArgs(trailingOnly = FALSE)
-file.arg.name <- "--file="
-script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
-script.dirname <- dirname(script.name)
-if (paste0(script.dirname, "runInConsole") == "runInConsole")
-  script.dirname <- wd
-
-####### 1.2 Load functions #######
-wd_Functions <- file.path(script.dirname, "Rfunctions/")
-for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
-
-####### 1.3 Load libraries #######
-load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
-
-####### 1.4 Core parallelism #######
-cores <- parallel:::detectCores(); registerDoParallel(cores-2);
-
-####### 1.5 Read config file #######
-args = commandArgs(trailingOnly=TRUE)
-DEBUG = FALSE
-configFilePath = "./rcoupler.cfg"
-for (arg in args) {
-  if (arg == '-d') {
-    DEBUG = TRUE
-  } else {
-    configFilePath = arg
+  
+  rm(list=ls()); start_time <- Sys.time();
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 1. R Settings #######
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 1.1 Set directory for coupling #######
+  # Not necessary if you open watasit_rcoupler.Rproject
+  wd <- getwd()
+  initial.options <- commandArgs(trailingOnly = FALSE)
+  file.arg.name <- "--file="
+  script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+  script.dirname <- dirname(script.name)
+  if (paste0(script.dirname, "runInConsole") == "runInConsole")
+    script.dirname <- wd
+  
+  ####### 1.2 Load functions #######
+  wd_Functions <- file.path(script.dirname, "Rfunctions/")
+  for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
+  
+  ####### 1.3 Load libraries #######
+  load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
+  
+  ####### 1.4 Core parallelism #######
+  cores <- parallel:::detectCores(); registerDoParallel(cores-2);
+  
+  ####### 1.5 Read config file #######
+  args = commandArgs(trailingOnly=TRUE)
+  DEBUG = FALSE
+  configFilePath = "./rcoupler.cfg"
+  for (arg in args) {
+    if (arg == '-d') {
+      DEBUG = TRUE
+    } else {
+      configFilePath = arg
+    }
   }
-}
-configFileName = basename(configFilePath)
-configFileDir = dirname(configFilePath)
-stderrP = FALSE
-stdoutP = FALSE
-if (DEBUG) {
-  stderrP = ""
-  stdoutP = ""
-}
-config = ConfigParser$new(NULL)
-config$read(configFilePath)
-
-jamsRootPath = config$get("jamsRoot", NA, "tools")
-if (!isAbsolutePath(jamsRootPath)) {
-  jamsRootPath = paste(configFileDir, jamsRootPath, sep="/")
-}
-jamsStarterPath = paste(jamsRootPath, "jams-starter.jar", sep="/")
-
-cormasRootPath = config$get("cormasRoot", NA, "tools")
-if (!isAbsolutePath(cormasRootPath)) {
-  cormasRootPath = paste(configFileDir, cormasRootPath, sep="/")
-}
-cormasPath = paste(cormasRootPath, "cormas.im", sep="/")
-vwPath = paste(cormasRootPath, "..", "bin", "win", "visual.exe", sep="/")
-
-requiredFiles = c(jamsStarterPath, cormasPath, vwPath)
-for (path in requiredFiles) {
-  if (!file.exists(path)) {
-    cat(paste("File ", path, " not found.\n", sep=""))
-    quit(status=1)
+  configFileName = basename(configFilePath)
+  configFileDir = dirname(configFilePath)
+  stderrP = FALSE
+  stdoutP = FALSE
+  if (DEBUG) {
+    stderrP = ""
+    stdoutP = ""
   }
-}
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 2. Simulation Settings and inputs #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
-case_study_name <- "Aspres_with_cormas_1989-2013"
-date_start_hydro <- as.Date("2016-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
-date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
-date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
-#date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
-date_end_irri <- as.Date("2017-06-15", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
-date_end_simu <- date_end_irri
-
-####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
-climate_file_name <- 'climate_buech_2016-2017.csv'
-input_meteo <- computeClimateInput(climate_file_name, date_start_crop, date_end_irri)
-str(input_meteo)
-
-####### 2.2 Specification for J2K/JAMS #######
-hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
-jams_file_name <- "cowat_for_new_com_module.jam"
-reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
-
-makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
-
-####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
-with_cormas <- T # choose True (T) or False (F)
-if (with_cormas) {
-modelName = "COWAT"
-parcelFile = "WatASit[1.1.3_COMSES]deasactivateAsas.pcl"
-init = "INIT_2017_318x238_upperBuech"
-cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
-#scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
-scenario <- "BaselineCOWAT"
-}
-
-# ####### 2.4 Specification for Optirrig coupling [COMPULSORY] #######
-# Unused here
-
-####### 2.5 Activate results saving #######
-saveRes <- F #if False -> don't save results if True -> save results
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 3. WatASit and J2K initialisation ############################
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 3.1 Connexion and opening of WatASit model #######
-# Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
-cormasInVW7dir = cormasRootPath
-setwd(cormasInVW7dir)
-if (!isCormasListening()) {
-  # Open Cormas listenning for instruction
-  system2(
-    'wine',
-      args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-    # adding headless successfully launches cormas and the model loading appears to be working
-    # but at some point Rcoupler crashes
-    #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
-    wait=F, stdout=stdoutP, stderr=stderrP
-  )
-  cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
-  Sys.sleep(3)
-}
-setwd(wd)
-
-# Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
-# Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
-# Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
-r <- openModel(modelName, parcelFile = parcelFile)
-
-####### 3.2 Choose of WatASit initial state and time step function (scenarios) #######
-# Note that the model is not initialized, we just set the init method..
-r <- setInit(init) # Init
-r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
-
-####### 3.4 Initialize Cormas model #######
-
-#Choose probes to activate
-r <- activateProbe("flowInRiverReachGB", "COWAT")
-r <- activateProbe("flowInRiverReachPB", "COWAT")
-# initialize the model
-r <- initSimu() 
+  config = ConfigParser$new(NULL)
+  config$read(configFilePath)
+  
+  jamsRootPath = config$get("jamsRoot", NA, "tools")
+  if (!isAbsolutePath(jamsRootPath)) {
+    jamsRootPath = paste(configFileDir, jamsRootPath, sep="/")
+  }
+  jamsStarterPath = paste(jamsRootPath, "jams-starter.jar", sep="/")
+  
+  cormasRootPath = config$get("cormasRoot", NA, "tools")
+  if (!isAbsolutePath(cormasRootPath)) {
+    cormasRootPath = paste(configFileDir, cormasRootPath, sep="/")
+  }
+  cormasPath = paste(cormasRootPath, "cormas.im", sep="/")
+  vwPath = paste(cormasRootPath, "..", "bin", "win", "visual.exe", sep="/")
+  
+  requiredFiles = c(jamsStarterPath, cormasPath, vwPath)
+  for (path in requiredFiles) {
+    if (!file.exists(path)) {
+      cat(paste("File ", path, " not found.\n", sep=""))
+      quit(status=1)
+    }
+  }
+  
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 2. Simulation Settings and inputs #######
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
+  case_study_name <- "Aspres_with_cormas_1989-2013"
+  date_start_hydro <- as.Date("2016-01-01", "%Y-%m-%d") # Attention la date de début de simulation de j2k doit être la mêne que dans le .jam (date modifiée dans juice!)
+  date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
+  date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
+  #date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+  date_end_irri <- as.Date("2017-05-15", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+  date_end_simu <- date_end_irri
+  
+  ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
+  climate_file_name <- 'climate_buech_2016-2017.csv'
+  input_meteo <- computeClimateInput(climate_file_name, date_start_crop, date_end_irri)
+  str(input_meteo)
+  
+  ####### 2.2 Specification for J2K/JAMS #######
+  hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
+  jams_file_name <- "cowat_for_new_com_module.jam"
+  reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
+  
+  makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
+  
+  ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
+  with_cormas <- T # choose True (T) or False (F)
+  if (with_cormas) {
+  modelName = "COWAT"
+  parcelFile = "WatASit[1.1.3_COMSES]deasactivateAsas.pcl"
+  init = "INIT_2017_318x238_upperBuech"
+  cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
+  #scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
+  scenario <- "BaselineCOWAT"
+  }
+  
+  # ####### 2.4 Specification for Optirrig coupling [COMPULSORY] #######
+  # Unused here
+  
+  ####### 2.5 Activate results saving #######
+  saveRes <- F #if False -> don't save results if True -> save results
+  
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 3. WatASit and J2K initialisation ############################
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 3.1 Connexion and opening of WatASit model #######
+  # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
+  cormasInVW7dir = cormasRootPath
+  setwd(cormasInVW7dir)
+  if (!isCormasListening()) {
+    # Open Cormas listenning for instruction
+    system2(
+      'wine',
+        args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+      # adding headless successfully launches cormas and the model loading appears to be working
+      # but at some point Rcoupler crashes
+      #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+      wait=F, stdout=stdoutP, stderr=stderrP
+    )
+    cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
+    Sys.sleep(3)
+  }
+  setwd(wd)
+  
+  # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
+  # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
+  # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
+  r <- openModel(modelName, parcelFile = parcelFile)
+  
+  ####### 3.2 Choose of WatASit initial state and time step function (scenarios) #######
+  # Note that the model is not initialized, we just set the init method..
+  r <- setInit(init) # Init
+  r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
+  
+  ####### 3.4 Initialize Cormas model #######
+  
+  #Choose probes to activate
+  r <- activateProbe("flowInRiverReachGB", "COWAT")
+  r <- activateProbe("flowInRiverReachPB", "COWAT")
+  r <- activateProbe("numberOfFlooldPlotActions", "COWAT")
+  r <- activateProbe("numberOfFloodPlots", "COWAT")
+  # initialize the model
+  r <- initSimu() 
 
 ####### 3.5 Get Hrus and reaches IDs that are in WatAsit Model #######
 cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
