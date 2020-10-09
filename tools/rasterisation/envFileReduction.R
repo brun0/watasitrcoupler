@@ -4,13 +4,13 @@
 
 library(dplyr)
 library(tidyr)
-.........................................................................
+#.........................................................................
 library(rgdal)         # lien vers la librairie GDAL
-.........................................................................
+#.........................................................................
 library(raster)        # analyses sur données Raster
 library(gdistance)     # chemins de moindre coût sur Raster
 library(rasterVis)     # visualisation de données Raster
-.........................................................................
+#.........................................................................
 library(sp)            # analyses sur données vecteur
 library(spdep)         # géostatistiques sur données vecteur
 library(rgeos)         # opérateurs sur données vecteur
@@ -26,6 +26,7 @@ envTable <- read.table("tools/rasterisation/spatial_ent[2017]_div2grandbuechcana
                        dec = ".") %>%
   tbl_df()
 
+colnames(envTable)<-c("idParcel","surfParc","codeCultu","codeGroup","codeAsa","idExpl","idReach","wintakeId","wreleaseId","wderivId","filteringSoil","canalsId")
 ## Getting altitude
 r<-raster('tools/rasterisation/MNT25m_93_buech_emprise.tif', sep="")
 
@@ -35,7 +36,7 @@ proj=CRS("+init=epsg:2154")
 projection(etendue)<-proj 
 etendueBox<-extent(etendue) # calcul de l'étendue rectangulaire du fichier  buffer
 r <- crop(r,etendueBox)        # découpage du MNT pour qu'il corresponde à l'étendue
-fdiv=3 # !!! division resolution par ...
+fdiv=4 # !!! division resolution par ...
 rdiv<-aggregate(r, fact=fdiv)#; str(rdiv) 
 
 #rpg=readShapePoly('tools/rasterisation/upper_buech_hru-plots.shp');
@@ -43,28 +44,37 @@ rdiv<-aggregate(r, fact=fdiv)#; str(rdiv)
 
 
 #Adding altitude to data table
-envTable$V14 <- rdiv %>% as.data.frame() %>% pull()
+#envTable$V14 <- rdiv %>% as.data.frame() %>% pull() #No altitude..
 
 #Reomving unused cells and adding id column
 txt <- envTable %>% 
-  mutate(isNull = (V6 < 0) & (V7 <= 0) & (V8 < 0) & (V9 < 0) & (V10 < 0) & (V12 < 0)) %>%
+  #mutate(isNull = (idExpl < 0) & (V7 <= 0) & (V8 < 0) & (V9 < 0) & (V10 < 0) & (V12 < 0)) %>% #keeping only real farmPlot (parcells)
+  mutate(isNull = (codeAsa != 7) & 
+           (idReach == 0) & 
+           (canalsId < 0) & 
+           (wintakeId < 0) & 
+           (wreleaseId < 0) &
+         (wderivId < 0)
+         ) %>% #keeping only reaches, canals, and asa 7)
   mutate(id = row_number()) %>%
-  filter(!isNull) %>% select(-isNull)
+  filter(!isNull) %>% 
+  dplyr::select(-isNull) 
 
 #Write header (adding id and altitude)
-fileConn<-file("tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCells.env")
+fileConn<-file("tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCellsMini.env")
 header <- writeLines(c(
   "dimensions\t318 238",
   "cloture\tclosed" ,
   "connexite\teight" ,
   "backgrounColor 0.666707 0.666707 0.666707",
   "full\tfalse",
-  "attributs\tid(Number) idParcel(Number) surfParc(Number) codeCultu(Number) codeGroup(Number) codeAsa(Number) idExpl(Number) idReach(Number) wintakeId(Number) wreleaseId(Number) wderivId(Number) filteringSoil(Number) canalsId(Number) altitude(Number)"
-))
+  "attributs\tid(Number) idParcel(Number) surfParc(Number) codeCultu(Number) codeGroup(Number) codeAsa(Number) idExpl(Number) idReach(Number) wintakeId(Number) wreleaseId(Number) wderivId(Number) filteringSoil(Number) canalsId(Number)"
+), con= fileConn)
 close(fileConn)
 
-?write.table(txt[,c(13,1:12,14)], "tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCells.env",
+write.table(txt[,c(13,1:12)], "tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCellsMini.env",
             sep=",",
             dec=".",
             row.names = F,
-            append = T)
+            append = T,
+            col.names = F)

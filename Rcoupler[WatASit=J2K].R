@@ -9,7 +9,8 @@
 # B. Richard -> make param and climate Rfunctions and Rcoupler
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  
+library(gridExtra)
+
   rm(list=ls()); start_time <- Sys.time();
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ####### 1. R Settings #######
@@ -101,13 +102,13 @@
   jams_file_name <- "cowat_for_new_com_module.jam"
   reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
   
-  makeWaterBalance <- F; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
+  makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
   
   ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
   with_cormas <- T # choose True (T) or False (F)
   if (with_cormas) {
   modelName = "COWAT"
-  parcelFile = "WatASit[1.1.3_COMSES]deasactivateAsas.pcl"
+  parcelFile = "WatASit.pcl"
   init = "INIT_2017_318x238_upperBuech"
   cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
   #scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
@@ -147,229 +148,406 @@
   # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
   # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
   r <- openModel(modelName, parcelFile = parcelFile)
+    
+    ####### 3.2 Choose of WatASit initial state and time step function (scenarios) #######
+    # Note that the model is not initialized, we just set the init method..
+    r <- setInit(init) # Init
+    r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
+    
+    ####### 3.4 Initialize Cormas model #######
+    
+    #Choose probes to activate
+    r <- activateProbe("flowInRiverReachGB", "COWAT")
+    r <- activateProbe("flowInRiverReachPB", "COWAT")
+    r <- activateProbe("numberOfFlooldPlotActions", "COWAT")
+    r <- activateProbe("numberOfFloodPlots", "COWAT")
+    #r <- activateProbe("irriDailyDoseProbe", "FarmPlot")
+    # initialize the model
+    r <- initSimu() 
   
-  ####### 3.2 Choose of WatASit initial state and time step function (scenarios) #######
-  # Note that the model is not initialized, we just set the init method..
-  r <- setInit(init) # Init
-  r <- setStep(paste0("R_go",scenario,"Step:")) # Stepper
+  ####### 3.5 Get Hrus and reaches IDs that are in WatAsit Model #######
+  cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
+    tbl_df()
   
-  ####### 3.4 Initialize Cormas model #######
+  cormasSpatialPlaceIds <- getAttributesOfEntities("idReach","SpatialPlace") %>%
+    tbl_df()
   
-  #Choose probes to activate
-  r <- activateProbe("flowInRiverReachGB", "COWAT")
-  r <- activateProbe("flowInRiverReachPB", "COWAT")
-  r <- activateProbe("numberOfFlooldPlotActions", "COWAT")
-  r <- activateProbe("numberOfFloodPlots", "COWAT")
-  # initialize the model
-  r <- initSimu() 
+  correctReachIds <- read.table("superjams/data/J2K_cowat/parameter/step2_streams_new_div_OK2.asc",
+                                sep = " ",
+                                dec = ".",
+                                skip = 6) %>%
+    mutate(line = row_number()) %>%
+    gather("col", "j2kID", -line) %>% 
+    mutate(col = as.numeric(str_remove(col,"V"))) %>%
+    arrange(line, col) %>%
+    mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI il y a un décalage de 1..!
+    filter(j2kID != 0) %>%
+    tbl_df() %>% 
+    full_join(cormasSpatialPlaceIds %>% 
+                mutate(cormasId = as.numeric(as.character(id)))) %>%
+    arrange(cormasId) %>%
+    mutate(j2kID = replace_na(j2kID,0))
+  
+  r <- setAttributesOfEntities("idReach",
+                               "SpatialPlace", 
+                               correctReachIds$cormasId, 
+                               correctReachIds$j2kID)
+  
+  cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>%
+    tbl_df()
+  
+  spatialPlacesWithCanals <- getAttributesOfEntities("canalsId","SpatialPlace") %>%
+    tbl_df() %>%
+    filter(canalsId > 0) 
 
-####### 3.5 Get Hrus and reaches IDs that are in WatAsit Model #######
-cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%
-  tbl_df()
-
-cormasSpatialPlaceIds <- getAttributesOfEntities("idReach","SpatialPlace") %>%
-  tbl_df()
-
-correctReachIds <- read.table("superjams/data/J2K_cowat/parameter/step2_streams_new_div_OK2.asc",
-                              sep = " ",
-                              dec = ".",
-                              skip = 6) %>%
-  mutate(line = row_number()) %>%
-  gather("col", "j2kID", -line) %>% 
-  mutate(col = as.numeric(str_remove(col,"V"))) %>%
-  arrange(line, col) %>%
-  mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI il y a un décalage de 1..!
-  filter(j2kID != 0) %>%
-  tbl_df() %>% 
-  full_join(cormasSpatialPlaceIds %>% 
-              mutate(cormasId = as.numeric(as.character(id)))) %>%
-  arrange(cormasId) %>%
-  mutate(j2kID = replace_na(j2kID,0))
-
-r <- setAttributesOfEntities("idReach",
-                             "SpatialPlace", 
-                             correctReachIds$cormasId, 
-                             correctReachIds$j2kID)
-
-cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>%
-  tbl_df()
-
-
-####### 3.5 Initialize J2K model #######
-# On laisse le coupleur lancer JAMS/J2K
-killJ2K() # kill jams if it's running
-setwd(jamsRootPath)
-system2(
-  'java',
-  args=c('-jar', 'jams-starter.jar', '-m', paste0('data/J2K_cowat/',jams_file_name), '-n'),
-  wait=F, stdout=stdoutP, stderr=stderrP
-)
-cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
-Sys.sleep(3)
-setwd(wd)
-
-####### 3.6 Warms-up J2K model #######
-# Run j2k on the warming-up simulation period 
-nbDays <- as.numeric(difftime(date_start_irri,date_start_hydro,units='days'))
-simuProgress <- txtProgressBar(min = 1,
-                               max = nbDays,
-                               style = 3)
-# J2k Warming-up
-print("J2k warming-up")
-  for (i in 1:nbDays){ 
-    #cat("\n","Running step:",i,"\n"); 
-    setTxtProgressBar(simuProgress, i)
-    # Run step-by-step for balance purpose
-    if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())}
-    j2kMakeStep()
-    if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
-  }
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 4. Run simulations #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cat('\nRunning coupled simulation!!!\n')
-####### 4.1 Create results dataFrame #######
-#TODO
-irrigatedFarmPlots <- NULL
-j2KNetRain <- NULL
-reachsOfCormas <- NULL
-
-####### 4.2 Run models
-  # Run Coupled model on the rest of the simulation period 
-  simuProgress <- txtProgressBar(min = doy_start_irri,
-                                 max = doy_end_irri,
+  spatialPlacesWithCanals <- spatialPlacesWithCanals %>% 
+    left_join(getAttributesOfEntities("idHRU","SpatialPlace"), by = "id") %>%
+    mutate(id = as.numeric(as.character(id))) %>%
+    arrange(id)
+  
+  ####### 3.5 Initialize J2K model #######
+  # On laisse le coupleur lancer JAMS/J2K
+  killJ2K() # kill jams if it's running
+  setwd(jamsRootPath)
+  system2(
+    'java',
+    args=c('-jar', 'jams-starter.jar', '-m', paste0('data/J2K_cowat/',jams_file_name), '-n'),
+    wait=F, stdout=stdoutP, stderr=stderrP
+  )
+  cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
+  Sys.sleep(3)
+  setwd(wd)
+  
+  ####### 3.6 Warms-up J2K model #######
+  # Run j2k on the warming-up simulation period 
+  nbDays <- as.numeric(difftime(date_start_irri,date_start_hydro,units='days'))
+  simuProgress <- txtProgressBar(min = 1,
+                                 max = nbDays,
                                  style = 3)
-  
-    for (i in doy_start_irri:doy_end_irri){ 
+  # J2k Warming-up
+  print("J2k warming-up")
+    for (i in 1:nbDays){ 
+      #cat("\n","Running step:",i,"\n"); 
       setTxtProgressBar(simuProgress, i)
-        
-        ####### A. Getting flow from j2k #######
-      #TODO problème: beaucoup de reachs sont dans cormas mais pas dans 
-      # les reachs de j2k_cowat_buech_ju_couplage.jam!
-      # du coup pour tester, au lieu de prendre le bon code ci-dessous,
-      # on prend un autre 
-        #reach_Runoff = j2kGetOneValueAllReachs("Runoff", 
-        #                                       cormasReachIds %>%
-        #                                         select(idReach) %>%
-        #                                         pull())
-      reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
-        tbl_df()
-      
-        ####### B. Updating flows in Cormas #######
-        updatedFlows <- cormasReachIds %>%
-          mutate(ID = idReach) %>%
-          full_join(reach_Runoff, by = "ID") %>%
-          mutate(q = (Runoff / 1000) / (24 * 3600)) %>%
-          mutate(q = replace_na(q,0))
-        
-        r <- setAttributesOfEntities("q", "RiverReach",
-                                updatedFlows$id,
-                                updatedFlows$q)
-        
-        reachsOfCormas <- reachsOfCormas %>%
-          rbind(updatedFlows %>% 
-                  mutate(date = i))
-        
-        #For tests Or to integrate J2k meteo in Cormas model?
-        
-        #rainOnParcells <- j2kGetValuesAllHrus("rain", cormasParcelIds$idParcel) %>%
-        #tbl_df()
-        
-        #r <- setAttributesOfEntities("rain", "FarmPlot",
-        #                             rainOnParcells$ID,
-        #                             rainOnParcells$rain)
-        ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
-        #TODO
-        #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
-        # RunWatASit(daily_step = i, input_meteo = input_meteo)
-        #}
-        r <- runSimu(duration = 24)
-        
-        ####### C. Set the irrigation in J2K #######
-        #TODO
-        surfaceIrri <- getAttributesOfEntities("irriDailyDose", "FarmPlot") %>%
-          filter(irriDailyDose > 0) %>%
-          mutate(date = i) %>%
+      # Run step-by-step for balance purpose
+      if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())}
+      j2kMakeStep()
+      if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())}
+    }
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 4. Run simulations #######
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  cat('\nRunning coupled simulation!!!\n')
+  ####### 4.1 Create results dataFrame #######
+  #TODO
+  irrigatedFarmPlots <- NULL
+  j2KNetRain <- NULL
+  reachsOfCormas <- NULL
+  inOutCanals <- NULL
+  seepage <- NULL
+  
+  ####### 4.2 Run models
+    # Run Coupled model on the rest of the simulation period 
+    simuProgress <- txtProgressBar(min = doy_start_irri,
+                                   max = doy_end_irri,
+                                   style = 3)
+    
+      for (i in doy_start_irri:doy_end_irri){ 
+        setTxtProgressBar(simuProgress, i)
+          
+          ####### A. Getting flow from j2k #######
+        #TODO problème: beaucoup de reachs sont dans cormas mais pas dans 
+        # les reachs de j2k_cowat_buech_ju_couplage.jam!
+        # du coup pour tester, au lieu de prendre le bon code ci-dessous,
+        # on prend un autre 
+          #reach_Runoff = j2kGetOneValueAllReachs("Runoff", 
+          #                                       cormasReachIds %>%
+          #                                         select(idReach) %>%
+          #                                         pull())
+        reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
           tbl_df()
         
-        irrigatedFarmPlots <- surfaceIrri %>% 
-          rbind(surfaceIrri)
-        
-        netRain <- j2kGetValuesAllHrus("netrain",
-                                             cormasParcelIds$idParcel) %>%
-          mutate(date = i)
-        
-        j2kSet("surface", 
-               surfaceIrri$id, 
-               surfaceIrri$irriDailyDose) # Mais en utilisant en fait les irriDailyDose ou truc du genre
-        # récupérés ci-dessus depuis cormas
+          ####### B. Updating flows in Cormas #######
+          updatedFlows <- cormasReachIds %>%
+            mutate(ID = idReach) %>%
+            full_join(reach_Runoff, by = "ID") %>%
+            mutate(q = (Runoff / 1000) / (24 * 3600)) %>%
+            mutate(q = replace_na(q,0))
+          
+          r <- setAttributesOfEntities("q", "RiverReach",
+                                  updatedFlows$id,
+                                  updatedFlows$q)
+          
+          reachsOfCormas <- reachsOfCormas %>%
+            rbind(updatedFlows %>% 
+                    mutate(date = i))
+          
+          #For tests Or to integrate J2k meteo in Cormas model?
+          
+          #rainOnParcells <- j2kGetValuesAllHrus("rain", cormasParcelIds$idParcel) %>%
+          #tbl_df()
+          
+          #r <- setAttributesOfEntities("rain", "FarmPlot",
+          #                             rainOnParcells$ID,
+          #                             rainOnParcells$rain)
+          ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
+          #TODO
+          #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
+          # RunWatASit(daily_step = i, input_meteo = input_meteo)
+          #}
+          r <- runSimu(duration = 24)
+          
+          ####### C. Set the irrigation in J2K And reset the one of Cormas accordingly#######
+          #TODO
+          #get liters of irrigation in cormas hruParcels #ATTENTION ÇA FONCTIONNE BIEN CAR ON A GARDÉ QUE LES FARMPlots irrigués
+          surfaceIrri <- getAttributesOfEntities("jamsWaterBuffer", "FarmPlot") %>%
+            mutate(irriDoseInLitres = jamsWaterBuffer * 1000) %>%
+            mutate(id =  as.numeric(as.character(id))) %>%
+            filter(irriDoseInLitres > 0) %>%
+            mutate(date = i) %>%
+            tbl_df()
+          
+          #Reset cormas buffers
+          surfaceIrri <- surfaceIrri %>% 
+            arrange(id)
+          r <- setAttributesOfEntities("jamsWaterBuffer", "FarmPlot",
+                                       surfaceIrri$id, 
+                                       vector("numeric", length(surfaceIrri$id)))
+          # Save irrigated plot for posterity
+          irrigatedFarmPlots <- irrigatedFarmPlots %>% 
+            rbind(surfaceIrri)
+          
+          # Set irrigation of corresponding j2k HRUPLOTs.
+          j2kSet("surface", 
+                 surfaceIrri$id, 
+                 surfaceIrri$irriDoseInLitres) 
 
-        j2KNetRain <- j2KNetRain %>% 
-          rbind(netRain) %>%
-          tbl_df()
-        
-        ####### D. Set water withdrawed and added from the reachs #######
-        
-        #Take water from the reach of the intake and release it 
-        # to the reach of the release. 
-        #Be carreful, the actual water withdrawed during the day needs to be computed
-        #by cormas
-        qFromIntakes <- getAttributesOfEntities("q", "EwaterIntake") 
-        qFromReleases <- getAttributesOfEntities("q", "EwaterRelease") 
-        qFromIntakes <- qFromIntakes %>% 
-          left_join(getAttributesOfEntities("idReach", "EwaterIntake"), by="id" )
-        qFromReleases <- qFromReleases %>% 
-          left_join(getAttributesOfEntities("idReach", "EwaterRelease"), by="id" )
-        #Ensuite il faudrait faire un truc comme ce qui est indiqué en dessous mais 
-        #ça ne fonctionne pas
-        
-        #j2kSet("reachin", 
-        #       qFromIntakes$idReach, 
-        #       qFromIntakes$q * 1000 * 24 * 60)
-        
-        #j2kSet("reachout", 
-        #       qFromReleases$idReach, 
-        #       qFromReleases$q * 1000 * 24 * 60)
-        
-        ####### E. Run new j2k daily step #######
-        if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterStorage())} # To calculate the water balance
-        j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
-        if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kInOutWater())}
-    } # End of time loop
+          ####### D. Set water withdrawed and added from the canals #######
+          
+          #Take water from the reach of the intake and release it 
+          # to the reach of the release. 
+          
+          #Get the water accumulated since last consultation (sotred in entities jamsWaterBuffer variables)
+          #Note that the water buffer is in m3 and cormas was run 24 hourly time step
+          qFromIntakes <- getAttributesOfEntities("jamsWaterBuffer", "EwaterIntake") %>%
+            mutate(id =  as.numeric(as.character(id))) %>%
+            mutate(q = jamsWaterBuffer * 1000) %>%
+            arrange(id)
+          
+          qFromReleases <- getAttributesOfEntities("jamsWaterBuffer", "EwaterRelease") %>%
+            mutate(id =  as.numeric(as.character(id))) %>%
+            mutate(q = jamsWaterBuffer * 1000) %>%
+            arrange(id)
+          
+          #Reset cormas buffers
+          r <- setAttributesOfEntities("jamsWaterBuffer", "EwaterIntake",
+                                       qFromIntakes$id, vector("numeric", length(qFromIntakes$id))) 
+          r <- setAttributesOfEntities("jamsWaterBuffer", "EwaterRelease",
+                                       qFromReleases$id,  vector("numeric", length(qFromReleases$id))) 
+          
+          #Build table q exchanges from reachs to canals to reachs back or to hruplots (other than irrigation)
+          qFromIntakes <- qFromIntakes %>% 
+            left_join(getAttributesOfEntities("idReach", "EwaterIntake") %>%
+                        mutate(id =  as.numeric(as.character(id))), by="id" )
+          qFromReleases <- qFromReleases %>% 
+            left_join(getAttributesOfEntities("idReach", "EwaterRelease") %>%
+                        mutate(id =  as.numeric(as.character(id))), by="id" )
+          qFromReleases <- qFromReleases %>% 
+            left_join(getAttributesOfEntities("idHRU", "EwaterRelease") %>%
+                        mutate(id =  as.numeric(as.character(id))), by="id" )
+          
+          qOfTheDay <- qFromIntakes %>% 
+            mutate(waterIn = T) %>%
+            mutate(idHRU = 0) %>%
+            dplyr::union(qFromReleases %>%
+                    mutate(waterIn = F), by= c("id", "waterIn")) %>% 
+            mutate(date = i)
+          
+          #Save exchanges for posterity
+          inOutCanals <- inOutCanals %>%
+            rbind(qOfTheDay)
+          
+          #Set outflow from reachs at waterIntakes
+          qsIn <- qOfTheDay %>% 
+            filter(waterIn)
+          
+          #Carrefull, waterIn in cormas -> reachout car de l'eau sort de J2K..
+          j2kSet("reachout", 
+                 qsIn$idReach, 
+                 qsIn$q)
+          
+          #Set inflows in hrus at waterReases
+          qsOut <- qOfTheDay %>% 
+            filter(!waterIn)
+          
+          # We consider that the hru is "flooded"
+          j2kSet("surface", 
+                 qsOut$idHRU, 
+                 qsOut$q)
+          
+          #Get the water seepage from canals and put it in the rigth HRUS
+          qFromSeepage <- getAttributesOfEntities("jamsWaterBuffer", "SpatialPlace") %>%
+            mutate(id =  as.numeric(as.character(id))) %>%
+            right_join(spatialPlacesWithCanals, by ="id") %>%
+            filter(jamsWaterBuffer > 0) %>%
+            mutate(q = jamsWaterBuffer * 1000) %>%
+            arrange(id) %>%
+            filter(idHRU > 0) %>%
+            tbl_df()
+          
+          #reset cormas buffer
+          r <- setAttributesOfEntities("jamsWaterBuffer", "SpatialPlace",
+                                       qFromSeepage$id,
+                                  vector("numeric", length(qFromSeepage$id))) 
+          
+          #save seepage for posterity
+          seepage <- seepage %>% 
+            mutate(date = i) %>%
+            rbind(qFromSeepage %>% 
+                    group_by(canalsId, idHRU) %>%
+                    summarise(q = sum(q)))
+          
+          #get hru Ids of spatial place
+          qFromSeepage <- qFromSeepage %>%
+            group_by(idHRU) %>%
+            summarise(q = sum(q))
+          
+          
+          #we consider seepage having the same effect as "surface" irrigation at the moment.. 
+          j2kSet("surface", 
+                 qFromSeepage$idHRU, 
+                 qFromSeepage$q)
+          
+          ####### E. Run new j2k daily step #######
+          if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())} # To calculate the water balance
+          j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
+          if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())}
+      } # End of time loop
+  
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 6. Make water balance [Optionnal] #######
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (makeWaterBalance){
+    storages <- storedWater %>% tbl_df()
+    inOut <- inOutWater %>% tbl_df()
+    waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
+    
+    waterSummary %>%
+      mutate(inWater = rain + snow) %>%
+      mutate(outWater = etact + runoff) %>%
+      mutate(storage = hruStorage + reachStorage) %>%
+      mutate(nextday = day + 1) %>%
+      ggplot() +
+      geom_line(aes(x = day, y = storage, color = "stock")) + 
+      geom_line(aes(x = day, y = inWater - outWater, color = "waterBalance")) +
+      geom_point(aes(x = nextday, y = storage + inWater - outWater, color = "PastStoragePlusBalance")) +
+      ylab("Litres")
+  
+    waterSummary %>%
+      filter(day > nbDays) %>%
+      mutate(inWater = rain + snow) %>%
+      mutate(outWater = etact + runoff) %>%
+      mutate(storage = hruStorage + reachStorage) %>%
+      mutate(nextday = day + 1) %>%
+      ggplot() +
+      geom_line(aes(x = day, y = storage, color = "stock")) + 
+      geom_line(aes(x = day, y = inWater - outWater, color = "waterBalance")) +
+      geom_point(aes(x = nextday, y = storage + inWater - outWater, color = "PastStoragePlusBalance")) +
+      ylab("Litres")
+    
+csteSeepage <- seepage  %>%
+      ungroup() %>%
+      distinct(canalsId,idHRU,q) %>%
+      summarise(total_q=sum(q)) %>%
+  pull()
+    
+cormasWaterSummary <- inOutCanals %>%
+      tbl_df() %>%
+      group_by(waterIn, date) %>%
+      summarise(q = sum(q)) %>%
+      arrange(date) %>%
+      spread(waterIn, q) %>%
+      rename(waterInCanal = `TRUE`) %>%
+      rename(waterOutCanal = `FALSE`) %>%
+      mutate(seepage = csteSeepage) %>%
+      left_join(irrigatedFarmPlots %>% 
+                  group_by(date) %>%
+                  summarise(floodedInParcells = sum(irriDoseInLitres)),
+                by = "date") %>%
+  mutate(floodedInParcells = replace_na(floodedInParcells, 0)) %>%
+  mutate(waterLoss = waterInCanal - waterOutCanal - seepage - floodedInParcells)
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 6. Make water balance [Optionnal] #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (makeWaterBalance){
-  storages <- storedWater %>% tbl_df()
-  inOut <- inOutWater %>% tbl_df()
-  waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
-  waterSummary <- waterSummary %>% mutate(storage = mps + lps + dps + storedSnow + intercStorage + 
-                                            rg1 + rg2 +
-                                            reachRD1 + reachRD2 + reachRG1 + reachRG2) %>%
-    mutate(inWater = rain + snow) %>%
-    mutate(outFlow = outRunoff) %>%
-    mutate(outET = eTR) %>%
-    mutate(balance = inWater - outFlow - outET) %>%
-    mutate(storageNextDay = lead(storage)) %>%
-    mutate(massConservation = storageNextDay - (storage + balance)) %>%
-    mutate(deltaStock = storageNextDay - storage)
-  write.csv(waterSummary, "newWaterSummary.csv", row.names = F)
-  plotBalance(storedWater,inOutWater, "waterBalanceTest")
+cormasWaterSummary %>%
+  ggplot() +
+  geom_line(aes(x= date, y = waterLoss))
+  
+cormasWaterSummary %>% 
+  gather("flows", "value", -date,-waterLoss) %>%
+  ggplot() +
+  geom_line(aes(x= date, y = value, color=flows))
+    
+irrigatedFarmPlots %>%
+      tbl_df()
+    
+    
+plot_bilan <- function (period = c(300,400)){
+wL <- waterSummary %>%
+      #filter(day > nbDays) %>%
+      mutate(inWater = rain + snow) %>%
+      mutate(outWater = etact + runoff) %>%
+      mutate(storage = hruStorage + reachStorage) %>%
+      mutate(storageNextDay = lead(storage)) %>%
+      mutate(deltaS = storageNextDay - storage) %>%
+      mutate(waterBalance =  inWater - outWater) %>%
+      mutate(waterLoss = deltaS - waterBalance) %>%
+      mutate(cumWaterLoss = cumsum(waterLoss)) %>%
+      ggplot() +
+      coord_cartesian(xlim=period) +
+      geom_line(aes(x = day, 
+                    #color = "waterLoss",
+                    y = waterLoss)) 
+      #geom_line(aes(x = day, y = cumWaterLoss, color = "cummulativeWaterLoss")) +
+      #theme(legend.position = "bottom")
+
+wFlows <- waterSummary %>%
+  select(day, runoff, rain, snow, etact) %>%
+  gather("flow", "value", -day) %>%
+  ggplot() +
+  geom_line(aes(x = day, y = value, color = flow)) + 
+  coord_cartesian(xlim=period) +
+  theme(legend.position = "bottom")
+  
+wStocks <- waterSummary %>%
+  select(day, hruStorage, reachStorage) %>%
+  gather("stock", "value", -day) %>%
+  ggplot() +
+  coord_cartesian(xlim=period) +
+  geom_line(aes(x = day, y = value, color = stock)) +
+  theme(legend.position = "bottom")
+
+grid.arrange(wL, wFlows, wStocks, 
+             #widths=c(4, 1.4), 
+             heights=c(4, 4, 4),
+             #ncol=1,
+             nrow=3) %>%
+  ggsave(file =paste0("bilan-", period[1], "-",period[2], ".pdf"),
+         width=21, height=29.7, units="cm")
 }
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-####### 7. Save simulation results #######
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#TODO: a function to export savings.
-if (saveRes) {
-  dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
-}
-cat('\n')
-j2kStop()
-Sys.sleep(3)
-killJ2K()
-end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
-                                                                "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")
+    write.csv(waterSummary, "newWaterSummary.csv", row.names = F)
+  }
+  
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####### 7. Save simulation results #######
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #TODO: a function to export savings.
+  if (saveRes) {
+    dir.create("save/simulations_cowat/"); dir.create(paste0("save/simulations_cowat/",case_study_name))
+  }
+  cat('\n')
+  j2kStop()
+  Sys.sleep(3)
+  killJ2K()
+  end_time <- Sys.time(); simu_time = end_time - start_time; cat ("................................................................",
+                                                                  "\n","Simulation time is ", round(simu_time,2), "minutes", "\n")

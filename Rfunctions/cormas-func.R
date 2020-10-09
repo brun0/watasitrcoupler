@@ -237,6 +237,7 @@ return(askCormas("SetStringAttributeOfClassValue",
 setAttributesOfEntities <- function(attributeName, className, entitiesIds, values){
   #This method uses a special feature of the method CormasWS>>setAttribute:ofClass:value:
   #designed to set values of attribute "attributeName" of all entities of class "className"
+  if(length(entitiesIds) < 1) return("no entities")
   answer <- askCormas("SetAttributeOfClassValue",
                    argNames = c("attName", "className", "value"),
                    argValues = c(paste(className,

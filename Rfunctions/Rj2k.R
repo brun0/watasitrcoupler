@@ -131,7 +131,7 @@ j2kGetValuesAllHrus <- function(attributes, ids = NULL, ip="localhost", port="99
 
 # For backwards compatibility..
 j2kGetOneValueAllHrus <- function(attribute, ids = NULL, ip="localhost", port="9999") {
-  return(j2kValuesAllHrus(attributes = attribute, ids, ip="localhost", port="9999"))
+  return(j2kGetValuesAllHrus(attributes = attribute, ids, ip="localhost", port="9999"))
 }
 
 # Get values of attributes sumed on all HRUS
