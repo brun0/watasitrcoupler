@@ -415,6 +415,7 @@ library(gridExtra)
           
           
           #we consider seepage having the same effect as "surface" irrigation at the moment.. 
+          #utiliser un module infiltration par seepage?
           j2kSet("surface", 
                  qFromSeepage$idHRU, 
                  qFromSeepage$q)
