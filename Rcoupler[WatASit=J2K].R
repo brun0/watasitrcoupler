@@ -419,9 +419,14 @@ library(gridExtra)
   ####### 6. Make water balance [Optionnal] #######
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (makeWaterBalance){
+    # Création des tables agrégées organisées pour afficher les graphiques de bilans
     storages <- storedWater %>% tbl_df()
     inOut <- inOutWater %>% tbl_df()
     waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
+    
+    # Graphique intuitif pour voir si le bilan est correct 
+    #(à l'echelle du bassin)
+    # Pour toute la durée de simulation incluant la pré-chauffe
     
     waterSummary %>%
       mutate(inWater = rain + snow) %>%
@@ -433,7 +438,10 @@ library(gridExtra)
       geom_line(aes(x = day, y = inWater - outWater, color = "waterBalance")) +
       geom_point(aes(x = nextday, y = storage + inWater - outWater, color = "PastStoragePlusBalance")) +
       ylab("Litres")
-  
+    
+    # Graphique intuitif pour voir si le bilan est correct 
+    #(à l'echelle du bassin)
+    # Pour la périodé couplée
     waterSummary %>%
       filter(day > nbDays) %>%
       mutate(inWater = rain + snow) %>%
@@ -450,14 +458,15 @@ totalSeepage <- seepage  %>%
       ungroup() %>%
       group_by(date) %>%
       summarise(seepage=sum(q))
-    
-totalSeepage %>% 
-  ggplot() +
-  geom_line(aes(x=date, y =seepage))
+
+  #plot du seepage pendant la période couplée
+  totalSeepage %>% 
+    ggplot() +
+    geom_line(aes(x=date, y =seepage))
   
   
-  
-cormasWaterSummary <- inOutCanals %>%
+  # Table agrégée du bilan pour le modèle CORMAS
+  cormasWaterSummary <- inOutCanals %>%
       tbl_df() %>%
       group_by(waterIn, date) %>%
       summarise(q = sum(q)) %>%
@@ -473,11 +482,14 @@ cormasWaterSummary <- inOutCanals %>%
   mutate(floodedInParcells = replace_na(floodedInParcells, 0)) %>%
   mutate(waterLoss = waterInCanal - waterOutCanal - seepage - floodedInParcells)
 
+  # Plot de l'eau "perdue" au sein de Cormas pendant la simulation couplée
+  #(Du point de vue de Cormas/watAsit)
+  
 cormasWaterSummary %>%
   ggplot() +
   geom_line(aes(x= date, y = waterLoss))
   
-
+  # Plot des flux d'eau dans Cormas (du point de vue de cormas)
 cormasWaterSummary %>% 
   mutate(waterOut = floodedInParcells + seepage + waterOutCanal) %>%
   gather("flows", "value", -date,-waterLoss) %>%
@@ -487,11 +499,13 @@ cormasWaterSummary %>%
 irrigatedFarmPlots %>%
       tbl_df()
     
-    
+# Fonction qui plot les variables des bilans fait par J2k sur l'ensemble de la simu
+library(gtable)
+library(grid)
 plot_bilan <- function (period = c(300,400)){
 wL <- waterSummary %>%
       arrange(day) %>%
-      filter(day > nbDays) %>%
+      #filter(day > nbDays) %>%
       mutate(inWater = rain + snow) %>%
       mutate(outWater = etact + runoff) %>%
       mutate(storage = hruStorage + reachStorage) %>%
@@ -501,10 +515,10 @@ wL <- waterSummary %>%
       mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
       mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
-      #coord_cartesian(xlim=period) +
+      coord_cartesian(xlim=period) +
       geom_line(aes(x = day, 
-                    #color = "waterLoss",
-                    y = waterLoss))
+                    color = "waterLoss",
+                    y = waterLoss))#+
                     #y=cumWaterLoss
       #geom_line(aes(x = day, y = cumWaterLoss, color = "cummulativeWaterLoss")) +
       #theme(legend.position = "bottom")
@@ -514,26 +528,32 @@ wFlows <- waterSummary %>%
   gather("flow", "value", -day) %>%
   ggplot() +
   geom_line(aes(x = day, y = value, color = flow)) + 
-  coord_cartesian(xlim=period) +
-  theme(legend.position = "bottom")
+  coord_cartesian(xlim=period) #+
+  #theme(legend.position = "bottom")
   
 wStocks <- waterSummary %>%
   select(day, hruStorage, reachStorage) %>%
   gather("stock", "value", -day) %>%
   ggplot() +
   coord_cartesian(xlim=period) +
-  geom_line(aes(x = day, y = value, color = stock)) +
-  theme(legend.position = "bottom")
+  geom_line(aes(x = day, y = value, color = stock)) #+
+  #theme(legend.position = "bottom")
+g1 <- ggplotGrob(wL)
+g2 <- ggplotGrob(wFlows)
+g3 <- ggplotGrob(wStocks)
+g <- rbind(g1, g2, g3, 
+             size ="first")
+grid.newpage()
+grid.draw(g)
 
-grid.arrange(wL, wFlows, wStocks, 
-             #widths=c(4, 1.4), 
-             heights=c(4, 4, 4),
-             #ncol=1,
-             nrow=3) %>%
-  ggsave(file =paste0("bilan-", period[1], "-",period[2], ".pdf"),
-         width=21, height=29.7, units="cm")
+#%>%
+  #ggsave(file =paste0("bilan-", period[1], "-",period[2], ".pdf"),
+         #width=21, height=29.7, units="cm")
 }
-    write.csv(waterSummary, "newWaterSummary.csv", row.names = F)
+plot_bilan(c(475,500))
+    #sauvegarde du bilan dans un fichier
+    stamp <- format(Sys.time(), "%y%m%d-%H%M%S")
+    write.csv(waterSummary, paste0("waterSummary-",stamp,".csv"), row.names = F)
   }
   
   
