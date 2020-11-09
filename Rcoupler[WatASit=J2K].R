@@ -15,73 +15,24 @@ library(gridExtra)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ####### 1. R Settings #######
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ####### 1.1 Set directory for coupling #######
-  # Not necessary if you open watasit_rcoupler.Rproject
-  wd <- getwd()
-  initial.options <- commandArgs(trailingOnly = FALSE)
-  file.arg.name <- "--file="
-  script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
-  script.dirname <- dirname(script.name)
-  if (paste0(script.dirname, "runInConsole") == "runInConsole")
-    script.dirname <- wd
-  
-  ####### 1.2 Load functions #######
-  wd_Functions <- file.path(script.dirname, "Rfunctions/")
-  for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
-  
-  ####### 1.3 Load libraries #######
-  load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
-  
-  ####### 1.4 Core parallelism #######
-  cores <- parallel:::detectCores(); registerDoParallel(cores-2);
-  
-  ####### 1.5 Read config file #######
-  args = commandArgs(trailingOnly=TRUE)
-  DEBUG = FALSE
-  configFilePath = "./rcoupler.cfg"
-  for (arg in args) {
-    if (arg == '-d') {
-      DEBUG = TRUE
-    } else {
-      configFilePath = arg
-    }
-  }
-  configFileName = basename(configFilePath)
-  configFileDir = dirname(configFilePath)
-  stderrP = FALSE
-  stdoutP = FALSE
-  if (DEBUG) {
-    stderrP = ""
-    stdoutP = ""
-  }
-  config = ConfigParser$new(NULL)
-  config$read(configFilePath)
-  
-  jamsRootPath = config$get("jamsRoot", NA, "tools")
-  if (!isAbsolutePath(jamsRootPath)) {
-    jamsRootPath = paste(configFileDir, jamsRootPath, sep="/")
-  }
-  jamsStarterPath = paste(jamsRootPath, "jams-starter.jar", sep="/")
-  
-  cormasRootPath = config$get("cormasRoot", NA, "tools")
-  if (!isAbsolutePath(cormasRootPath)) {
-    cormasRootPath = paste(configFileDir, cormasRootPath, sep="/")
-  }
-  cormasPath = paste(cormasRootPath, "cormas.im", sep="/")
-  vwPath = paste(cormasRootPath, "..", "bin", "win", "visual.exe", sep="/")
-  
-  requiredFiles = c(jamsStarterPath, cormasPath, vwPath)
-  for (path in requiredFiles) {
-    if (!file.exists(path)) {
-      cat(paste("File ", path, " not found.\n", sep=""))
-      quit(status=1)
-    }
-  }
-  
+  # General settings for R
+  source("Rcoupler[WatASit=J2K]-settings.R")
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ####### 2. Simulation Settings and inputs #######
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  #Some general settings of the simulation
+  # If water balance is made or not (increases simulation time)
+  makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
+  
+  # If original big Hrus are used (not hru plot and thus no cormas)
+  bigHrus <- T
+  
+  # If orginial big Hrus are used, link must be made between cormas HRU plots and J2K big HRUS
+  if (bigHrus) {
+      source("clean-hrus-par.R") # create the plotsInHrus variable telling for each hruPlot in which big hru it is..
+    }
   
   ####### 2.0 Specification of case study name and simulation dates [COMPULSORY] #######
   case_study_name <- "Aspres_with_cormas_1989-2013"
@@ -89,7 +40,9 @@ library(gridExtra)
   date_start_crop <- as.Date("2016-10-15", "%Y-%m-%d"); doy_start_crop <- as.numeric(difftime(date_start_crop,date_start_crop,units='days'))
   date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
   #date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
-  date_end_irri <- as.Date("2017-05-15", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
+  date_end_irri <- as.Date("2017-05-15", "%Y-%m-%d")
+  #if (bigHrus) {date_end_irri <- date_start_irri}
+  doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
   date_end_simu <- date_end_irri
   
   ####### 2.1 Importation of meteo data input for Optirrig and WatASit [COMPULSORY] #######
@@ -100,20 +53,19 @@ library(gridExtra)
   ####### 2.2 Specification for J2K/JAMS #######
   hydro_warmup_doy_nb <- as.numeric(difftime(date_start_crop, date_start_hydro,units='days')-1)
   jams_file_name <- "cowat_for_new_com_module.jam"
+  if (bigHrus) {
+    jams_file_name <- "cowat_for_new_com_module-bigHrus.jam"
+  }
   reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
-  
-  makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
+
   
   ####### 2.3 Specification for WatASit/Cormas coupling [COMPULSORY] #######
-  with_cormas <- T # choose True (T) or False (F)
-  if (with_cormas) {
   modelName = "COWAT"
   parcelFile = "WatASit.pcl"
   init = "INIT_2017_318x238_upperBuech"
   cormas_doy_nb <- as.numeric(difftime(date_end_irri,date_start_irri,units='days'))
   #scenario <- "TestConnexion" #Choose Baseline ("simultaneous" scenario) or Alternative ("daily slots" scenario)
   scenario <- "BaselineCOWAT"
-  }
   
   # ####### 2.4 Specification for Optirrig coupling [COMPULSORY] #######
   # Unused here
@@ -177,7 +129,7 @@ library(gridExtra)
                                 dec = ".",
                                 skip = 6) %>%
     mutate(line = row_number()) %>%
-    gather("col", "j2kID", -line) %>% 
+      gather("col", "j2kID", -line) %>% 
     mutate(col = as.numeric(str_remove(col,"V"))) %>%
     arrange(line, col) %>%
     mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI il y a un décalage de 1..!
@@ -319,6 +271,18 @@ library(gridExtra)
             rbind(surfaceIrri)
           
           # Set irrigation of corresponding j2k HRUPLOTs.
+          if(bigHrus) {
+            # If needed we aggregate the flows in big HRUs
+            surfaceIrri <- surfaceIrri %>%
+              left_join(plotsInHrus %>% 
+                          rename(id = ID) %>%
+                          select(id, bigHRUid)) %>%
+              mutate(id = bigHRUid) %>%
+              group_by(id, date) %>%
+              summarise(irriDoseInLitres = sum(irriDoseInLitres)) %>% 
+              arrange(id)
+          }
+          
           j2kSet("surface", 
                  surfaceIrri$id, 
                  surfaceIrri$irriDoseInLitres) 
@@ -335,7 +299,7 @@ library(gridExtra)
             mutate(q = jamsWaterBuffer * 1000) %>%
             arrange(id)
           
-          qFromReleases <- getAttributesOfEntities("jamsWaterBuffer", "EwaterRelease") %>%
+            qFromReleases <- getAttributesOfEntities("jamsWaterBuffer", "EwaterRelease") %>%
             mutate(id =  as.numeric(as.character(id))) %>%
             mutate(q = jamsWaterBuffer * 1000) %>%
             arrange(id)
@@ -357,7 +321,20 @@ library(gridExtra)
             left_join(getAttributesOfEntities("idHRU", "EwaterRelease") %>%
                         mutate(id =  as.numeric(as.character(id))), by="id" )
           
+          if(bigHrus) {
+            # If needed we aggregate the flows in big HRUs
+            qFromReleases <- qFromReleases %>%
+              left_join(plotsInHrus %>% 
+                          rename(idHRU = ID) %>%
+                          select(idHRU, bigHRUid)) %>%
+              ungroup() %>%
+              mutate(idHRU = bigHRUid) %>%
+              group_by(idHRU, idReach) %>%
+              summarise(q = sum(q))
+          }
+          
           qOfTheDay <- qFromIntakes %>% 
+            select(-jamsWaterBuffer,-id) %>%
             mutate(waterIn = T) %>%
             mutate(idHRU = 0) %>%
             dplyr::union(qFromReleases %>%
@@ -402,11 +379,23 @@ library(gridExtra)
                                   vector("numeric", length(qFromSeepage$id))) 
           
           #save seepage for posterity
-          seepage <- seepage %>% 
+          seepage <- qFromSeepage %>% 
+            group_by(canalsId, idHRU) %>%
+            summarise(q = sum(q)) %>% 
             mutate(date = i) %>%
-            rbind(qFromSeepage %>% 
-                    group_by(canalsId, idHRU) %>%
-                    summarise(q = sum(q)))
+            rbind(seepage)
+          
+          if(bigHrus) {
+            # If needed we aggregate the flows in big HRUs
+            qFromSeepage <- qFromSeepage %>%
+              left_join(plotsInHrus %>% 
+                          rename(idHRU = ID) %>%
+                          select(idHRU, bigHRUid)) %>%
+              ungroup() %>%
+              mutate(idHRU = bigHRUid) %>%
+              group_by(idHRU) %>%
+              summarise(q = sum(q))
+          }
           
           #get hru Ids of spatial place
           qFromSeepage <- qFromSeepage %>%
@@ -453,16 +442,21 @@ library(gridExtra)
       mutate(nextday = day + 1) %>%
       ggplot() +
       geom_line(aes(x = day, y = storage, color = "stock")) + 
-      geom_line(aes(x = day, y = inWater - outWater, color = "waterBalance")) +
+     # geom_line(aes(x = day, y = inWater - outWater, color = "waterBalance")) +
       geom_point(aes(x = nextday, y = storage + inWater - outWater, color = "PastStoragePlusBalance")) +
       ylab("Litres")
     
-csteSeepage <- seepage  %>%
+totalSeepage <- seepage  %>%
       ungroup() %>%
-      distinct(canalsId,idHRU,q) %>%
-      summarise(total_q=sum(q)) %>%
-  pull()
+      group_by(date) %>%
+      summarise(seepage=sum(q))
     
+totalSeepage %>% 
+  ggplot() +
+  geom_line(aes(x=date, y =seepage))
+  
+  
+  
 cormasWaterSummary <- inOutCanals %>%
       tbl_df() %>%
       group_by(waterIn, date) %>%
@@ -471,7 +465,7 @@ cormasWaterSummary <- inOutCanals %>%
       spread(waterIn, q) %>%
       rename(waterInCanal = `TRUE`) %>%
       rename(waterOutCanal = `FALSE`) %>%
-      mutate(seepage = csteSeepage) %>%
+      left_join(totalSeepage) %>%
       left_join(irrigatedFarmPlots %>% 
                   group_by(date) %>%
                   summarise(floodedInParcells = sum(irriDoseInLitres)),
@@ -483,7 +477,9 @@ cormasWaterSummary %>%
   ggplot() +
   geom_line(aes(x= date, y = waterLoss))
   
+
 cormasWaterSummary %>% 
+  mutate(waterOut = floodedInParcells + seepage + waterOutCanal) %>%
   gather("flows", "value", -date,-waterLoss) %>%
   ggplot() +
   geom_line(aes(x= date, y = value, color=flows))
@@ -494,20 +490,22 @@ irrigatedFarmPlots %>%
     
 plot_bilan <- function (period = c(300,400)){
 wL <- waterSummary %>%
-      #filter(day > nbDays) %>%
+      arrange(day) %>%
+      filter(day > nbDays) %>%
       mutate(inWater = rain + snow) %>%
       mutate(outWater = etact + runoff) %>%
       mutate(storage = hruStorage + reachStorage) %>%
       mutate(storageNextDay = lead(storage)) %>%
       mutate(deltaS = storageNextDay - storage) %>%
       mutate(waterBalance =  inWater - outWater) %>%
-      mutate(waterLoss = deltaS - waterBalance) %>%
+      mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
       mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
-      coord_cartesian(xlim=period) +
+      #coord_cartesian(xlim=period) +
       geom_line(aes(x = day, 
                     #color = "waterLoss",
-                    y = waterLoss)) 
+                    y = waterLoss))
+                    #y=cumWaterLoss
       #geom_line(aes(x = day, y = cumWaterLoss, color = "cummulativeWaterLoss")) +
       #theme(legend.position = "bottom")
 
