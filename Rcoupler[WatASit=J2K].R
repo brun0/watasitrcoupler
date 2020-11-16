@@ -1,14 +1,15 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#################      R coupler 2.0      ############################
+#################      R coupler[WatASit=J2K]      ############################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# This script runs J2K-WatASit-Optirrig coupled simulations
+# This script runs J2K-WatASit coupled simulations
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Code developed in 2020, Jan-June, by
-# J. Veyssier -> make superjams, socket methods and Rcoupler
-# B. Bonté -> make RCormas methods and Rcoupler
-# B. Richard -> make param and climate Rfunctions and Rcoupler
+# J. Veyssier -> make superjams, socket methods
+# B. Bonté -> make RCormas methods and Rcoupler script
+# B. Richard -> make param and climate Rfunctions and Rcoupler script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+# Adding new librairies 
+#TODO: To put in the library file
 library(gridExtra)
 
   rm(list=ls()); start_time <- Sys.time();
@@ -219,6 +220,12 @@ library(gridExtra)
           #                                         pull())
         reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
           tbl_df()
+        r <- setAttributesOfEntities("rain", "FarmPlot",
+                                     rainOnParcells$ID,
+                                     rainOnParcells$rain)
+        ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
+        # r <- runSimu(duration = 1)
+        r <- runSimu(duration = 24)
         
           ####### B. Updating flows in Cormas #######
           updatedFlows <- cormasReachIds %>%
