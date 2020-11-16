@@ -16,7 +16,7 @@ You need to follow all the following steps to use the model on your computer.
 ## Install Cormas 2020 and load Communication Add-ons
 - Download cormas 2020 and unzip it on your computer in the COWAT-ALL directory (http://cormas.cirad.fr/logiciel/cormas2020_package.zip)
 - Copy the watasitrcoupler-master/cormas-add-ons folder in the cormas2020/Add-ons folder
-- Open Cormas (wine cormas.exe (linux) or cormas.exe) and load all add-ons (tools/Add-ons/add-on_manager) and then click "select all" and "Load-Close".
+- Open Cormas (cormas2020/ and "wine cormas.exe" (terminal linux) or cormas.exe (windows)) and load all add-ons (tools/Add-ons/add-on_manager) and then click "select all" and "Load-Close".
 - Save cormas software: open the main interface of visual works (clik tools/open_vw_main_interface) and save it (File/Save_image)
 - Exit cormas and visual works 
 
