@@ -25,7 +25,7 @@ You need to follow all the following steps to use the model on your computer.
 - Unzip it and copy the watasit-COWATv0.0 folder in the cormas model folder (cormas2020/Model/) under the name COWAT. Your pcl file must be at the following location on your disk:  COWAT-ALL/cormas2020/Models/COWAT/WatASit.pcl
 
 ## Set up your configuration file
-- If you followed the instructions above, modify the config file rcoupler_template.cfg at the root of watasitrcoupler folder as the follows and rename it: rcoupler.cfg
+- If you followed the instructions above, modify the config file rcoupler_template.cfg at the root of watasitrcoupler folder as the follows and rename it: rcoupler.cfg. 
  \[tools\]
 \# accept absolute path or relative ones (relative to this config file location)
 jamsRoot = superjams
