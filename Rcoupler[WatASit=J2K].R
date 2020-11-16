@@ -220,9 +220,7 @@ library(gridExtra)
           #                                         pull())
         reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
           tbl_df()
-        r <- setAttributesOfEntities("rain", "FarmPlot",
-                                     rainOnParcells$ID,
-                                     rainOnParcells$rain)
+
         ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
         # r <- runSimu(duration = 1)
         r <- runSimu(duration = 24)
