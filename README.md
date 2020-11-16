@@ -18,7 +18,7 @@ You need to follow all the following steps to use the model on your computer.
 - Copy the watasitrcoupler-master/cormas-add-ons folder in the cormas2020/Add-ons folder
 - Open Cormas (cormas2020/ and "wine cormas.exe" (terminal linux) or cormas.exe (windows)) and load all add-ons (tools/Add-ons/add-on_manager) and then click "select all" and "Load-Close".
 - Save cormas software: open the main interface of visual works (clik tools/open_vw_main_interface) and save it (File/Save_image)
-- Exit cormas and visual works 
+- Exit cormas and visual works (Cormas interface: File -> Exit)
 
 ## Get the right version of the COWAT model
 - Download the right version of the WatASit model: (https://gitlab.irstea.fr/watasitdev/watasit/-/releases) 
