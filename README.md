@@ -4,7 +4,7 @@ The CoWAT model (Coupling Water and Agent Trajectories) has been developped by B
 
 It uses R statistical software, the jams plateforme (http://jams.uni-jena.de/) and the Cormas plateforme (http://cormas.cirad.fr/). It couples the J2K-Buëch jams model and the WatAsit Cormas model.
 
-# Instalation of CoWAT model on your computer
+# Set up of CoWAT model on your computer
 You need to follow all the following steps to use the model on your computer.
 
 ## Create a directory COWAT-ALL
