@@ -1,6 +1,6 @@
 Sources and data of the CoWAT coupled model
 # Principle
-The CoWAT model (Coupling Water and Agent Trajectories) has been developped by Bastien Richard, Bruno Bonté, Julien Veyssier, Isabelle braud and Olivier Barreteau during the Radhy Buëch project to represent irrigation and hydrology in the Buëch river catchment in southern France. 
+The CoWAT model (Coupling Water and Agent Trajectories) has been developped by Bastien Richard, Bruno Bonté, Julien Veyssier, Isabelle braud and Olivier Barreteau during the Radhy Buëch project to represent irrigation and hydrology in the Buëch river catchment in Southern France. 
 
 It uses R statistical software, the jams plateforme (http://jams.uni-jena.de/) and the Cormas plateforme (http://cormas.cirad.fr/). It couples the J2K-Buëch jams model and the WatAsit Cormas model.
 
