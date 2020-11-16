@@ -33,11 +33,11 @@ cormasRoot = ../cormas2020
 - if you use another install of Cormas (be carefull you need to add add-ons to this version if you do so), replace the line "cormasRoot = ../cormas2020" by the correct absolute path of cormas on your computer.
 
 ## Install RStudio and packages
-- Install the version of RStudio corresponding to the watasitRcoupler release.
-- Install all required R packages (Rstudio/packages/install)
+- Install the version of R (R version > 4.0.3 (2020-10-10)) and RStudio corresponding to the watasitRcoupler release.
+- Install all required R packages "ConfigParser", "R.utils", "RSQLite", "feather", "zoo", "multiplex", "tidyr", "ggplot2", "dplyr", "doParallel" (Rstudio/packages/install).
 
 
 # Run the model
 - Open the WatASit_Rcoupler project in RSutdio (click on WatASit_Rcoupler.Rproj)
-- Source the Rcoupler\[WatASit=J2K\].R file
+- Open and source the Rcoupler\[WatASit=J2K\].R file
 
