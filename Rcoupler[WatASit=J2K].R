@@ -42,7 +42,6 @@ library(gridExtra)
   date_start_irri <- as.Date("2017-05-01", "%Y-%m-%d"); doy_start_irri <- as.numeric(difftime(date_start_irri,date_start_crop,units='days'))
   #date_end_irri <- as.Date("2017-09-30", "%Y-%m-%d"); doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
   date_end_irri <- as.Date("2017-05-15", "%Y-%m-%d")
-  #if (bigHrus) {date_end_irri <- date_start_irri}
   doy_end_irri <- as.numeric(difftime(date_end_irri,date_start_crop,units='days'))
   date_end_simu <- date_end_irri
   
@@ -221,10 +220,6 @@ library(gridExtra)
         reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
           tbl_df()
 
-        ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
-        # r <- runSimu(duration = 1)
-        r <- runSimu(duration = 24)
-        
           ####### B. Updating flows in Cormas #######
           updatedFlows <- cormasReachIds %>%
             mutate(ID = idReach) %>%
@@ -248,14 +243,10 @@ library(gridExtra)
           #r <- setAttributesOfEntities("rain", "FarmPlot",
           #                             rainOnParcells$ID,
           #                             rainOnParcells$rain)
-          ####### B. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
-          #TODO
-          #if (i >= date_start_irri){# activate coupling with WatASit in Cormas plateform
-          # RunWatASit(daily_step = i, input_meteo = input_meteo)
-          #}
+          ####### C. Run WatASit during 24 hours during the irrigation campaign and get irrigtaion #######
           r <- runSimu(duration = 24)
           
-          ####### C. Set the irrigation in J2K And reset the one of Cormas accordingly#######
+          ####### D. Get the irrigation from Cormas and set it in J2K accordingly#######
           #TODO
           #get liters of irrigation in cormas hruParcels #ATTENTION ÇA FONCTIONNE BIEN CAR ON A GARDÉ QUE LES FARMPlots irrigués
           surfaceIrri <- getAttributesOfEntities("jamsWaterBuffer", "FarmPlot") %>%
@@ -292,7 +283,7 @@ library(gridExtra)
                  surfaceIrri$id, 
                  surfaceIrri$irriDoseInLitres) 
 
-          ####### D. Set water withdrawed and added from the canals #######
+          ####### E. Get from Cormas the water withdrawed and added from/to the canals and set J2K transfers accordingly#######
           
           #Take water from the reach of the intake and release it 
           # to the reach of the release. 
@@ -414,7 +405,7 @@ library(gridExtra)
                  qFromSeepage$idHRU, 
                  qFromSeepage$q)
           
-          ####### E. Run new j2k daily step #######
+          ####### F. Run new j2k daily step #######
           if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())} # To calculate the water balance
           j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
           if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())}
