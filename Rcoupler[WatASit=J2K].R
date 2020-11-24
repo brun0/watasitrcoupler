@@ -23,6 +23,12 @@ library(gridExtra)
   ####### 2. Simulation Settings and inputs #######
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
+  # Active cormas N J2K during coupled simu
+  with_cormas <- T #TODO
+  with_J2K <- F # If set to false, only the warming up is performed and
+                #the same hydrologic day is used for the whole coupled
+                # simulation
+  
   #Some general settings of the simulation
   # If water balance is made or not (increases simulation time)
   makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
@@ -198,7 +204,10 @@ library(gridExtra)
   reachsOfCormas <- NULL
   inOutCanals <- NULL
   seepage <- NULL
-  
+
+  reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
+    tbl_df()
+    
   ####### 4.2 Run models
     # Run Coupled model on the rest of the simulation period 
     simuProgress <- txtProgressBar(min = doy_start_irri,
@@ -217,9 +226,10 @@ library(gridExtra)
           #                                       cormasReachIds %>%
           #                                         select(idReach) %>%
           #                                         pull())
-        reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
-          tbl_df()
-
+        if (with_J2K) {
+          reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
+            tbl_df()
+        }
           ####### B. Updating flows in Cormas #######
           updatedFlows <- cormasReachIds %>%
             mutate(ID = idReach) %>%
@@ -278,10 +288,11 @@ library(gridExtra)
               summarise(irriDoseInLitres = sum(irriDoseInLitres)) %>% 
               arrange(id)
           }
-          
-          j2kSet("surface", 
+          if (with_J2K) {
+            j2kSet("surface", 
                  surfaceIrri$id, 
                  surfaceIrri$irriDoseInLitres) 
+          }
 
           ####### E. Get from Cormas the water withdrawed and added from/to the canals and set J2K transfers accordingly#######
           
@@ -346,19 +357,21 @@ library(gridExtra)
             filter(waterIn)
           
           #Carrefull, waterIn in cormas -> reachout car de l'eau sort de J2K..
-          j2kSet("reachout", 
+          if (with_J2K) {
+            j2kSet("reachout", 
                  qsIn$idReach, 
                  qsIn$q)
-          
+          }
           #Set inflows in hrus at waterReases
           qsOut <- qOfTheDay %>% 
             filter(!waterIn)
           
           # We consider that the hru is "flooded"
-          j2kSet("surface", 
+          if (with_J2K) {
+            j2kSet("surface", 
                  qsOut$idHRU, 
                  qsOut$q)
-          
+          }
           #Get the water seepage from canals and put it in the rigth HRUS
           qFromSeepage <- getAttributesOfEntities("jamsWaterBuffer", "SpatialPlace") %>%
             mutate(id =  as.numeric(as.character(id))) %>%
@@ -401,14 +414,19 @@ library(gridExtra)
           
           #we consider seepage having the same effect as "surface" irrigation at the moment.. 
           #utiliser un module infiltration par seepage?
-          j2kSet("surface", 
+          if (with_J2K) {
+            j2kSet("surface", 
                  qFromSeepage$idHRU, 
                  qFromSeepage$q)
-          
+          }
           ####### F. Run new j2k daily step #######
-          if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())} # To calculate the water balance
-          j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
-          if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())}
+          if (with_J2K) {
+            if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())} # To calculate the water balance
+       
+                 j2kMakeStep() # cette fonction fait un step si on lui donne pas de paramètre
+
+            if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())}
+          }
       } # End of time loop
   
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
