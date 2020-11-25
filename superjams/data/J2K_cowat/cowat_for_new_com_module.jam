@@ -196,6 +196,7 @@
             <var attribute="HRUS" context="J2K_RHONE" name="hrus"/>
             <var attribute="time" context="J2K_RHONE" name="time"/>
 						<var attribute="Runoff" context="TimeLoop" name="catchmentSimRunoff"/>
+            <var name="debugMode" value="true"/>
         </component>
         <component class="jams.components.gui.JAMSExecInfo" enabled="true" name="JAMSExecInfo" version="1.1_0"/>
         <component class="org.unijena.j2k.DoubleSetter" enabled="true" name="DoubleSetter" version="1.0_0">
