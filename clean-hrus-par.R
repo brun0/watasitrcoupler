@@ -1,4 +1,4 @@
-bigHrusTb <- read.table("superjams/data/J2K_cowat/parameter/hru.par",
+bigHrusTb <<- read.table("superjams/data/J2K_cowat/parameter/hru.par",
                       sep="\t", 
                       dec= ".", 
                       header = F,
@@ -8,7 +8,7 @@ colnames(bigHrusTb) <- c("ID","area","elevation","slope","aspect","x","y","water
 
 bigHrusTb %>% filter(is.na(to_poly))
 
-hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_ok2.par",
+hrus <<- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_ok2.par",
                       sep="\t", 
                       dec= ".", 
                       header = F,
@@ -16,7 +16,7 @@ hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_ok2.par",
 
 colnames(hrus) <- c("ID","area","elevation","slope","aspect","x","y","watershed","subbasin","hgeoID","landuseID","soilID","to_poly","to_reach")
 
-plots2Hrus <- read.table("hru-plot-to-big-hru.csv",
+plots2Hrus <<- read.table("hru-plot-to-big-hru.csv",
                          sep=";",
                          dec=".",
                          header = T) %>% 
@@ -25,7 +25,7 @@ plots2Hrus <- read.table("hru-plot-to-big-hru.csv",
   rename(motherHRU = cat) %>%
   tbl_df()
 
-plotsInHrus <- hrus %>% 
+plotsInHrus <<- hrus %>% 
   left_join(# Pour les plots, la HRU mère est l'exutoire du HRUplot
               plots2Hrus %>%
               filter(!isPlot) %>%
