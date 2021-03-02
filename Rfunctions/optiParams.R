@@ -1,16 +1,18 @@
-#############################################
-#Function to generate Optirrig parameter files#
-#############################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+######      Function to generate Optirrig parameter files      #########
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Code developed in 2019, Oct, by B. Richard
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-optiParams = function(dir, case_study_name, shapefile_name, paramDBfile_name, climatefile_name, annee, jdsim, jfsim, irrigfile_name) {
+optiParams = function(dir, case_study_name, plotfile_name, paramDBfile_name, climatefile_name, jdsim, jfsim, itest, gge, dosap, th_w) {
   
   
-#case_study_name<-"ASPRES"
-param_folder_name<-paste0("paramfiles_",case_study_name)
-dir.create(paste0(dir,param_folder_name))
+#case_study_param_folder
+if (dir.exists(paste0(dir, "paramfiles_",case_study_name))) {unlink(paste0(dir, "paramfiles_",case_study_name), recursive = TRUE)}
+dir.create(paste0(dir,"paramfiles_",case_study_name))
 
 #Load_farm_plots_features
-plots <- read.table(paste0(dir,shapefile_name), header = T, sep = ";", dec = ",", na.strings = "-9999")
+plots <- read.table(paste0(dir,plotfile_name), header = T, sep = ";", dec = ",", na.strings = "-9999")
 
 #Load_Optirrig_params_database
 paramDB <- read.table(paste0(dir,paramDBfile_name), header = T, sep = ";", dec = ",", na.strings = "-9999")
@@ -19,10 +21,9 @@ paramDB <- read.table(paste0(dir,paramDBfile_name), header = T, sep = ";", dec =
 for (i in 1:dim(plots)[1]) {
   classCult <- plots$CLASS_CULT[i]
   typeSoil <- toString(plots$TYPESOIL[i])
-  # if ((classCult != 1) & (classCult != 5) & (classCult != 7)){  #1: estives, 5: orchads, 7: various
     #1/Context_params 
     climate<-climatefile_name                                                         #climatic file to be read
-    annee<-annee                                                                      #year or fictional year to grow winter
+    annee<-NA                                                                      #year or fictional year to grow winter
     jdsim<-jdsim                                                                      #julian day of the beginning of the simulation (DOY)
     jfsim<-jfsim                                                                      #julian end of simulation day (DOY)
     #2/Soil_params
@@ -31,7 +32,7 @@ for (i in 1:dim(plots)[1]) {
     ru<-plots$RU[i]                                                                   #useful reserve (ru) en mm/m
     fc<-(ppf+ru) / (1000*profx)                                                     #field capacity
     rkru<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$rkru))        #ratio between the easily usable reserve (rfu) and the useful reserve (ru)
-    res<-plots$MAXSTORAGE[i]                                                         #total profile reserve on the day of the start of the simulation (jdsim)
+    res<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$res))         #total profile reserve on the day of the start of the simulation (jdsim)
     rksol<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$rksol))      #analogous kc for bare ground, "evapotranspiration resistance"
     #3/Temp_params
     base<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$base))        #base temperature
@@ -61,11 +62,12 @@ for (i in 1:dim(plots)[1]) {
     jsem <-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$jsem))       #sowind day (DOY)
     jrecol<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$jrecol))    #number of days after sowing for harvesting
     rscx <-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$rscx))       #mulch effect
-    gge<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$gge))          #irrigation technique: 0 = aspersion
-    itest<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$itest))      #itest = 0 to read an irirgation schedule
-    irrigfile<-irrigfile_name                                                         #irrigation file name
-    th_w<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$th_w))        #if itest=1
-    dosap<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$dosap))      #if itest=1 (mm)
+    gge<- gge          #irrigation technique: 0 = aspersion
+    itest <- itest    #itest = 0 to read an irirgation schedule
+    irrigfile<-'NA'                                                         #irrigation file not used
+    #th_w<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$th_w))        #if itest=1
+    th_w <- th_w
+    dosap<- dosap #if itest=1 (mm)
     dosem<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$dosem))      #irrigation at sowing (mm)
     jdir<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$jdir))        #DOY of the first possible irrigation
     jfir<-as.numeric(as.character(subset(paramDB, CLASS_CULT == classCult & TYPESOIL == typeSoil)$jfir))        #DOY of the last possible irrigation
@@ -83,13 +85,10 @@ for (i in 1:dim(plots)[1]) {
 parF <- data.frame(climate,annee,jdsim,jfsim,fc,ppf,profx,rkru,res,rksol,base,tseuil0,xt0,tjdc,tjfc,tm,tfmat,taux,rkcm,rlaimax,rmg,hi,coefas0,cwx,alpha1,alpha2,gama,dens,densopt,rlcrit,xl1,pourc,jsem,jrecol,rscx,gge,itest,irrigfile,th_w,dosap,dosem,jdir,jfir,quota,selini,ssel,csel,ciw,css,f1,f2,f3)
 
 #Save
-# output_file_name <- paste0('parF',plots$ID_PARCEL[i])
 output_file_name <- paste0('parF',plots$ID_PARCEL[i])
-dir.create(paste0(dir,param_folder_name,'/',plots$ID_PARCEL[i]))
-write.csv(parF,paste0(dir,param_folder_name,'/',plots$ID_PARCEL[i],'/',output_file_name,'.csv'), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
-#write.dat(parF,paste0(dir,param_folder_name,'/',output_file_name))
-  # }
+dir.create(paste0(dir,"paramfiles_",case_study_name,'/',plots$ID_PARCEL[i]))
+write.csv(parF,paste0(dir,"paramfiles_",case_study_name,'/',plots$ID_PARCEL[i],'/',output_file_name,'.csv'), row.names = FALSE, quote = FALSE, na = "NA", eol = "\n")
 }
-list_idParcel <- as.numeric(list.files(paste0(dir,param_folder_name,'/'), full.names=FALSE)) #liste des parcelles modélisées (ne sont pas modélisées les vergers, jachères et estives)
+list_idParcel <- as.numeric(list.files(paste0(dir, "paramfiles_",case_study_name,'/'), full.names=FALSE))
 return(list_idParcel)
 }

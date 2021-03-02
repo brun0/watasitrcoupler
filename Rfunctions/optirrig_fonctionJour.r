@@ -212,10 +212,11 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
         }
         
         ################## TDM fin ####
-        
         # LAI_11
         if ((param$tseuil0<=200) & (ill==1) & (TS_p[i-1] < (param$tfmat-param$xt0)))
         {
+          rl0 = LAI[i] #ajout BR avril2020 suite erreur 'rl0 introuvable' et selon indications commentaire ci-dessous
+          l0  = kt[i]  #ajout BR avril2020 suite erreur 'rl0 introuvable' et selon indications commentaire ci-dessous
           LAI[i] = rl0 * exp((l0-kt[i])*0.05) # rl0 étant la valeur du LAI et l0 la valeur de kt quand ill = 1 
         }
         
@@ -224,6 +225,7 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
           jdc   = i-param$jsem
           ipas1 = 1
         }
+        
         # ill	
         if ((param$tseuil0<=200) & (LAI[i]<=0.2) & (kt[i] > (jdc+10)) & (ill==0))
         {
@@ -231,7 +233,6 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
           rl0 = LAI[i]
           l0  = kt[i]
         }
-        
         # LAI_12
         if ((istr==0) & (TS[i] < (param$tjfc - param$xt0)) & (TS_p[i-1] < (param$tfmat-param$xt0)))
         {
@@ -361,13 +362,13 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
     ####### irrigation ##
     ## si itest==1 (pas de flichier irrigation)
     if ((param$itest == 1) & (i > (param$jsem+param$jdir)) & (i< (param$jsem+param$jfir)))
-    {
+    {print("Irrigation modification due to itest, jsem, jdir or jfir params value")
       if ((i<=param$jsem+10) & (ifois==0) & (P[i] < param$dosem))
       {
         if ((RU1[i-1]<=0) & (RU2[i-1] <= (0.75 * RU2max)))
         {
-          if (param$gge == 0)   { I1[i] = param$dosem }
-          if (param$gge == 999) { I2[i] = param$dosem }
+          if (param$gge == 0)   { I1[i] = param$dosem ; print(paste0("gge = 0 => I1[day]= ",param$dosem, "= param$dosem" ))}
+          if (param$gge == 999) { I2[i] = param$dosem ; print(paste0("gge = 999 => I2[day]= ",param$dosem, "= param$dosem" ))}
           ifois = 1
         }
       }
@@ -376,17 +377,18 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
       {
         # if (param$gge == 0)   { I1[i] = param$dosap }
         # if (param$gge == 999) { I2[i] = param$dosap }
-        if (param$gge == 0)   { I1[i] =  min(param$dosap,param$quota-sum(I1)) }
-        if (param$gge == 999) { I2[i] =  min(param$dosap,param$quota-sum(I1)) }
+        if (param$gge == 0)   { I1[i] =  min(param$dosap,param$quota-sum(I1)) ; print(paste0("gge = 0 => I1[day]= ", min(param$dosap,param$quota-sum(I1)), "= min(param$dosap,param$quota-sum(I1)" ))}
+        if (param$gge == 999) { I2[i] =  min(param$dosap,param$quota-sum(I1)) ; print(paste0("gge = 0 => I2[day]= ",min(param$dosap,param$quota-sum(I1)), "= min(param$dosap,param$quota-sum(I1)" ))}
       }
     }
    
     ######## Calculs pour R1 #########
     ##################################
-    R1_a  = R1[i-1] + P[i] + I1[i]
-    d1 = max(0, R1_a - R1max)
-    R1_1  = min(R1_a , R1max) 
-    RU1_1 = max(0 , round(R1_1 - (param$ppf * 1000 * Hz1), 10)) ### reprendre les "round"
+    R1_a  = R1[i-1] + P[i] + I1[i] ; print("Calculs dans daily_optirr "); print("I1 = "); print(I1[i]); print("I2 = "); print(I2[i]); print("R1_a = "); print(R1_a)
+    d1 = max(0, R1_a - R1max) ; print("d1:"); print(d1)
+    R1_1  = min(R1_a , R1max) ; print("R1_1:"); print(R1_1)
+    RU1_1 = max(0 , round(R1_1 - (param$ppf * 1000 * Hz1), 10))  ; #print("RU1_1:"); print(RU1_1) ; print("param$ppf * 1000 * Hz1:"); print(param$ppf * 1000 * Hz1)### reprendre les "round"; 
+                                                                  #print("round(R1_1 - (param$ppf * 1000 * Hz1), 10):"); print(round(R1_1 - (param$ppf * 1000 * Hz1), 10))
     # cat(R1max, "\n")
     # cat(R1[i-1], "\n")
     # cat(P[i] , "\n")
@@ -411,9 +413,9 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
     }# pas de modif d'ETM TP1+ES1=ETR=ETM > ET0 si LAI>1.8 et Kcmax=1.2
     # répartition à faire entre TP1 et TP2? eu prorata des tailles Hz1 et Hz2
     
-    R1[i]  = R1_1 - ES1 -TP1
-    RU1[i] = max(0 , round(R1[i] - param$ppf * 1000 * Hz1, 10))
-    teta1 = R1[i] / (Hz1*1000)
+    R1[i]  = R1_1 - ES1 -TP1 ; print("R1[day] :"); print(R1[i])
+    RU1[i] = max(0 , round(R1[i] - param$ppf * 1000 * Hz1, 10)) ; print("RU1:"); print(RU1[i]) ; #print("ppf*1000*Hz1:"); print(param$ppf*1000*Hz1); print("round(R1[i] - param$ppf * 1000 * Hz1, 10):"); print(round(R1[i] - param$ppf * 1000 * Hz1, 10))
+    teta1 = R1[i] / (Hz1*1000) ; print("teta1:"); print(teta1)
     
     ######## Calculs pour R2 #########
     ##################################
@@ -573,13 +575,13 @@ daily_optirr = function(param,meteo,const,inpval,vecteurs,I1,I2,i)
 				TPM=TPM,TPM2=TPM2,ETM=ETM,ETR=ETR,TRP=TRP,TS=TS,TS_p=TS_p,TT=TT,TT_p=TT_p,LAI_p=LAI_p,LAI=LAI,LAImax=LAImax,LAI_av=LAI_av,LAIp_av=LAIp_av,
 				TDM=TDM,TDM_p=TDM_p,imoins=imoins,fac=fac,crac=crac,crat=crat,dHz2=dHz2,ks=ks,Hz2=Hz2,taum=taum,kt=kt)
 
-
+  irr = list(I1=I1[i], I2=I2[i])
 
 	detach(const)
   detach(inpval)
   detach(vecteurs)   
   # list(cstes=cstes , inval=inval , vect=vect)
-  return(list(cstes=cstes ,inval=inval , vect=vect))
+  return(list(cstes=cstes ,inval=inval , vect=vect, irr=irr))
 
   
    
