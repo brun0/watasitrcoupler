@@ -25,7 +25,7 @@ library(gridExtra)
   
   # Active cormas N J2K during coupled simu
   with_cormas <- T #TODO
-  with_J2K <- F # If set to false, only the warming up is performed and
+  with_J2K <- T # If set to false, only the warming up is performed and
                 #the same hydrologic day is used for the whole coupled
                 # simulation
   
@@ -34,7 +34,7 @@ library(gridExtra)
   makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
   
   # If original big Hrus are used (not hru plot and thus no cormas)
-  bigHrus <- T
+  bigHrus <- F
   
   # If orginial big Hrus are used, link must be made between cormas HRU plots and J2K big HRUS
   if (bigHrus) {
@@ -172,8 +172,8 @@ library(gridExtra)
     args=c('-jar', 'jams-starter.jar', '-m', paste0('data/J2K_cowat/',jams_file_name), '-n'),
     wait=F, stdout=stdoutP, stderr=stderrP
   )
-  cat('\n\nWaiting 3 seconds to make sure J2K coupling module starts listening...')
-  Sys.sleep(3)
+  cat('\n\nWaiting 5 seconds to make sure J2K coupling module starts listening...')
+  Sys.sleep(5)
   setwd(wd)
   
   ####### 3.6 Warms-up J2K model #######
@@ -214,7 +214,7 @@ library(gridExtra)
                                    max = doy_end_irri,
                                    style = 3)
     
-      for (i in doy_start_irri:doy_end_irri){ 
+      for (i in (doy_start_irri:doy_end_irri)){ 
         setTxtProgressBar(simuProgress, i)
           
           ####### A. Getting flow from j2k #######
@@ -345,6 +345,7 @@ library(gridExtra)
             mutate(waterIn = T) %>%
             mutate(idHRU = 0) %>%
             dplyr::union(qFromReleases %>%
+                           select(-jamsWaterBuffer,-id) %>%
                     mutate(waterIn = F), by= c("id", "waterIn")) %>% 
             mutate(date = i)
           
@@ -559,10 +560,9 @@ g <- rbind(g1, g2, g3,
              size ="first")
 grid.newpage()
 grid.draw(g)
-
-#%>%
-  #ggsave(file =paste0("bilan-", period[1], "-",period[2], ".pdf"),
-         #width=21, height=29.7, units="cm")
+# %>%
+  #ggsave(file =paste0("bilan-test-", period[1], "-",period[2], ".pdf"),
+  #       width=21, height=29.7, units="cm")
 }
 plot_bilan(c(475,500))
     #sauvegarde du bilan dans un fichier
