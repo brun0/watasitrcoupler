@@ -34,7 +34,7 @@ library(gridExtra)
   makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
   
   # If original big Hrus are used (not hru plot and thus no cormas)
-  bigHrus <- F
+  bigHrus <- T
   
   # If orginial big Hrus are used, link must be made between cormas HRU plots and J2K big HRUS
   if (bigHrus) {
@@ -241,6 +241,7 @@ library(gridExtra)
                                   updatedFlows$id,
                                   updatedFlows$q)
           
+          #Save for posterity
           reachsOfCormas <- reachsOfCormas %>%
             rbind(updatedFlows %>% 
                     mutate(date = i))
@@ -338,8 +339,16 @@ library(gridExtra)
               mutate(idHRU = bigHRUid) %>%
               group_by(idHRU, idReach) %>%
               summarise(q = sum(q))
+            
+            qOfTheDay <- qFromIntakes %>% 
+              select(-jamsWaterBuffer,-id) %>%
+              mutate(waterIn = T) %>%
+              mutate(idHRU = 0) %>%
+              dplyr::union(qFromReleases %>%
+                             mutate(waterIn = F), by= c("id", "waterIn")) %>% 
+              mutate(date = i)
           }
-          
+          else {
           qOfTheDay <- qFromIntakes %>% 
             select(-jamsWaterBuffer,-id) %>%
             mutate(waterIn = T) %>%
@@ -348,6 +357,7 @@ library(gridExtra)
                            select(-jamsWaterBuffer,-id) %>%
                     mutate(waterIn = F), by= c("id", "waterIn")) %>% 
             mutate(date = i)
+          }
           
           #Save exchanges for posterity
           inOutCanals <- inOutCanals %>%
