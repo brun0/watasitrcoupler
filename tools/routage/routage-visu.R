@@ -13,8 +13,12 @@ hrus <- read.table("superjams/data/J2K_cowat/parameter/hru.par",
 colnames(hrus) <- c("id", "area", "x", "y", "subbassin", "to_poly", "to_reach")
 
 # On plote tout le buech
-sub1hrus <- hrus #%>% (sinon on peut ici ne choisir que certains sous-bassins)
-  #filter(subbassin == 52001)
+sub1hrus <- hrus %>% #(sinon on peut ici ne choisir que certains sous-bassins) et ne pas mettre les cooronnées 
+  filter((subbassin == 59400)
+  | (subbassin == 73400)
+  | (subbassin == 73600)
+  #...
+ )
 
 # On crée les arcs entre HRUs
 sub1HruEdges <- sub1hrus %>%
@@ -41,13 +45,13 @@ sub1G <- graph_from_edgelist(sub1Edges %>% as.matrix())
 vertexList <- V(sub1G)
 
 # Il y a un reach par sous-bassin! On le positionne au "centre" du sous-bassin..
-reachsPositions <- hrus %>% 
+reachsPositions <- sub1hrus %>% 
   group_by(subbassin) %>%
   summarise(x = mean(x), y=mean(y)) %>%
   mutate(vertexId = paste("reach", subbassin, sep="_"))
 
 # Les Hrus sont positionnées au niveau de leurs coordonées
-hrusPositions <- hrus %>%
+hrusPositions <- sub1hrus %>%
   select(id, x,y) %>%
   mutate(vertexId = as.character(id))
 
@@ -70,17 +74,19 @@ vertexAtributes <- vertexList$name %>% as.data.frame() %>%
   mutate(ishru = !str_detect(vertexId, "reach")) %>%
   mutate(area = replace_na(area,500000))
 
-subnum = "all"
-pdf(paste0("subassin_", subnum,".pdf"), height = 16, width = 11)
+subnum = "some-sub-bassins"
+#pdf(paste0("subassin_", subnum,".pdf"), height = 16, width = 11) #en A3 pour tout le bassin
+pdf(paste0("subassin_", subnum,".pdf"), paper ="a4")
 plot(sub1G, 
      edge.arrow.size=.2,
      vertex.size = vertexAtributes %>% 
        pull(area) / 500000,
      vertex.label.cex=0.25,
-     vertex.label.dist=0,
-     layout = vertexAtributes %>%
-       select(x,y) %>%
-       as.matrix(),
+     #vertex.label.dist=0, #en A3 on met les noms des noeuds dans les noeuds.
+     vertex.label.dist=0.3,#en A4 on met les noms des noeuds au dessus des noeuds.
+     #layout = vertexAtributes %>% # Commenter cette ligne et les deux suivante si on ne veux pas les coordonnées
+    #   select(x,y) %>%        # intéressant si on veut regarder seulement la topologie sur certains sous-bassins par exemple
+    #   as.matrix(),
      vertex.color= !vertexAtributes %>% 
        pull(ishru)
     )
