@@ -24,14 +24,14 @@ library(gridExtra)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # Active cormas N J2K during coupled simu
-  with_cormas <- T #TODO
+  with_cormas <- F # For doing only warm-up without cormas for water balance tests of J2k
   with_J2K <- T # If set to false, only the warming up is performed and
                 #the same hydrologic day is used for the whole coupled
                 # simulation
   
   #Some general settings of the simulation
   # If water balance is made or not (increases simulation time)
-  makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL}
+  makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL ;localStoredWater <- NULL; localInOutWater <-NULL}
   
   # If original big Hrus are used (not hru plot and thus no cormas)
   bigHrus <- T
@@ -85,6 +85,7 @@ library(gridExtra)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ####### 3.1 Connexion and opening of WatASit model #######
   # Open Cormas: dans le répertoire de cormas taper: "wine cormas.exe"
+  if (with_cormas) {
   cormasInVW7dir = cormasRootPath
   setwd(cormasInVW7dir)
   if (!isCormasListening()) {
@@ -162,7 +163,7 @@ library(gridExtra)
     left_join(getAttributesOfEntities("idHRU","SpatialPlace"), by = "id") %>%
     mutate(id = as.numeric(as.character(id))) %>%
     arrange(id)
-  
+  }
   ####### 3.5 Initialize J2K model #######
   # On laisse le coupleur lancer JAMS/J2K
   killJ2K() # kill jams if it's running
@@ -188,9 +189,19 @@ library(gridExtra)
       #cat("\n","Running step:",i,"\n"); 
       setTxtProgressBar(simuProgress, i)
       # Run step-by-step for balance purpose
-      if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())}
+      if (makeWaterBalance) {
+          storedWater <- rbind(storedWater, j2kWaterBalanceStorages())
+          # Testing local balance. Only during warming-up.
+          localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(548, 554, 567, 634, 696))) 
+      }
+      # Making step by step j2k simu
       j2kMakeStep()
-      if (makeWaterBalance) {inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())}
+      if (makeWaterBalance) {
+          inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())
+          # Testing local balance. Only during warming-up.
+          localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(548, 554, 567, 634, 696),
+                                                                              lastHru = 567)) 
+          }
     }
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -448,6 +459,48 @@ library(gridExtra)
     storages <- storedWater %>% tbl_df()
     inOut <- inOutWater %>% tbl_df()
     waterSummary <- cbind (storages, inOut) %>% tbl_df() %>% mutate(day = row_number())
+    localStorages <- localStoredWater %>% tbl_df()
+    localInOut <- localInOutWater %>% tbl_df()
+    localWaterSummary <- cbind (localStorages, localInOut) %>% tbl_df() %>% mutate(day = row_number())
+    
+    
+    waterSummary %>%
+      arrange(day) %>%
+      #filter(day > nbDays) %>%
+      mutate(inWater = rain + snow) %>%
+      mutate(outWater = etact + runoff) %>%
+      mutate(storage = hruStorage + reachStorage) %>%
+      mutate(storageNextDay = lead(storage)) %>%
+      mutate(deltaS = storageNextDay - storage) %>%
+      mutate(waterBalance =  inWater - outWater) %>%
+      mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
+      filter(day > 150) %>%
+      #mutate(cumWaterLoss = cumsum(waterLoss)) %>%
+      ggplot() +
+      geom_line(aes(x = day, y = waterLoss))
+    
+    localWaterSummary %>%
+      arrange(day) %>%
+      #filter(day > nbDays) %>%
+      mutate(inWater = rain + snow) %>%
+      mutate(outWater = etact + outflow) %>%
+      mutate(storage = hruStorage) %>%
+      mutate(storageNextDay = lead(storage)) %>%
+      mutate(deltaS = storageNextDay - storage) %>%
+      mutate(waterBalance =  inWater - outWater) %>%
+      mutate(deltaS = storageNextDay - storage) %>%
+      mutate(waterLoss = deltaS - waterBalance) %>%
+      filter(day > 150) %>%
+      mutate(cumWaterLoss = cumsum(waterLoss)) %>%
+      ggplot() +
+      geom_line(aes(x = day, y = waterLoss, color = "loss"))
+     # geom_line(aes(x = day, y = - outWater, color = "outWater")) +
+    #  geom_line(aes(x = day, y = deltaS, color = "deltaS")) + 
+     # geom_line(aes(x = day, y = - etact, color = "et")) + 
+    #  geom_line(aes(x = day, y = - outflow, color = "outflow")) + 
+     # geom_line(aes(x = day, y = inWater, color = "inWater"))  + 
+    #geom_line(aes(x = day, y = snow, color = "snow"))  +
+     # geom_line(aes(x = day, y = rain, color = "rain")) 
     
     # Graphique intuitif pour voir si le bilan est correct 
     #(à l'echelle du bassin)
@@ -575,6 +628,7 @@ grid.draw(g)
   #       width=21, height=29.7, units="cm")
 }
 plot_bilan(c(475,500))
+plot_bilan(c(1,400))
     #sauvegarde du bilan dans un fichier
     stamp <- format(Sys.time(), "%y%m%d-%H%M%S")
     write.csv(waterSummary, paste0("waterSummary-",stamp,".csv"), row.names = F)

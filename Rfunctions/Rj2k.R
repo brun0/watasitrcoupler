@@ -190,6 +190,23 @@ j2kWaterBalanceFlows <- function(ip="localhost", port="9999") {
   return(data.frame(runoff, hrusInOut))
 }
 
+# get aggregated values for LOCAL water balance Only for HRUS at the head of a basin
+j2kLocalWaterBalanceStorages <- function(ip="localhost", port="9999", selectedHrus) {
+  hruStorage <- sum(j2kGetValuesAllHrus(attributes = c("actMPS", "actLPS", "actDPS", "TotSWE", "storedInterceptedWater",
+                                                       "actRG1", "actRG2"),
+                    ids = selectedHrus))
+  return(data.frame(hruStorage))
+}
+
+j2kLocalWaterBalanceFlows <- function(ip="localhost", port="9999", selectedHrus, lastHru) {
+  #outflow = j2kGetValuesAllHrus(attributes =c("RD1OUT","RD2OUT","RG1OUT","RG2OUT"), ids = lastHru)
+  outflow = sum(j2kGetValuesAllHrus(attributes =c("RD1OUT","RD2OUT","RG1OUT","RG2OUT"), ids = lastHru) %>% select(-ID))
+  hrusInOut <-t(colSums(j2kGetValuesAllHrus(attributes =c("rain","snow","etact"), ids = selectedHrus) %>% select(-ID)))
+  return(data.frame(cbind(outflow,hrusInOut)))
+}
+
+
+
 
 ############## UTILS ###############
 
