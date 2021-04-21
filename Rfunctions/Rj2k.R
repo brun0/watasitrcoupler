@@ -199,7 +199,6 @@ j2kLocalWaterBalanceStorages <- function(ip="localhost", port="9999", selectedHr
 }
 
 j2kLocalWaterBalanceFlows <- function(ip="localhost", port="9999", selectedHrus, lastHru) {
-  #outflow = j2kGetValuesAllHrus(attributes =c("RD1OUT","RD2OUT","RG1OUT","RG2OUT"), ids = lastHru)
   outflow = sum(j2kGetValuesAllHrus(attributes =c("RD1OUT","RD2OUT","RG1OUT","RG2OUT"), ids = lastHru) %>% select(-ID))
   hrusInOut <-t(colSums(j2kGetValuesAllHrus(attributes =c("rain","snow","etact"), ids = selectedHrus) %>% select(-ID)))
   return(data.frame(cbind(outflow,hrusInOut)))

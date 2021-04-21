@@ -493,7 +493,8 @@ library(gridExtra)
       filter(day > 150) %>%
       mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
-      geom_line(aes(x = day, y = waterLoss, color = "loss"))
+      geom_line(aes(x = day, y = waterLoss, color = "loss")) + 
+      ggtitle("Hrus 548, 554, 567, 634, 696")
      # geom_line(aes(x = day, y = - outWater, color = "outWater")) +
     #  geom_line(aes(x = day, y = deltaS, color = "deltaS")) + 
      # geom_line(aes(x = day, y = - etact, color = "et")) + 
