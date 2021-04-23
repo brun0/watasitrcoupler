@@ -4,7 +4,9 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-hrus <- read.table("superjams/data/J2K_cowat/parameter/hru.par", 
+#hrus <- read.table("superjams/data/J2K_cowat/parameter/hru.par",
+#hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_ok2.par",
+hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_cor_grand_buech.par", 
                     skip = 5,
                     sep= "\t",
                     dec = ".") %>%
@@ -14,7 +16,8 @@ hrus <- read.table("superjams/data/J2K_cowat/parameter/hru.par",
 colnames(hrus) <- c("id", "area", "x", "y", "subbassin", "to_poly", "to_reach")
 
 
-reachs <- read.table("superjams/data/J2K_cowat/parameter/reach_cor2_delete_duplicate.par", 
+#reachs <- read.table("superjams/data/J2K_cowat/parameter/reach_cor2_delete_duplicate.par",
+reachs <- read.table("superjams/data/J2K_cowat/parameter/reachs_grand_buech.par", 
                    skip = 5,
                    sep= "\t",
                    dec = ".") %>%
@@ -35,8 +38,8 @@ ymax <- max(hrus$y)
 yL <- ymax - ymin
 
 # Ici on prend juste le petit bassin nord-ouest
-ymin <- 6394625
-xmax <- 918612
+#ymin <- 6394625
+#xmax <- 918612
 
 # On regarde tous les sous-bassins apparaissant dans de cette fenetre
 windowsSubssasins <- hrus %>%
@@ -86,6 +89,8 @@ sub1Edges <- rbind(sub1HruEdges,
 
 sub1G <- graph_from_edgelist(sub1Edges %>% as.matrix())
 
+hruNtw <- graph_from_edgelist(sub1HruEdges %>% as.matrix())
+
 # La liste des noeuds du réseaux comprend les Hrus et les reachs
 vertexList <- V(sub1G)
 
@@ -107,6 +112,12 @@ vertexPositions <- union(reachsPositions %>%
                            select(x,y, vertexId),
                          hrusPositions %>% 
                            select(x,y, vertexId))
+
+#vertexPositions <- rbind(reachsPositions %>% 
+#                           select(x,y, vertexId),
+#                         hrusPositions %>% 
+#                           select(x,y, vertexId))
+
 # On stocke dans cette table les attributs des noeuds
 # Attention ils doivent être dans le même ordre que lea liste des noueds (vertexList)
 # Assuré par le le "left_join"
@@ -130,16 +141,17 @@ vertexAtributes <- vertexAtributes %>%
   mutate(x = replace_na(x, mx)) %>%
   mutate(y = replace_na(y,ymin))
 
-subnum = "north-west"
-#pdf(paste0("subassin_", subnum,".pdf"), height = 16, width = 11) #en A3 pour tout le bassin
-pdf(paste0("topology_", subnum,".pdf"), paper ="a4")
+#subnum = "north-west-hru-ploy"
+subnum = "all-GB"
+pdf(paste0("topology_", subnum,".pdf"), height = 16, width = 11) #en A3 pour tout le bassin
+#pdf(paste0("topology_", subnum,".pdf"), paper ="a4")
 plot(sub1G, 
      edge.arrow.size=.2,
      vertex.size = vertexAtributes %>% 
        pull(area) / 250000,
      vertex.label.cex=0.25,
-     #vertex.label.dist=0, #en A3 on met les noms des noeuds dans les noeuds.
-     vertex.label.dist=0.3,#en A4 on met les noms des noeuds au dessus des noeuds.
+     vertex.label.dist=0, #en A3 on met les noms des noeuds dans les noeuds.
+     #vertex.label.dist=0.3,#en A4 on met les noms des noeuds au dessus des noeuds.
      #layout = vertexAtributes %>% # Commenter cette ligne et les deux suivante si on ne veux pas les coordonnées
     #   select(x,y) %>%        # intéressant si on veut regarder seulement la topologie sur certains sous-bassins par exemple
     #   as.matrix(),
@@ -163,4 +175,5 @@ plot(sub1G,
        pull(ishru)
 )
 dev.off()
+
 
