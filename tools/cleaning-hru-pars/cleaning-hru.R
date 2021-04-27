@@ -12,7 +12,9 @@ hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_cor_grand_bu
 #nb correspondance collonnes: V1, V2, V6, V7, V9,    V13,    V14
                               #id,area,x,y,subbassin,to_poly,to_reach
 
-valide_hrus <- hrus%>% filter(V2 > 10) %>% tbl_df()
+valide_hrus <- hrus %>% 
+  filter(V2 > 100) %>% 
+  tbl_df()
 
 write.table(valide_hrus,
             "hru_cowat_withplots.par.dat",

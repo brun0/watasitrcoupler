@@ -194,7 +194,7 @@ library(gridExtra)
           storedWater <- rbind(storedWater, j2kWaterBalanceStorages())
           # Testing local balance. Only during warming-up.
           #localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(548, 554, 567, 634, 696)))
-          localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(11104, 8563, 12464, 8560, 16637))) 
+          #localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(8665, 8670, 14463, 17024))) 
       }
       # Making step by step j2k simu
       j2kMakeStep()
@@ -203,8 +203,8 @@ library(gridExtra)
           # Testing local balance. Only during warming-up.
           #localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(548, 554, 567, 634, 696),
                                                                               #lastHru = 567)) 
-          localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(11104, 8563, 12464, 8560, 16637),
-                                                                              lastHru = 16637))
+          #localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(8665, 8670, 14463, 17024),
+                                                                             # lastHru = 17024))
           }
     }
   
@@ -478,7 +478,8 @@ library(gridExtra)
       mutate(deltaS = storageNextDay - storage) %>%
       mutate(waterBalance =  inWater - outWater) %>%
       mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
-      filter(day > 0) %>%
+      filter(day > 150) %>%
+      filter(day < 300) %>%
       #mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
       geom_line(aes(x = day, y = waterLoss))
@@ -632,8 +633,8 @@ grid.draw(g)
   #ggsave(file =paste0("bilan-test-", period[1], "-",period[2], ".pdf"),
   #       width=21, height=29.7, units="cm")
 }
-plot_bilan(c(475,500))
-plot_bilan(c(1,400))
+plot_bilan(c(350,375))
+# plot_bilan(c(1,500))
     #sauvegarde du bilan dans un fichier
     stamp <- format(Sys.time(), "%y%m%d-%H%M%S")
     write.csv(waterSummary, paste0("waterSummary-",stamp,".csv"), row.names = F)

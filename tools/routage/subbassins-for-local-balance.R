@@ -38,7 +38,7 @@ sub1HruEdges <- selectedHrus %>%
 
 hruNtw <- graph_from_edgelist(sub1HruEdges %>% as.matrix())
 
-# La liste des noeuds du réseaux comprend les Hrus et les reachs
+# La liste des noeuds du réseaux comprend les Hrus
 vertexList <- V(hruNtw)
 
 # Les Hrus sont positionnées au niveau de leurs coordonées
@@ -73,7 +73,7 @@ vertexAtributes <- vertexList$name %>% as.data.frame() %>%
 subnum = "subbassin-GB"
 pdf(paste0("topology_", subnum,".pdf"), height = 16, width = 11) #en A3 pour tout le bassin
 #pdf(paste0("topology_", subnum,".pdf"), paper ="a4")
-plot(sub1G, 
+plot(hruNtw, 
      edge.arrow.size=.2,
      vertex.size = vertexAtributes %>% 
        pull(area) / 250000,
@@ -89,7 +89,7 @@ plot(sub1G,
 dev.off()
 
 pdf(paste0("bassin_", subnum,".pdf"), paper ="a4")
-plot(sub1G, 
+plot(hruNtw, 
      edge.arrow.size=.2,
      vertex.size = vertexAtributes %>% 
        pull(area) / 250000,
@@ -104,4 +104,78 @@ plot(sub1G,
 )
 dev.off()
 
+hrusSubbassins <- NULL
+bassinsList <- hruNtw %>% 
+  decompose()
+
+for (i in 1:length(bassinsList)) {
+  testSubBassin <- bassinsList[[i]]
+  subbass <- NULL
+  subbass$Hrus <- c(V(testSubBassin)$name)
+  subbass <- subbass %>% as.data.frame()
+  subbass$isLast <- c(degree(testSubBassin, mode = "out")) == 0
+  subbass$bassin <- i 
+  hrusSubbassins <- rbind(hrusSubbassins, subbass)
+}
+
+hrusSubbassins <-  hrusSubbassins %>% 
+  as.data.frame() %>%
+  tbl_df()
+
+#hrusSubbassins %>% write.table("hrus-subassins-for-balance-test.csv",
+#                               dec= ".",
+#                               sep=";",
+#                               row.names = F)
+
+hrusSubbassins <- read.table("hrus-subassins-for-balance-test.csv",
+                               dec= ".",
+                               sep=";",
+                               header = T) %>% 
+  tbl_df()
+
+hrusSubbassins %>% 
+  group_by(bassin) %>%
+  count() %>% filter(n< 10)
+
+hrusSubbassins %>% filter(bassin == 51)
+
+testVertexAtributes <- testVertexList$name %>% as.data.frame() %>%
+  mutate_("id"=".") %>%
+  tbl_df() %>%
+  mutate(vertexId = as.character(id)) %>%
+  select(vertexId) %>%
+  left_join(vertexPositions,  by="vertexId")  %>%
+  left_join(selectedHrus %>% 
+              mutate(vertexId = as.character(id)) %>%
+              select(vertexId, area, subbassin), by="vertexId") %>%
+  mutate(ishru = !str_detect(vertexId, "reach")) %>%
+  mutate(area = replace_na(area,1000000))
+
+plot(testSubBassin, 
+     edge.arrow.size=.2,
+     vertex.size = testVertexAtributes %>% 
+       pull(area) / 250000,
+     vertex.label.cex=0.25,
+     #vertex.label.dist=0, #en A3 on met les noms des noeuds dans les noeuds.
+     vertex.label.dist=0.3,#en A4 on met les noms des noeuds au dessus des noeuds.
+     layout = testVertexAtributes %>% # Commenter cette ligne et les deux suivante si on ne veux pas les coordonnées
+       select(x,y) %>%        # intéressant si on veut regarder seulement la topologie sur certains sous-bassins par exemple
+       as.matrix(),
+     vertex.color= !testVertexAtributes %>% 
+       pull(ishru)
+)
+
+plot(testSubBassin, 
+     edge.arrow.size=.2,
+     vertex.size = testVertexAtributes %>% 
+       pull(area) / 250000,
+     vertex.label.cex=0.25,
+     vertex.label.dist=0, #en A3 on met les noms des noeuds dans les noeuds.
+     #vertex.label.dist=0.3,#en A4 on met les noms des noeuds au dessus des noeuds.
+     #layout = vertexAtributes %>% # Commenter cette ligne et les deux suivante si on ne veux pas les coordonnées
+     #   select(x,y) %>%        # intéressant si on veut regarder seulement la topologie sur certains sous-bassins par exemple
+     #   as.matrix(),
+     vertex.color= !testVertexAtributes %>% 
+       pull(ishru)
+)
 
