@@ -34,7 +34,7 @@ library(gridExtra)
   makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL ;localStoredWater <- NULL; localInOutWater <-NULL}
   
   # If original big Hrus are used (not hru plot and thus no cormas)
-  bigHrus <- F
+  bigHrus <- T
   
   # If orginial big Hrus are used, link must be made between cormas HRU plots and J2K big HRUS
   if (bigHrus) {
@@ -61,7 +61,7 @@ library(gridExtra)
   #jams_file_name <- "cowat_for_new_com_module.jam"
   jams_file_name <- "cowat_for_new_com_module_GB.jam"
   if (bigHrus) {
-    jams_file_name <- "cowat_for_new_com_module-bigHrus.jam"
+    jams_file_name <- "cowat_for_new_com_module_GB-bigHrus.jam"
   }
   reachTopologyFileName <- "reach_cor2_delete_duplicate.par"
 
