@@ -34,7 +34,7 @@ library(gridExtra)
   makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL ;localStoredWater <- NULL; localInOutWater <-NULL}
   
   # If original big Hrus are used (not hru plot and thus no cormas)
-  bigHrus <- F
+  bigHrus <- T
 
   # If orginial big Hrus are used, link must be made between cormas HRU plots and J2K big HRUS
   if (bigHrus) {
@@ -474,11 +474,23 @@ library(gridExtra)
     localStorages <- localStoredWater %>% tbl_df()
     localInOut <- localInOutWater %>% tbl_df()
     localWaterSummary <- cbind (localStorages, localInOut) %>% tbl_df() %>% mutate(day = row_number())
+  
+    # Quick saveing of global and local agreggated water-balances values
+    waterSummary %>% 
+      write.table(paste0("output/globalwaterBalance-big", bigHrus, "_GB.csv"),
+                  row.names = F,
+                  sep = ";",
+                  dec=".")
     
+    localWaterSummary %>% 
+      write.table(paste0("output/localwaterBalance-big", bigHrus, "_GB.csv"),
+                  row.names = F,
+                  sep = ";",
+                  dec=".")
     
+    #Plotting global water loss for verification
     waterSummary %>%
       arrange(day) %>%
-      #filter(day > nbDays) %>%
       mutate(inWater = rain + snow) %>%
       mutate(outWater = etact + runoff) %>%
       mutate(storage = hruStorage + reachStorage) %>%
@@ -486,15 +498,12 @@ library(gridExtra)
       mutate(deltaS = storageNextDay - storage) %>%
       mutate(waterBalance =  inWater - outWater) %>%
       mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
-      #filter(day > 250) %>%
-      #filter(day < 300) %>%
-      #mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
       geom_line(aes(x = day, y = waterLoss))
     
+    #Plotting local water loss for verification
     localWaterSummary %>%
       arrange(day) %>%
-      #filter(day > nbDays) %>%
       mutate(inWater = rain + snow) %>%
       mutate(outWater = etact + outflow) %>%
       mutate(storage = hruStorage) %>%
@@ -507,15 +516,8 @@ library(gridExtra)
       mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
       geom_line(aes(x = day, y = waterLoss, color = "loss")) + 
-      ggtitle("Bilan Hrus 11104p, 8563p, 12464p, 8560p, 16637t")
-     # geom_line(aes(x = day, y = - outWater, color = "outWater")) +
-    #  geom_line(aes(x = day, y = deltaS, color = "deltaS")) + 
-     # geom_line(aes(x = day, y = - etact, color = "et")) + 
-    #  geom_line(aes(x = day, y = - outflow, color = "outflow")) + 
-     # geom_line(aes(x = day, y = inWater, color = "inWater"))  + 
-    #geom_line(aes(x = day, y = snow, color = "snow"))  +
-     # geom_line(aes(x = day, y = rain, color = "rain")) 
-    
+      ggtitle("Bilan Hrus 8560p,16637t,8563p,11104p,12464p")
+
     # Graphique intuitif pour voir si le bilan est correct 
     #(à l'echelle du bassin)
     # Pour toute la durée de simulation incluant la pré-chauffe
