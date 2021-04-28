@@ -32,6 +32,14 @@ globalWaterSummary %>%
   ggplot() +
   geom_line(aes(y = diffRunOff, x = day))
 
+globalWaterSummary %>% 
+  select(day, runoff, hruType) %>% 
+  spread(hruType, runoff) %>%
+  mutate(diffRunOff =  (Big - WithHruPlots)) %>%
+  ggplot() +
+  geom_line(aes(y = diffRunOff, x = day))
+
+
 # Local
 localWaterSummaryBigH <- read.table(paste0("output/localwaterBalance-bigTRUE_GB.csv"),
                                      header = T,

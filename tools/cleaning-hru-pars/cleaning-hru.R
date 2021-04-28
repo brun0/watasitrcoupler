@@ -4,6 +4,8 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
+minArea <- 10
+
 hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_cor_grand_buech.par", 
                    skip = 5,
                    sep= "\t",
@@ -12,11 +14,29 @@ hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_cor_grand_bu
 #nb correspondance collonnes: V1, V2, V6, V7, V9,    V13,    V14
                               #id,area,x,y,subbassin,to_poly,to_reach
 
-valide_hrus <- hrus %>% 
-  filter(V2 > 100) %>% 
+toosmall_hrus <- hrus %>% 
+  filter(V2 < minArea) %>% 
   tbl_df()
 
-write.table(valide_hrus,
+valide_hrus <- hrus %>% 
+  filter(V2 >= minArea) %>% 
+  tbl_df()
+
+areaToAdd <- toosmall_hrus %>% 
+  select(V2, V13) %>%
+  rename(areaToAdd = V2, id = V13) %>%
+  group_by(id) %>%
+  summarise(areaToAdd = sum(areaToAdd)) %>%
+  filter(id >0)
+
+corrected_hrus <- valide_hrus %>% 
+  rename(id = V1) %>%
+  left_join(areaToAdd) %>%
+  mutate(areaToAdd = replace_na(0)) %>%
+  mutate(V2 = V2 + areaToAdd) %>%
+  select(-areaToAdd)
+
+write.table(corrected_hrus,
             "hru_cowat_withplots.par.dat",
             sep = "\t",
             dec= ".",

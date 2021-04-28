@@ -1,4 +1,4 @@
-# Suppression par Bruno Bonte des hrus de surface < 10m2 depuis "hru_cowat_10_cor_gand_buech.par created 17 Mar 2021 by B.Richard: area correction"												
+# Suppression par Bruno Bonte des hrus de surface < 10m2 et report de la surface vers les hrus trounquees correspondantes (depuis "hru_cowat_10_cor_gand_buech.par created 17 Mar 2021 by B.Richard: area correction"
 ID	area	elevation	slope	aspect	x	y	watershed	subbasin	hgeoID	landuseID	soilID	to_poly	to_reach
 0	0	0	0	0	0	0	0	0	0	0	0	0	0
 999999	9999999	10000	90	360	9999999	9999999	999999	999999	9999	9999	9999	999999	999999
