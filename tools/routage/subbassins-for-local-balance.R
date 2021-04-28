@@ -6,7 +6,8 @@ library(stringr)
 
 #hrus <- read.table("superjams/data/J2K_cowat/parameter/hru.par",
 #hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_ok2.par",
-hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_cor_grand_buech.par", 
+#hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_10_cor_grand_buech.par",
+hrus <- read.table("superjams/data/J2K_cowat/parameter/hru_cowat_smallminarea_grand_buech.par", 
                     skip = 5,
                     sep= "\t",
                     dec = ".") %>%
@@ -70,7 +71,7 @@ vertexAtributes <- vertexList$name %>% as.data.frame() %>%
   mutate(area = replace_na(area,1000000))
 
 #subnum = "north-west-hru-ploy"
-subnum = "subbassin-GB"
+subnum = "subbassin-GB-smallminarea-hru"
 pdf(paste0("topology_", subnum,".pdf"), height = 16, width = 11) #en A3 pour tout le bassin
 #pdf(paste0("topology_", subnum,".pdf"), paper ="a4")
 plot(hruNtw, 
@@ -122,22 +123,27 @@ hrusSubbassins <-  hrusSubbassins %>%
   as.data.frame() %>%
   tbl_df()
 
-#hrusSubbassins %>% write.table("hrus-subassins-for-balance-test.csv",
-#                               dec= ".",
-#                               sep=";",
-#                               row.names = F)
-
-hrusSubbassins <- read.table("hrus-subassins-for-balance-test.csv",
+hrusSubbassins %>% write.table("minareahrus-subassins-for-balance-test.csv",
                                dec= ".",
                                sep=";",
-                               header = T) %>% 
-  tbl_df()
+                               row.names = F)
+
+#hrusSubbassins <- read.table("hrus-subassins-for-balance-test.csv",
+#                               dec= ".",
+#                               sep=";",
+#                               header = T) %>% 
+#  tbl_df()
 
 hrusSubbassins %>% 
   group_by(bassin) %>%
   count() %>% filter(n< 10)
 
-hrusSubbassins %>% filter(bassin == 51)
+hrusSubbassins %>% 
+  filter(bassin == 45) %>% 
+  pull(Hrus) %>% paste(sep=",",collapse = ",")
+
+plot(bassinsList[[45]],
+     edge.arrow.size=.2)
 
 testVertexAtributes <- testVertexList$name %>% as.data.frame() %>%
   mutate_("id"=".") %>%

@@ -34,8 +34,8 @@ library(gridExtra)
   makeWaterBalance <- T; if (makeWaterBalance) { storedWater <- NULL; inOutWater <-NULL ;localStoredWater <- NULL; localInOutWater <-NULL}
   
   # If original big Hrus are used (not hru plot and thus no cormas)
-  bigHrus <- T
-  
+  bigHrus <- F
+
   # If orginial big Hrus are used, link must be made between cormas HRU plots and J2K big HRUS
   if (bigHrus) {
       source("clean-hrus-par.R") # create the plotsInHrus variable telling for each hruPlot in which big hru it is..
@@ -193,18 +193,26 @@ library(gridExtra)
       if (makeWaterBalance) {
           storedWater <- rbind(storedWater, j2kWaterBalanceStorages())
           # Testing local balance. Only during warming-up.
-          #localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(548, 554, 567, 634, 696)))
-          #localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(8665, 8670, 14463, 17024))) 
+          if (bigHrus) {
+            localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(16637)))
+          } else {
+            localStoredWater <- rbind(localStoredWater, j2kLocalWaterBalanceStorages(selectedHrus = c(8560,16637,8563,11104,12464))) 
+          }
       }
       # Making step by step j2k simu
+      Sys.sleep(0.05)
       j2kMakeStep()
+      Sys.sleep(0.05)
       if (makeWaterBalance) {
           inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows())
           # Testing local balance. Only during warming-up.
-          #localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(548, 554, 567, 634, 696),
-                                                                              #lastHru = 567)) 
-          #localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(8665, 8670, 14463, 17024),
-                                                                             # lastHru = 17024))
+          if (bigHrus) {
+            localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(16637),
+                                                                              lastHru = 16637)) 
+          } else {
+            localInOutWater <- rbind(localInOutWater, j2kLocalWaterBalanceFlows(selectedHrus = c(8560,16637,8563,11104,12464),
+                                                                              lastHru = 16637))
+          }
           }
     }
   
@@ -478,8 +486,8 @@ library(gridExtra)
       mutate(deltaS = storageNextDay - storage) %>%
       mutate(waterBalance =  inWater - outWater) %>%
       mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
-      filter(day > 150) %>%
-      filter(day < 300) %>%
+      #filter(day > 250) %>%
+      #filter(day < 300) %>%
       #mutate(cumWaterLoss = cumsum(waterLoss)) %>%
       ggplot() +
       geom_line(aes(x = day, y = waterLoss))

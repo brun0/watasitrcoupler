@@ -22,3 +22,16 @@ write.table(valide_hrus,
             dec= ".",
             row.names = F)
 
+hrus_big <- read.table("superjams/data/J2K_cowat/parameter/hru_cor_grand_buech.par", 
+                   skip = 5,
+                   sep= "\t",
+                   dec = ".") %>%
+  tbl_df() %>%
+  select(V1, V2, V6, V7, V9,    V13,    V14)
+
+colnames(hrus_big) <- c("id","area","x","y","subbassin","to_poly","to_reach")
+
+hrus_big %>% filter(area < 2000)
+
+
+
