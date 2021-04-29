@@ -227,7 +227,8 @@ library(gridExtra)
   reachsOfCormas <- NULL
   inOutCanals <- NULL
   seepage <- NULL
-
+  
+  if (with_cormas) {
   reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>%
     tbl_df()
     
@@ -453,6 +454,7 @@ library(gridExtra)
                  qFromSeepage$idHRU, 
                  qFromSeepage$q)
           }
+      }
           ####### F. Run new j2k daily step #######
           if (with_J2K) {
             if (makeWaterBalance) {storedWater <- rbind(storedWater, j2kWaterBalanceStorages())} # To calculate the water balance
@@ -548,7 +550,9 @@ library(gridExtra)
       geom_point(aes(x = nextday, y = storage + inWater - outWater, color = "PastStoragePlusBalance")) +
       ylab("Litres")
     
-totalSeepage <- seepage  %>%
+    if (with_cormas) {
+      #Cormas related balance analysis
+  totalSeepage <- seepage  %>%
       ungroup() %>%
       group_by(date) %>%
       summarise(seepage=sum(q))
@@ -592,12 +596,13 @@ cormasWaterSummary %>%
     
 irrigatedFarmPlots %>%
       tbl_df()
-    
+}
 # Fonction qui plot les variables des bilans fait par J2k sur l'ensemble de la simu
 library(gtable)
 library(grid)
+    
 plot_bilan <- function (period = c(300,400)){
-wL <- waterSummary %>%
+  wL <- waterSummary %>%
       arrange(day) %>%
       #filter(day > nbDays) %>%
       mutate(inWater = rain + snow) %>%

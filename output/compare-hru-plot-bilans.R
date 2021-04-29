@@ -59,7 +59,8 @@ localWaterSummary <- union(localWaterSummaryBigH, localWaterSummaryWithPlots)
 
 localWaterSummary %>% 
   ggplot() +
-  geom_line(aes(y = outflow, x = day, color = hruType))
+ # geom_line(aes(y = outflow, x = day, color = hruType)) +
+  geom_line(aes(y = hruStorage, x = day, color = hruType))
 
 localWaterSummary %>% 
   select(day, outflow, hruType) %>% 
@@ -70,7 +71,7 @@ localWaterSummary %>%
   geom_line(aes(y = diffoutFlow, x = day))
 
 #Plotting global water loss for verification
-waterSummary %>%
+globalWaterSummaryBigH %>%
   arrange(day) %>%
   mutate(inWater = rain + snow) %>%
   mutate(outWater = etact + runoff) %>%
@@ -81,3 +82,48 @@ waterSummary %>%
   mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
   ggplot() +
   geom_line(aes(x = day, y = waterLoss))
+
+globalWaterSummaryWithPlots %>%
+  arrange(day) %>%
+  mutate(inWater = rain + snow) %>%
+  mutate(outWater = etact + runoff) %>%
+  mutate(storage = hruStorage + reachStorage) %>%
+  mutate(storageNextDay = lead(storage)) %>%
+  mutate(deltaS = storageNextDay - storage) %>%
+  mutate(waterBalance =  inWater - outWater) %>%
+  mutate(waterLoss = storageNextDay - storage - waterBalance) %>%
+  ggplot() +
+  geom_line(aes(x = day, y = waterLoss))
+
+#Plotting local water loss for verification
+localWaterSummaryBigH %>%
+  arrange(day) %>%
+  mutate(inWater = rain + snow) %>%
+  mutate(outWater = etact + outflow) %>%
+  mutate(storage = hruStorage) %>%
+  mutate(storageNextDay = lead(storage)) %>%
+  mutate(deltaS = storageNextDay - storage) %>%
+  mutate(waterBalance =  inWater - outWater) %>%
+  mutate(deltaS = storageNextDay - storage) %>%
+  mutate(waterLoss = deltaS - waterBalance) %>%
+  filter(day > 0) %>%
+  mutate(cumWaterLoss = cumsum(waterLoss)) %>%
+  ggplot() +
+  geom_line(aes(x = day, y = waterLoss, color = "loss")) + 
+  ggtitle("Bilan Hrus 16637")
+
+localWaterSummaryWithPlots %>%
+  arrange(day) %>%
+  mutate(inWater = rain + snow) %>%
+  mutate(outWater = etact + outflow) %>%
+  mutate(storage = hruStorage) %>%
+  mutate(storageNextDay = lead(storage)) %>%
+  mutate(deltaS = storageNextDay - storage) %>%
+  mutate(waterBalance =  inWater - outWater) %>%
+  mutate(deltaS = storageNextDay - storage) %>%
+  mutate(waterLoss = deltaS - waterBalance) %>%
+  filter(day > 0) %>%
+  mutate(cumWaterLoss = cumsum(waterLoss)) %>%
+  ggplot() +
+  geom_line(aes(x = day, y = waterLoss, color = "loss")) + 
+  ggtitle("Bilan Hrus 8560,16637t,8563,11104,12464")
