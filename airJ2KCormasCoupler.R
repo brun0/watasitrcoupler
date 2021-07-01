@@ -6,7 +6,7 @@
 
 # General settings for R
 rm(list=ls()); startTime = Sys.time();
-wd = '~/watasitrcoupler'
+wd = getwd()
 source('Rcoupler[WatASit=J2K]-settings.R')
 
 # Simulation Settings
