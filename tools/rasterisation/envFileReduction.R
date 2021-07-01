@@ -49,7 +49,7 @@ rdiv<-aggregate(r, fact=fdiv)#; str(rdiv)
 #Reomving unused cells and adding id column
 txt <- envTable %>% 
   #mutate(isNull = (idExpl < 0) & (V7 <= 0) & (V8 < 0) & (V9 < 0) & (V10 < 0) & (V12 < 0)) %>% #keeping only real farmPlot (parcells)
-  mutate(isNull = (codeAsa != 7) & 
+  mutate(isNull = ((codeAsa < 0)| (codeAsa == 11) | (codeAsa == 8) | (codeAsa == 10) | (codeAsa == 9) | (codeAsa == 1)) &
            (idReach == 0) & 
            (canalsId < 0) & 
            (wintakeId < 0) & 
@@ -61,7 +61,7 @@ txt <- envTable %>%
   dplyr::select(-isNull) 
 
 #Write header (adding id and altitude)
-fileConn<-file("tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCellsMini.env")
+fileConn<-file("tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCellsMiniAllAsas.env")
 header <- writeLines(c(
   "dimensions\t318 238",
   "cloture\tclosed" ,
@@ -72,9 +72,10 @@ header <- writeLines(c(
 ), con= fileConn)
 close(fileConn)
 
-write.table(txt[,c(13,1:12)], "tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCellsMini.env",
+write.table(txt[,c(13,1:12)], "tools/rasterisation/spatial_ent[2017]_div2grandbuechcanaux318x238_numvaluesLessCellsMiniAllAsas.env",
             sep=",",
             dec=".",
             row.names = F,
             append = T,
             col.names = F)
+
