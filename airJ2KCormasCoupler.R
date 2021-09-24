@@ -31,8 +31,6 @@ control = "R_goBaselineCOWATStep:"
 connectCORMAS(modelName, parcelFile, cormasRootPath, stdoutP, stderrP, wd)
 probesList = c("flowInRiverReachGB","flowInRiverReachPB","numberOfFlooldPlotActions","numberOfFloodPlots") # Comment: Give the probe names you want to activate
 initCORMAS(init, control, modelName, probesList)
-cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>% as_tibble() # Comment: On récupère les id des reach dans CORMAS
-cormasFarmPlotIds <- getAttributesOfEntities("idParcel","FarmPlot") %>% as_tibble() %>% filter(idParcel > 0)# Comment: On récupère les id des farm plots dans CORMAS
 
 # Initializes J2K model
 killJ2K() # Comment: Kill JAMS if it's running
@@ -50,6 +48,31 @@ for (i in 1:as.numeric(difftime(dateStartCORMAS,dateStartJ2K,units='days'))){ # 
   # runoffSelectedReaches <- rbind(runoffSelectedReaches, j2kRunoffSelectedReaches(selectedIDs = c(55000,57800,61000,62200,78200,79400))) # Comment: Enregistrement de un ou plusieurs reachs en particulier TODO: faire une liste des reachs à enregistrés
 } # Comment: End of the J2K time loop before the starting of the irrigation campaign
 
+# Get the lists of hydrological entities present in Cormas
+cormasReachIds <- getAttributesOfEntities("idReach", "RiverReach") %>% 
+  pull(idReach)
+
+cormasHRUPlots <- getAttributesOfEntities("idParcel", "FarmPlot") %>% as_tibble()
+  
+#TODO: Résoudre le problème ci-dessous!!!
+# Dû à un problème d'identifiants dans les hruplots cormas on ne séléctionne que celles qui ont réellement un 
+# équivalent dans j2k
+
+possibleHrus = j2kGetOneValueAllHrus("actMPS") %>% as_tibble()
+
+cormasHRUPlotsIds <- cormasHRUPlots %>% 
+  rename(ID = idParcel) %>%
+  semi_join(possibleHrus) %>%
+  pull(ID)
+
+# Mise à jour des données initales manquantes dans les Hrus Cormas
+maxMPS = j2kGetOneValueAllHrus("maxMPS", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting maxMPS value from HRUs
+updatedMaxMPS <- maxMPS %>%
+  mutate(maxMPS = maxMPS / 1000) %>%
+  mutate(maxMPS = replace_na(maxMPS,0))
+
+r <- setAttributesOfEntities("maxMPS", "FarmPlot", updatedMaxMPS$ID, updatedMaxMPS$maxMPS)
+
 # Runs J2K with CORMAS
 print('Ongoing J2K with CORMAS simulation...')
 simuProgress <- txtProgressBar(min = 1, max =as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days')), style = 3)
@@ -57,33 +80,25 @@ irrigatedFarmPlots <- NULL; j2KNetRain <- NULL; reachsOfCormas <- NULL; inOutCan
 for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ # Comment: Boucle temporelle ocouplée
   setTxtProgressBar(simuProgress, i)
   
-  reach_Runoff = j2kGetValuesAllReachs(attributes = "Runoff", 
-                                       ids = cormasReachIds$idReach) %>% as_tibble() # Comment: Getting reach flow from J2K
-  reach_Runoff = j2kGetValuesAllReachs(attributes = "Runoff") %>% as_tibble() 
+
+  #reach_Runoff = j2kGetValuesAllReachs(attributes = "Runoff", 
+  #                                     ids = cormasReachIds$idReach) %>% as_tibble() # For test
+  reach_Runoff = j2kGetValuesAllReachs(attributes = "Runoff", ids = cormasReachIds) %>% as_tibble() # Comment: Getting reach flow from J2K
   
-  updatedFlows <- cormasReachIds %>% 
-    mutate(ID = idReach) %>%
-    full_join(reach_Runoff, by = "ID") %>%
+  updatedFlows <- reach_Runoff %>%
     mutate(q = (Runoff / 1000) / (24 * 3600)) %>%
     mutate(q = replace_na(q,0))
-  r <- setAttributesOfEntities("q", "RiverReach", updatedFlows$id, updatedFlows$q) # Comment: Mise à jour des valeurs de débits dans les entites RiverReach de CORMAS
+  
+  r <- setAttributesOfEntities("q", "RiverReach", updatedFlows$ID, updatedFlows$q) # Comment: Mise à jour des valeurs de débits dans les entites RiverReach de CORMAS
   reachsOfCormas <- reachsOfCormas %>% rbind(updatedFlows %>% mutate(date = i)) # Comment: Enregistrement des débits de CORMAS
   
-  actMPS = j2kGetOneValueAllHrus("actMPS") %>% as_tibble() # Comment: Getting actMPS value from HRUs
-  updatedActMPS <- cormasFarmPlotIds %>%
-    mutate(ID = idParcel) %>%
-    full_join(actMPS, by = "ID") %>%
+  actMPS = j2kGetOneValueAllHrus("actMPS", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting actMPS value from HRUs
+  
+  updatedActMPS <- actMPS %>%
     mutate(actMPS = actMPS / 1000) %>%
     mutate(actMPS = replace_na(actMPS,0))
-  r <- setAttributesOfEntities("actMPS", "FarmPlot", updatedActMPS$id, updatedActMPS$actMPS) # Comment: Mise à jour des valeurs de actMPS dans les entites FarmPlot de CORMAS
   
-  maxMPS = j2kGetOneValueAllHrus("maxMPS") %>% as_tibble() # Comment: Getting actMPS value from HRUs
-  updatedMaxMPS <- cormasFarmPlotIds %>%
-    mutate(ID = idParcel) %>%
-    full_join(maxMPS, by = "ID") %>%
-    mutate(maxMPS = maxMPS / 1000) %>%
-    mutate(maxMPS = replace_na(maxMPS,0))
-  r <- setAttributesOfEntities("maxMPS", "FarmPlot", updatedMaxMPS$id, updatedMaxMPS$maxMPS)
+  r <- setAttributesOfEntities("actMPS", "FarmPlot", updatedActMPS$ID, updatedActMPS$actMPS) # Comment: Mise à jour des valeurs de actMPS dans les entites FarmPlot de CORMAS
   
   actET = j2kGetOneValueAllHrus("etact") %>% as_tibble() # Comment: Getting actMPS value from HRUs
   updatedActET <- cormasFarmPlotIds %>%
@@ -93,13 +108,13 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
     mutate(actET = replace_na(actET,0))
   r <- setAttributesOfEntities("actET", "FarmPlot", updatedActET$id, updatedActET$actET)
   
-  
   maxET = j2kGetOneValueAllHrus("etpot") %>% as_tibble() # Comment: Getting actMPS value from HRUs
   updatedMaxET <- cormasFarmPlotIds %>%
     mutate(ID = idParcel) %>%
     full_join(maxET, by = "ID") %>%
     mutate(maxET = (maxET / 1000) / (24 * 3600)) %>%
     mutate(maxET = replace_na(maxET,0))
+  
   r <- setAttributesOfEntities("maxET", "FarmPlot", updatedMaxET$id, updatedMaxET$maxET)
   
   #TODO: trop lourd trouvez une alternative pour affecter des pluies spatialisées?
