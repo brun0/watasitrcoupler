@@ -6,7 +6,7 @@
 
 # General settings for R
 rm(list=ls()); startTime = Sys.time();
-wd = getwd()
+wd <- getwd()
 source('Rcoupler[WatASit=J2K]-settings.R')
 
 # Simulation Settings
@@ -14,7 +14,8 @@ caseName = 'test'
 saveOutputs = F # Comment: Si True les sorties seront enregistrées dans ~airJ2K/superjams/data/.../output
 
 # J2K model settings
-dateStartJ2K = as.Date('1970-01-01', '%Y-%m-%d') # Comment: Attention la date de début de simulation doit être la même que dans le fichier modèle .jam (à modifier "à la main" dans le .jam)
+#Starting date of cowat_for_new_com_module_GB.jam is 2016-01-01
+dateStartJ2K = as.Date('2016-01-01', '%Y-%m-%d') # Comment: Attention la date de début de simulation doit être la même que dans le fichier modèle .jam (à modifier "à la main" dans le .jam)
 dateEndJ2K = as.Date('2018-07-31', '%Y-%m-%d') # Comment: Choisir une date de fin inférieure ou égale à celle dans le .jam (ou modifier le .jam)
 jamsFileName = 'cowat_for_new_com_module_GB.jam' # Comment: Renseigner le nom du fichier modèle .jam qui est à placer dans le répertoir ~/watasitrcoupler/superjams/data/.../
 
@@ -31,7 +32,7 @@ connectCORMAS(modelName, parcelFile, cormasRootPath, stdoutP, stderrP, wd)
 probesList = c("flowInRiverReachGB","flowInRiverReachPB","numberOfFlooldPlotActions","numberOfFloodPlots") # Comment: Give the probe names you want to activate
 initCORMAS(init, control, modelName, probesList)
 cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>% as_tibble() # Comment: On récupère les id des reach dans CORMAS
-cormasFarmPlotIds <- getAttributesOfEntities("idParcel","FarmPlot") %>% as_tibble() # Comment: On récupère les id des farm plots dans CORMAS
+cormasFarmPlotIds <- getAttributesOfEntities("idParcel","FarmPlot") %>% as_tibble() %>% filter(idParcel > 0)# Comment: On récupère les id des farm plots dans CORMAS
 
 # Initializes J2K model
 killJ2K() # Comment: Kill JAMS if it's running
@@ -40,11 +41,12 @@ initJ2K(jamsRootPath, jamsFileName, stdoutP, stderrP, wd) # Comment: Lance le fi
 # Runs J2K until CORMAS starts 
 print('J2K simulation starting...')
 simuProgress <- txtProgressBar(min = 1, max =as.numeric(difftime(dateStartCORMAS,dateStartJ2K,units='days')), style = 3) # Comment: Barre de progression
-inOutWater = NULL; runoffSelectedReaches = NULL # Comment: Variable de stockage des sorties J2K
+inOutWater = NULL; runoffSelectedReaches = NULL ; reachsOfCormas =NULL # Comment: Variable de stockage des sorties J2K
 for (i in 1:as.numeric(difftime(dateStartCORMAS,dateStartJ2K,units='days'))){ # Comment: Boucle temporelle
   setTxtProgressBar(simuProgress, i)
   j2kMakeStep() # Comment: Un seul pas de temps
-  inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows()) # Comment: Enregistrement du CatchmentRunoff et somme des precipitations, ETR et T°C sur l'ensemble des HRUs, il existe aussi une fonction pour sélectionner uniquement certaines HRUs (voir dans Rj2k.R)
+  #inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows()) 
+  # Comment: Enregistrement du CatchmentRunoff et somme des precipitations, ETR et T°C sur l'ensemble des HRUs, il existe aussi une fonction pour sélectionner uniquement certaines HRUs (voir dans Rj2k.R)
   # runoffSelectedReaches <- rbind(runoffSelectedReaches, j2kRunoffSelectedReaches(selectedIDs = c(55000,57800,61000,62200,78200,79400))) # Comment: Enregistrement de un ou plusieurs reachs en particulier TODO: faire une liste des reachs à enregistrés
 } # Comment: End of the J2K time loop before the starting of the irrigation campaign
 
@@ -55,7 +57,10 @@ irrigatedFarmPlots <- NULL; j2KNetRain <- NULL; reachsOfCormas <- NULL; inOutCan
 for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ # Comment: Boucle temporelle ocouplée
   setTxtProgressBar(simuProgress, i)
   
-  reach_Runoff = j2kGetOneValueAllReachs("Runoff") %>% as_tibble() # Comment: Getting reach flow from J2K
+  reach_Runoff = j2kGetValuesAllReachs(attributes = "Runoff", 
+                                       ids = cormasReachIds$idReach) %>% as_tibble() # Comment: Getting reach flow from J2K
+  reach_Runoff = j2kGetValuesAllReachs(attributes = "Runoff") %>% as_tibble() 
+  
   updatedFlows <- cormasReachIds %>% 
     mutate(ID = idReach) %>%
     full_join(reach_Runoff, by = "ID") %>%
@@ -68,7 +73,7 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
   updatedActMPS <- cormasFarmPlotIds %>%
     mutate(ID = idParcel) %>%
     full_join(actMPS, by = "ID") %>%
-    mutate(actMPS = (actMPS / 1000) / (24 * 3600)) %>%
+    mutate(actMPS = actMPS / 1000) %>%
     mutate(actMPS = replace_na(actMPS,0))
   r <- setAttributesOfEntities("actMPS", "FarmPlot", updatedActMPS$id, updatedActMPS$actMPS) # Comment: Mise à jour des valeurs de actMPS dans les entites FarmPlot de CORMAS
   
@@ -76,7 +81,7 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
   updatedMaxMPS <- cormasFarmPlotIds %>%
     mutate(ID = idParcel) %>%
     full_join(maxMPS, by = "ID") %>%
-    mutate(maxMPS = (maxMPS / 1000) / (24 * 3600)) %>%
+    mutate(maxMPS = maxMPS / 1000) %>%
     mutate(maxMPS = replace_na(maxMPS,0))
   r <- setAttributesOfEntities("maxMPS", "FarmPlot", updatedMaxMPS$id, updatedMaxMPS$maxMPS)
   
