@@ -53,6 +53,15 @@ cormasReachIds <- getAttributesOfEntities("idReach", "RiverReach") %>%
   pull(idReach)
 
 cormasHRUPlots <- getAttributesOfEntities("idParcel", "FarmPlot") %>% as_tibble()
+
+spatialPlacesWithCanals <- getAttributesOfEntities("canalsId","SpatialPlace") %>%
+  tbl_df() %>%
+  filter(canalsId > 0) 
+
+spatialPlacesWithCanals <- spatialPlacesWithCanals %>% 
+  left_join(getAttributesOfEntities("idHRU","SpatialPlace"), by = "id") %>%
+  mutate(id = as.numeric(as.character(id))) %>%
+  arrange(id)
   
 #TODO: Résoudre le problème ci-dessous!!!
 # Dû à un problème d'identifiants dans les hruplots cormas on ne séléctionne que celles qui ont réellement un 
@@ -100,77 +109,97 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
   
   r <- setAttributesOfEntities("actMPS", "FarmPlot", updatedActMPS$ID, updatedActMPS$actMPS) # Comment: Mise à jour des valeurs de actMPS dans les entites FarmPlot de CORMAS
   
-  actET = j2kGetOneValueAllHrus("etact") %>% as_tibble() # Comment: Getting actMPS value from HRUs
-  updatedActET <- cormasFarmPlotIds %>%
-    mutate(ID = idParcel) %>%
-    full_join(actET, by = "ID") %>%
+  actET = j2kGetOneValueAllHrus("etact", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting etact value from HRUs
+  
+  updatedActET <- actET %>%
     mutate(actET = (actET / 1000) / (24 * 3600)) %>%
     mutate(actET = replace_na(actET,0))
-  r <- setAttributesOfEntities("actET", "FarmPlot", updatedActET$id, updatedActET$actET)
   
-  maxET = j2kGetOneValueAllHrus("etpot") %>% as_tibble() # Comment: Getting actMPS value from HRUs
-  updatedMaxET <- cormasFarmPlotIds %>%
-    mutate(ID = idParcel) %>%
-    full_join(maxET, by = "ID") %>%
+  r <- setAttributesOfEntities("actET", "FarmPlot", updatedActET$ID, updatedActET$actET)
+  
+  maxET = j2kGetOneValueAllHrus("etpot", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting etpot value from HRUs
+  
+  updatedMaxET <- maxET %>%
     mutate(maxET = (maxET / 1000) / (24 * 3600)) %>%
     mutate(maxET = replace_na(maxET,0))
   
-  r <- setAttributesOfEntities("maxET", "FarmPlot", updatedMaxET$id, updatedMaxET$maxET)
-  
+  r <- setAttributesOfEntities("maxET", "FarmPlot", updatedMaxET$ID, updatedMaxET$maxET)
+
   #TODO: trop lourd trouvez une alternative pour affecter des pluies spatialisées?
-  #rainOnParcells <- j2kGetValuesAllHrus("rain", cormasParcelIds$idParcel) %>% as_tibble() # Comment: Getting rain from J2K HRU-plot
-  #r <- setAttributesOfEntities("rain", "FarmPlot", rainOnParcells$ID, rainOnParcells$rain) # Comment: Mise à jour des valeurs de pluie dans les entites FarmPlot de CORMAS 
-  
+  rainOnParcells <- j2kGetValuesAllHrus("rain", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting rain from J2K HRU-plot
+
+  r <- setAttributesOfEntities("rain", "FarmPlot", rainOnParcells$ID, rainOnParcells$rain) # Comment: Mise à jour des valeurs de pluie dans les entites FarmPlot de CORMAS 
+
   r <- runSimu(duration = 24) # Comment: Run CORMAS model during 24 time step
-  
+
+  # Irrigation gravitaire
   surfaceIrri <- getAttributesOfEntities("jamsWaterBuffer", "FarmPlot") %>% # Comment: Récupération de l'eau d'irrigation gravitaire
     mutate(irriDoseInLitres = jamsWaterBuffer * 1000) %>% # Comment: Conversion m3 -> L
     mutate(id =  as.numeric(as.character(id))) %>%
     filter(irriDoseInLitres > 0) %>%
     mutate(date = i) %>% as_tibble()
+
   surfaceIrri <- surfaceIrri %>% arrange(id) # Comment: Reset CORMAS buffers
+
   r <- setAttributesOfEntities("jamsWaterBuffer", "FarmPlot",
                                surfaceIrri$id, vector("numeric", length(surfaceIrri$id)))
+
   irrigatedFarmPlots <- irrigatedFarmPlots %>%  rbind(surfaceIrri) # Comment: Enregistrement des irrigations gravitaires
+  
   j2kSet("surface",   # Comment: Set gravity irrigation of corresponding HRU-plots
          surfaceIrri$id, 
          surfaceIrri$irriDoseInLitres) 
   
+  # Irrigation par aspertion (sous pression)
   aspersionIrri <- getAttributesOfEntities("jamsAspWaterBuffer", "FarmPlot") # Comment: Récupération de l'eau d'irrigation sous pression (NB: on fait l'hypothèse qu'elle est utilisée en aspersion et non en goutte-à-goutte)
+  
   aspersionIrri %>% mutate(aspIrriDoseInLitres = aspersionIrri * 1000) %>% # Comment: Conversion m3 -> L
     mutate(id =  as.numeric(as.character(id))) %>%
     filter(aspIrriDoseInLitres > 0) %>%
     mutate(date = i) %>% as_tibble()
+  
   aspersionIrri <- aspersionIrri %>% arrange(id) # Comment: Reset CORMAS buffers
+  
   r <- setAttributesOfEntities("jamsAspWaterBuffer", "FarmPlot",
                                aspersionIrri$id, vector("numeric", length(aspersionIrri$id)))
+  
   irrigatedFarmPlots <- irrigatedFarmPlots %>%  rbind(aspersionIrri) # Comment: Enregistrement des irrigations par aspersion
+  
   j2kSet("aspersion",   # Comment: Set pressure irrigation of corresponding HRU-plots
          aspersionIrri$id, 
          aspersionIrri$irriDoseInLitres)
   
+  # Prélèvements et deversement des reachs vers les cannaux et des cannaux vers les reachs.
   qFromIntakes <- getAttributesOfEntities("jamsWaterBuffer", "EwaterIntake") %>%  # Comment: Take water from the reach of the intake...
     mutate(id =  as.numeric(as.character(id))) %>%
     mutate(q = jamsWaterBuffer * 1000) %>% arrange(id)
+  
   qFromReservoirs <- getAttributesOfEntities("jamsWaterBuffer", "Ereservoir") %>%  # ... or of the reservoirs
     mutate(id =  as.numeric(as.character(id))) %>%
     mutate(q = jamsWaterBuffer * 1000) %>% arrange(id)
+  
   qFromReleases <- getAttributesOfEntities("jamsWaterBuffer", "EwaterRelease") %>% #  ... and release it to the reach of the release.
     mutate(id =  as.numeric(as.character(id))) %>%
     mutate(q = jamsWaterBuffer * 1000) %>% arrange(id)
+  
   r <- setAttributesOfEntities("jamsWaterBuffer", "EwaterIntake", # Comment: Reset CORMAS buffers
                                qFromIntakes$id, vector("numeric", length(qFromIntakes$id))) 
+  
   r <- setAttributesOfEntities("jamsWaterBuffer", "Ereservoir", 
                                qFromReservoirs$id, vector("numeric", length(qFromReservoirs$id)))
+  
   r <- setAttributesOfEntities("jamsWaterBuffer", "EwaterRelease",
                                qFromReleases$id,  vector("numeric", length(qFromReleases$id))) 
+  
   #TODO: intégrer l'eau qui alimente les reservoirs (inWater) depuis les reachs pour les ASAs sous pression
+  
   qFromIntakes <- qFromIntakes %>% # Comment: Build table q exchanges from reachs to canals to reachs back or to hruplots (other than irrigation)
     left_join(getAttributesOfEntities("myReachId", "EwaterIntake") %>% mutate(id =  as.numeric(as.character(id))), by="id" )
   qFromReleases <- qFromReleases %>%  
     left_join(getAttributesOfEntities("myReachId", "EwaterRelease") %>%   mutate(id =  as.numeric(as.character(id))), by="id" )
   qFromReleases <- qFromReleases %>% 
     left_join(getAttributesOfEntities("idHRU", "EwaterRelease") %>%  mutate(id =  as.numeric(as.character(id))), by="id" )
+  
   qOfTheDay <- qFromIntakes %>% 
     select(-jamsWaterBuffer,-id) %>%
     mutate(waterIn = T) %>%
@@ -179,8 +208,10 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
                    select(-jamsWaterBuffer,-id) %>%
                    mutate(waterIn = F), by= c("id", "waterIn")) %>%  mutate(date = i)
   inOutCanals <- inOutCanals %>% rbind(qOfTheDay) # Comment: Enregistrement des entrées et sorties des canaux
+  
   qsIn <- qOfTheDay %>% filter(waterIn)
   j2kSet("reachout", qsIn$idReach, qsIn$q) # Comment: Set outflow from reachs at waterIntakes
+  
   qsOut <- qOfTheDay %>% filter(!waterIn)
   j2kSet("surface", qsOut$idHRU, qsOut$q) # Comment: Set the flood in J2K (we consider that the hru is "flooded")
   
@@ -191,9 +222,11 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
     mutate(q = jamsWaterBuffer * 1000) %>%
     arrange(id) %>%
     filter(idHRU > 0) %>% as_tibble()
+  
   r <- setAttributesOfEntities("jamsWaterBuffer", "SpatialPlace", # Comment: Reset CORMAS buffer
                                qFromSeepage$id,
                                vector("numeric", length(qFromSeepage$id)))
+  
   seepage <- qFromSeepage %>% # Comment: Enregistrement des pertes par infiltration le long des canaux (seepages)
     group_by(canalsId, idHRU) %>%
     summarise(q = sum(q)) %>% 
@@ -214,7 +247,7 @@ print('J2K simulation finishing...')
 simuProgress <- txtProgressBar(min = 1, max =as.numeric(difftime(dateEndJ2K,dateEndCORMAS,units='days')), style = 3) # Comment: Barre de progression
 for (i in 1:as.numeric(difftime(dateEndJ2K,dateEndCORMAS,units='days'))){ # Comment: Boucle temporelle
   setTxtProgressBar(simuProgress, i)
-  j2kMakeStep() 
+  j2kMakeStep()
   inOutWater <- rbind(inOutWater, j2kWaterBalanceFlows()) # Comment: Enregistrement du CatchmentRunoff et somme des precipitations, ETR et T°C sur l'ensemble des HRUs, il existe aussi une fonction pour sélectionner uniquement certaines HRUs (voir dans Rj2k.R)
 } # Comment: End of the J2K time loop after the end of the irrigation campaign
 
