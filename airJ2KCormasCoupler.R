@@ -58,10 +58,12 @@ spatialPlacesWithCanals <- getAttributesOfEntities("canalsId","SpatialPlace") %>
   tbl_df() %>%
   filter(canalsId > 0) 
 
+#TODO: Remplacer les idParcel par des idHRUs. Implique que toute spatialPlace ait son identifiant d'HRU...
 spatialPlacesWithCanals <- spatialPlacesWithCanals %>% 
-  left_join(getAttributesOfEntities("idHRU","SpatialPlace"), by = "id") %>%
+  left_join(getAttributesOfEntities("idParcel","SpatialPlace"), by = "id") %>%
   mutate(id = as.numeric(as.character(id))) %>%
-  arrange(id)
+  arrange(id) %>%
+  filter(idParcel > 0) # TODO: Ligne à supprimer!!
   
 #TODO: Résoudre le problème ci-dessous!!!
 # Dû à un problème d'identifiants dans les hruplots cormas on ne séléctionne que celles qui ont réellement un 
@@ -84,9 +86,11 @@ r <- setAttributesOfEntities("maxMPS", "FarmPlot", updatedMaxMPS$ID, updatedMaxM
 
 # Runs J2K with CORMAS
 print('Ongoing J2K with CORMAS simulation...')
-simuProgress <- txtProgressBar(min = 1, max =as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days')), style = 3)
+nbDays <- 15 # TODO: for testing purpose!! Remove and uncomment next row
+#nbDays <- as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))
+simuProgress <- txtProgressBar(min = 1, max = nbDays, style = 3)
 irrigatedFarmPlots <- NULL; j2KNetRain <- NULL; reachsOfCormas <- NULL; inOutCanals <- NULL; seepage <- NULL # Comment: Variable de stockage des sorties couplées
-for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ # Comment: Boucle temporelle ocouplée
+for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
   setTxtProgressBar(simuProgress, i)
   
 
@@ -112,18 +116,18 @@ for (i in 1:as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))){ #
   actET = j2kGetOneValueAllHrus("etact", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting etact value from HRUs
   
   updatedActET <- actET %>%
-    mutate(actET = (actET / 1000) / (24 * 3600)) %>%
-    mutate(actET = replace_na(actET,0))
+    mutate(etact = (etact / 1000) / (24 * 3600)) %>%
+    mutate(etact = replace_na(etact,0))
   
-  r <- setAttributesOfEntities("actET", "FarmPlot", updatedActET$ID, updatedActET$actET)
+  r <- setAttributesOfEntities("actET", "FarmPlot", updatedActET$ID, updatedActET$etact)
   
   maxET = j2kGetOneValueAllHrus("etpot", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting etpot value from HRUs
   
   updatedMaxET <- maxET %>%
-    mutate(maxET = (maxET / 1000) / (24 * 3600)) %>%
-    mutate(maxET = replace_na(maxET,0))
+    mutate(etpot = (etpot / 1000) / (24 * 3600)) %>%
+    mutate(etpot = replace_na(etpot,0))
   
-  r <- setAttributesOfEntities("maxET", "FarmPlot", updatedMaxET$ID, updatedMaxET$maxET)
+  r <- setAttributesOfEntities("maxET", "FarmPlot", updatedMaxET$ID, updatedMaxET$etpot)
 
   #TODO: trop lourd trouvez une alternative pour affecter des pluies spatialisées?
   rainOnParcells <- j2kGetValuesAllHrus("rain", ids = cormasHRUPlotsIds) %>% as_tibble() # Comment: Getting rain from J2K HRU-plot
