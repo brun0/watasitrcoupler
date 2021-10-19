@@ -33,6 +33,7 @@ probesList = c("flowInRiverReachGB","flowInRiverReachPB","numberOfFlooldPlotActi
 initCORMAS(init, control, modelName, probesList)
 
 # Initializes J2K model
+# Comment and do it by hand in a terminal for debugging ..
 killJ2K() # Comment: Kill JAMS if it's running
 initJ2K(jamsRootPath, jamsFileName, stdoutP, stderrP, wd) # Comment: Lance le fichier modèle dans JAMS
 
@@ -90,7 +91,10 @@ nbDays <- 15 # TODO: for testing purpose!! Remove and uncomment next row
 #nbDays <- as.numeric(difftime(dateEndCORMAS,dateStartCORMAS,units='days'))
 simuProgress <- txtProgressBar(min = 1, max = nbDays, style = 3)
 irrigatedFarmPlots <- NULL; j2KNetRain <- NULL; reachsOfCormas <- NULL; inOutCanals <- NULL; seepage <- NULL # Comment: Variable de stockage des sorties couplées
+
 for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
+  #i <- 1 # Pour faire la boucle à la main :)
+  # i <- i + 1
   setTxtProgressBar(simuProgress, i)
   
 
@@ -141,7 +145,10 @@ for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
     mutate(irriDoseInLitres = jamsWaterBuffer * 1000) %>% # Comment: Conversion m3 -> L
     mutate(id =  as.numeric(as.character(id))) %>%
     filter(irriDoseInLitres > 0) %>%
-    mutate(date = i) %>% as_tibble()
+    group_by(id) %>%
+    summarise_all(sum) %>%
+    mutate(date = i) %>% 
+    as_tibble()
 
   surfaceIrri <- surfaceIrri %>% arrange(id) # Comment: Reset CORMAS buffers
 
@@ -157,10 +164,13 @@ for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
   # Irrigation par aspertion (sous pression)
   aspersionIrri <- getAttributesOfEntities("jamsAspWaterBuffer", "FarmPlot") # Comment: Récupération de l'eau d'irrigation sous pression (NB: on fait l'hypothèse qu'elle est utilisée en aspersion et non en goutte-à-goutte)
   
-  aspersionIrri %>% mutate(aspIrriDoseInLitres = aspersionIrri * 1000) %>% # Comment: Conversion m3 -> L
+  aspersionIrri <- aspersionIrri %>% mutate(aspIrriDoseInLitres = aspersionIrri * 1000) %>% # Comment: Conversion m3 -> L
     mutate(id =  as.numeric(as.character(id))) %>%
+    group_by(id) %>%
+    summarise_all(sum) %>%
     filter(aspIrriDoseInLitres > 0) %>%
-    mutate(date = i) %>% as_tibble()
+    as_tibble() %>%
+    mutate(date = i)
   
   aspersionIrri <- aspersionIrri %>% arrange(id) # Comment: Reset CORMAS buffers
   
@@ -210,14 +220,22 @@ for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
     mutate(idHRU = 0) %>%
     dplyr::union(qFromReleases %>%
                    select(-jamsWaterBuffer,-id) %>%
-                   mutate(waterIn = F), by= c("id", "waterIn")) %>%  mutate(date = i)
+                   mutate(waterIn = F), by= c("id", "waterIn")) %>%
+    group_by(myReachId, waterIn, idHRU) %>%
+    summarise(q = sum(q)) %>%
+    mutate(date = i)
+  
   inOutCanals <- inOutCanals %>% rbind(qOfTheDay) # Comment: Enregistrement des entrées et sorties des canaux
   
   qsIn <- qOfTheDay %>% filter(waterIn)
-  j2kSet("reachout", qsIn$idReach, qsIn$q) # Comment: Set outflow from reachs at waterIntakes
+  j2kSet("reachout", qsIn$myReachId, qsIn$q) # Comment: Set outflow from reachs at waterIntakes
   
-  qsOut <- qOfTheDay %>% filter(!waterIn)
-  j2kSet("surface", qsOut$idHRU, qsOut$q) # Comment: Set the flood in J2K (we consider that the hru is "flooded")
+  qsOutinHrus <- qOfTheDay %>% filter(!waterIn) %>% filter(idHRU > 0)
+  j2kSet("surface", qsOutinHrus$idHRU, qsOutinHrus$q) # Comment: Set the flood in J2K (we consider that the hru is "flooded")
+  
+  qsOutinReaches <- qOfTheDay %>% filter(!waterIn) %>% filter(idHRU <= 0)
+  j2kSet("reachin", qsOutinReaches$myReachId, qsOutinReaches$q) # Comment: Set the flood in J2K (we consider that the hru is "flooded")
+  
   
   qFromSeepage <- getAttributesOfEntities("jamsWaterBuffer", "SpatialPlace") %>% # Comment: Get the water seepage from canals and put it in the rigth HRUS
     mutate(id =  as.numeric(as.character(id))) %>%
@@ -225,21 +243,23 @@ for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
     filter(jamsWaterBuffer > 0) %>%
     mutate(q = jamsWaterBuffer * 1000) %>%
     arrange(id) %>%
-    filter(idHRU > 0) %>% as_tibble()
+    filter(idParcel > 0) %>% as_tibble()
   
   r <- setAttributesOfEntities("jamsWaterBuffer", "SpatialPlace", # Comment: Reset CORMAS buffer
                                qFromSeepage$id,
                                vector("numeric", length(qFromSeepage$id)))
   
   seepage <- qFromSeepage %>% # Comment: Enregistrement des pertes par infiltration le long des canaux (seepages)
-    group_by(canalsId, idHRU) %>%
+    group_by(canalsId, idParcel) %>%
     summarise(q = sum(q)) %>% 
     mutate(date = i) %>% rbind(seepage)
+  
   qFromSeepage <- qFromSeepage %>% # Comment: Get hru Ids of spatial place
-    group_by(idHRU) %>%
+    group_by(idParcel) %>%
     summarise(q = sum(q))
+  
   j2kSet("surface",        # Comment: Set seepages in J2K (we consider seepage having the same effect as "surface" irrigation)
-         qFromSeepage$idHRU, 
+         qFromSeepage$idParcel, 
          qFromSeepage$q)
   
   j2kMakeStep() # Comment: Run new J2K daily step
