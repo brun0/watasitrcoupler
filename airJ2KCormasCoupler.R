@@ -172,8 +172,9 @@ for (i in 1:nbDays){ # Comment: Boucle temporelle ocouplée
     as_tibble() %>%
     mutate(date = i)
   
-  aspersionIrri <- aspersionIrri %>% arrange(id) # Comment: Reset CORMAS buffers
+  aspersionIrri <- aspersionIrri %>% arrange(id) 
   
+  # Comment: Reset CORMAS buffers
   r <- setAttributesOfEntities("jamsAspWaterBuffer", "FarmPlot",
                                aspersionIrri$id, vector("numeric", length(aspersionIrri$id)))
   
