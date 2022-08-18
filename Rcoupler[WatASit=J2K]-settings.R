@@ -27,7 +27,7 @@
   for(FileName in list.files(wd_Functions, pattern="\\.[Rr]$")){ source(file.path(wd_Functions, FileName)); }
   
   ####### 1.3 Load libraries #######
-  load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel), require(gridExtra)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
+  load <- c(require(ConfigParser), require(R.utils), require(RSQLite), require(feather), require(zoo), require (multiplex), require(tidyr), require(ggplot2), require(dplyr), require(doParallel), require(gridExtra), require(httr), require(xml2), require(devtools), require(RJSONIO), require(tibble)); if(any(!load)){ cat("Error: a package is not installed \n"); stop("RUN STOPPED",call.=FALSE); };
   
   ####### 1.4 Core parallelism #######
   cores <- parallel:::detectCores(); registerDoParallel(cores-2);
@@ -74,3 +74,4 @@
       quit(status=1)
     }
   }
+  

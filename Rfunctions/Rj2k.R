@@ -212,3 +212,85 @@ j2kLocalWaterBalanceFlows <- function(ip="localhost", port="9999", selectedHrus,
 killJ2K <- function() {
     system2('kill', args=c('-9', "$(ps aux | grep -i 'jams-starter' | grep java | awk '{print $2}')"), wait=F)
 }
+
+initJ2K <- function(jamsRootPath, jams_file_name, stdoutP, stderrP, wd) {
+  setwd(jamsRootPath)
+  system2(
+    'java',
+    args=c('-jar', 'jams-starter.jar', '-m', paste0('data/J2K_cowat/',jams_file_name), '-n'),
+    wait=F, stdout=stdoutP, stderr=stderrP
+  )
+  cat('\n', 'Waiting 5 seconds to make sure J2K coupling module starts listening...','\n')
+  Sys.sleep(5)
+  setwd(wd)
+}
+
+connectCORMAS <- function(modelName, parcelFile, cormasRootPath, stdoutP, stderrP, wd) {
+  setwd(cormasRootPath)
+  if (!isCormasListening()) { # Open Cormas listenning for instruction
+    system2(
+      'wine',
+      args=c('../bin/win/visual.exe', 'cormas.im' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+      # adding headless successfully launches cormas and the model loading appears to be working
+      # but at some point Rcoupler crashes
+      #args=c('../bin/win/visual.exe', 'cormas.im', '-headless' ,'-doit', '"CormasNS.Kernel.Cormas current startWSForR"'),
+      wait=F, stdout=stdoutP, stderr=stderrP
+    )
+    cat('\n\nWaiting 3 seconds to make sure cormas starts listening...')
+    Sys.sleep(3)
+  }
+  setwd(wd)
+  
+  # Ça ouvre une image de cormas avec le modèle chargé mais ne pas regarder
+  # Dans l'interface principale, aller dans le menu: "simulation/Analysis/cormas<-->R/Sart webservie for R".
+  # Un petit logo R avec un point vert doit apparaitre.. Le tour est joué.
+  r <- openModel(modelName, parcelFile = parcelFile)
+}
+
+
+initCORMAS <- function(init, control, modelName, probesList) {
+  r <- setInit(init) # Init,  note that the model is not initialized, we just set the init method..
+  r <- setStep(paste0(control)) # Stepper
+  #Choose probes to activate
+  for (p in 1:length(probesList)) {
+  r <- activateProbe(probesList[p], modelName)
+  }
+  # initialize the model
+  r <- initSimu() 
+}
+
+# manageIDs <- function() {
+  # cormasParcelIds <- getAttributesOfEntities("idParcel","FarmPlot") %>%  as_tibble()
+  # cormasSpatialPlaceIds <- getAttributesOfEntities("idReach","SpatialPlace") %>% as_tibble()
+  # # correctReachIds <- read.table("superjams/data/J2K_cowat/parameter/step2_streams_new_div_OK2.asc",
+  # correctReachIds <- read.table("superjams/data/J2K_cowat/parameter/step2_streams_new_div2.asc",
+  #                               sep = " ",
+  #                               dec = ".",
+  #                               skip = 6) %>%
+  #   mutate(line = row_number()) %>%
+  #   gather("col", "j2kID", -line) %>% 
+  #   mutate(col = as.numeric(str_remove(col,"V"))) %>%
+  #   arrange(line, col) %>%
+  #   mutate(cormasId = row_number() - 1) %>% #JE NE SAIS PAS POURQUOI il y a un décalage de 1..!
+  #   filter(j2kID != 0) %>%
+  #   as_tibble() %>% 
+  #   full_join(cormasSpatialPlaceIds %>% 
+  #   mutate(cormasId = as.numeric(as.character(id)))) %>%
+  #   arrange(cormasId) %>%
+  #   mutate(j2kID = replace_na(j2kID,0))
+  # 
+  # r <- setAttributesOfEntities("idReach",
+  #                              "SpatialPlace", 
+  #                              correctReachIds$cormasId, 
+  #                              correctReachIds$j2kID)
+  
+  # cormasReachIds <- getAttributesOfEntities("idReach","RiverReach") %>% as_tibble()
+  
+  # spatialPlacesWithCanals <- getAttributesOfEntities("canalsId","SpatialPlace") %>% as_tibble() %>%
+  #   filter(canalsId > 0) 
+  # 
+  # spatialPlacesWithCanals <- spatialPlacesWithCanals %>% 
+  #   left_join(getAttributesOfEntities("idHRU","SpatialPlace"), by = "id") %>%
+  #   mutate(id = as.numeric(as.character(id))) %>%
+  #   arrange(id)
+# }
